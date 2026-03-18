@@ -184,6 +184,11 @@
             gap: 10px;
         }
 
+        /* Hide controls before JS runs to prevent flash of old layout */
+        #topControls, #quickLoadDropdown {
+            visibility: hidden;
+        }
+
         .dropdown {
             position: relative;
             display: inline-block;
@@ -607,6 +612,25 @@
             cursor: pointer;
         }
 
+        /* Hide UI mode - only settings button visible */
+        body.hide-ui .top-bar,
+        body.hide-ui .navigation,
+        body.hide-ui .counter {
+            display: none !important;
+        }
+
+        body.hide-ui .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 0;
+        }
+
+        body.hide-ui #cardDisplay {
+            width: 100%;
+        }
+
         .navigation {
             position: absolute;
             top: 20px;
@@ -956,11 +980,70 @@
         }
 
         .empty-state {
-            background: white;
-            border-radius: 20px;
-            padding: 60px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
+            padding: 20px 16px;
+            min-height: calc(100vh - 120px);
+        }
+
+        .empty-state-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px 30px 36px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .empty-state-actions {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 16px;
+            width: 100%;
+            margin-top: 32px;
+        }
+
+        .empty-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: white;
+            border: 3px solid #35654D;
+            border-radius: 20px;
+            padding: 18px 10px 14px;
+            cursor: pointer;
+            flex: 1;
+            max-width: 100px;
+            box-shadow: 0 4px 16px rgba(53,101,77,0.18);
+            transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .empty-action-btn:active {
+            transform: scale(0.94);
+            background: #f0f9f4;
+            box-shadow: 0 2px 8px rgba(53,101,77,0.15);
+        }
+
+        .empty-action-btn svg {
+            color: #35654D;
+        }
+
+        .empty-action-btn span {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #35654D;
+            letter-spacing: 0.3px;
         }
 
         /* Expandable Save Button */
@@ -1023,19 +1106,21 @@
         }
 
         .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
+            font-size: 5rem;
+            margin-bottom: 16px;
+            line-height: 1;
         }
 
         .empty-state h3 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: #333;
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #222;
         }
 
         .empty-state p {
             color: #666;
-            font-size: 1rem;
+            font-size: 0.95rem;
         }
 
         .modal {
@@ -1674,8 +1759,8 @@
                 </h1>
             </div>
 
-            <div class="controls">
-            <button class="btn" onclick="openCreateModal()" style="color: #35654D;">
+            <div class="controls" id="topControls">
+            <button class="btn" id="addBtn" onclick="openCreateModal()" style="color: #35654D; display:none;">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -1723,7 +1808,7 @@
                     <rect x="2" y="6" width="20" height="12" rx="2"></rect>
                 </svg>
             </button>
-            <button class="btn" id="loadBtn" onclick="openLoadOptions()" style="color: #35654D;">
+            <button class="btn" id="loadBtn" onclick="openLoadOptions()" style="color: #35654D; display:none;">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                 </svg>
@@ -1827,9 +1912,9 @@
     </div>
 
     <div class="modal" id="gameMenuModal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 340px;">
             <h2>🎮 Game Menu</h2>
-            <p style="margin-bottom: 20px; color: #666;">Select a game to play with your flashcards!</p>
+            <p style="margin-bottom: 20px; color: #666;">Play games with your cards</p>
 
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <button id="guessGameBtn" class="btn btn-success" onclick="startGame('guess')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
@@ -1845,7 +1930,7 @@
                 </button>
 
                 <button class="btn btn-secondary" onclick="closeGameMenu()" style="padding: 15px; justify-content: center;">
-                    ← Back to Flashcards
+                    ← Back
                 </button>
             </div>
         </div>
@@ -1985,20 +2070,44 @@
 
             <div id="loadFileInfo" style="display: none; background: #f0f4ff; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                 <p style="margin-bottom: 10px;"><strong>Selected File:</strong> <span id="loadFileName"></span></p>
-                <p style="margin-bottom: 15px;"><strong>Cards Found:</strong> <span id="loadFileCards"></span></p>
-
-                <p style="margin-bottom: 10px; font-weight: 600;">Load Options:</p>
-                <button class="btn btn-warning" id="replaceAllBtn" onclick="loadSession('replace')" style="width: 100%; margin-bottom: 10px;">
-                    ⚠️ Replace All Cards
-                </button>
-                <button class="btn btn-success" id="addToExistingBtn" onclick="loadSession('add')" style="width: 100%;">
-                    ➕ Add to Existing Cards
-                </button>
+                <p style="margin-bottom: 10px;"><strong>Cards Found:</strong> <span id="loadFileCards"></span></p>
             </div>
 
-            <button class="btn btn-secondary" onclick="closeLoadOptions()" style="width: 100%;">
-                Cancel
-            </button>
+            <!-- Option B expand panel kept but unused since Option A selected -->
+            <div id="previewExpandPanel" style="display:none;"></div>
+
+            <!-- Bottom action row: +Add | Cancel | Load | Replace | Preview -->
+            <div style="display:flex; gap:8px; margin-top:4px;">
+                <button class="btn btn-success" id="addToExistingBtn" onclick="loadSession('add')" style="flex:1; display:none; transition: flex 0.25s ease;">
+                    ➕ Add
+                </button>
+                <button class="btn btn-secondary" onclick="closeLoadOptions()" style="flex:1; transition: flex 0.25s ease;">
+                    Cancel
+                </button>
+                <button class="btn btn-success" id="loadDirectBtn" onclick="loadSession('replace')" style="flex:1; display:none; transition: flex 0.25s ease;">
+                    ➕ Add
+                </button>
+                <button class="btn btn-warning" id="replaceAllBtn" onclick="confirmReplace(this)" style="flex:1; display:none; transition: flex 0.25s ease, background 0.2s ease;">
+                    ⚠️ Replace
+                </button>
+                <button class="btn" id="previewBtn" onclick="openPreview()" style="flex:1; background:#35654D; color:white; display:none; transition: flex 0.25s ease;">
+                    👁️ Preview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Option A: Hover overlay preview window -->
+    <div id="previewOverlayModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:white; border-radius:16px; width:100%; max-width:560px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+            <div style="background:#35654D; padding:14px 18px; border-radius:16px 16px 0 0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <span style="color:white; font-weight:700; font-size:17px;">👁️ Card Preview</span>
+                <button onclick="closePreviewOverlay()" style="background:rgba(255,255,255,0.2); border:none; color:white; font-size:18px; cursor:pointer; border-radius:8px; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">✕</button>
+            </div>
+            <div id="previewOverlayGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px; overflow-y:auto; flex:1;"></div>
+            <div style="padding:12px 16px; border-top:1px solid #eee; flex-shrink:0; text-align:right;">
+                <button onclick="closePreviewOverlay()" class="btn btn-secondary" style="padding:10px 24px;">Close Preview</button>
+            </div>
         </div>
     </div>
 
@@ -2402,158 +2511,172 @@
             return target.closest('.modal') || target.closest('.btn') ||
                    target.closest('.nav-btn') || target.closest('.audio-btn') ||
                    target.closest('.fullscreen-btn') || target.closest('.counter') ||
-                   target.closest('.controls') || target.closest('.header');
+                   target.closest('.controls') || target.closest('.header') ||
+                   target.closest('#settingsMenu');
         }
 
         // Flag to prevent click event from firing after touch event (prevents double flip)
         let lastTouchTime = 0;
 
-        // Setup touch swipe gestures for card navigation
+        // Setup touch + mouse drag gestures for card navigation (all directions)
         function setupSwipeGestures() {
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let touchEndX = 0;
-            let touchEndY = 0;
-            let currentTouchX = 0;
-            let touchStartTime = 0;
-            const minSwipeDistance = 50; // minimum distance for a swipe to register
-            const maxTapTime = 500; // max time for a tap (in ms) - increased for better detection
-            const maxTapDistance = 30; // max distance moved for a tap - increased for better detection
+            let startX = 0, startY = 0;
+            let startTime = 0;
+            let isDragging = false;
+            let dragX = 0, dragY = 0;
 
-            document.addEventListener('touchstart', function(e) {
-                const target = e.target;
-                if (shouldExcludeTouchTarget(target)) return;
+            const MIN_SWIPE = 120;
+            const MAX_TAP_DIST = 10;
+            const MAX_TAP_TIME = 500;
+            const MIN_DRAG_TO_SUPPRESS_FLIP = 8;  // must barely move to count as tap
+            const PEAK_DRAG_SUPPRESS_FLIP = 20;   // if card ever moved this far, never flip on release
+            let peakDist = 0; // tracks maximum distance reached during this drag
 
-                // Only allow touch on card display area
-                if (!target.closest('#cardDisplay') && !target.closest('.card-container')) {
-                    return;
+            function getPos(e) {
+                if (e.touches) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
                 }
-
-                touchStartX = e.changedTouches[0].screenX;
-                touchStartY = e.changedTouches[0].screenY;
-                touchStartTime = Date.now();
-
-                // Add swiping class to disable transition and show preview
-                const cardElement = document.querySelector('.card');
-                const cardStack = document.querySelector('.card-stack');
-                if (cardElement) {
-                    cardElement.classList.add('swiping');
-                }
-                if (cardStack) {
-                    cardStack.classList.add('swiping');
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchmove', function(e) {
-                const target = e.target;
-                if (shouldExcludeTouchTarget(target)) return;
-
-                // Only allow on card display area
-                if (!target.closest('#cardDisplay') && !target.closest('.card-container')) {
-                    return;
-                }
-
-                if (touchStartX === 0) return;
-
-                currentTouchX = e.changedTouches[0].screenX;
-                const deltaX = currentTouchX - touchStartX;
-                const deltaY = e.changedTouches[0].screenY - touchStartY;
-
-                // Only move card if horizontal swipe is dominant AND moved enough
-                // Don't transform for tiny movements (prevents jerk on tap)
-                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 15) {
-                    const cardElement = document.querySelector('.card');
-                    if (cardElement) {
-                        const rotation = deltaX * 0.02; // Subtle rotation effect
-                        cardElement.style.transform = `translateX(${deltaX}px) rotateZ(${rotation}deg)`;
-                        cardElement.classList.add('swiping');
-                    }
-                }
-            }, { passive: true });
-
-            document.addEventListener('touchend', function(e) {
-                const target = e.target;
-                if (shouldExcludeTouchTarget(target)) return;
-
-                // Only allow on card display area
-                if (!target.closest('#cardDisplay') && !target.closest('.card-container')) {
-                    touchStartX = 0;
-                    touchStartY = 0;
-                    return;
-                }
-
-                touchEndX = e.changedTouches[0].screenX;
-                touchEndY = e.changedTouches[0].screenY;
-
-                const touchEndTime = Date.now();
-                const touchDuration = touchEndTime - touchStartTime;
-                const deltaX = touchEndX - touchStartX;
-                const deltaY = touchEndY - touchStartY;
-                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-                const cardElement = document.querySelector('.card');
-                const cardStack = document.querySelector('.card-stack');
-
-                // Check if it's a tap (short duration and minimal movement)
-                if (touchDuration < maxTapTime && distance < maxTapDistance) {
-                    // It's a tap, flip the card
-                    if (cardElement) {
-                        cardElement.classList.remove('swiping');
-                        // Clear any inline transform from swiping
-                        cardElement.style.transform = '';
-                        cardElement.style.transition = '';
-                    }
-                    if (cardStack) cardStack.classList.remove('swiping');
-                    // Set flag to prevent click event from also firing
-                    lastTouchTime = Date.now();
-                    // Flip the card
-                    flipCard();
-                } else if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                    // It's a valid swipe
-                    const shouldNavigate = handleSwipe();
-
-                    if (shouldNavigate) {
-                        // Navigation will happen, reset immediately
-                        if (cardElement) {
-                            cardElement.classList.remove('swiping');
-                            cardElement.style.transform = '';
-                        }
-                        if (cardStack) cardStack.classList.remove('swiping');
-                    } else {
-                        // Swipe rejected (left swipe), smoothly return to center
-                        if (cardElement) {
-                            cardElement.classList.remove('swiping');
-                            setTimeout(() => cardElement.style.transform = '', 10);
-                        }
-                        if (cardStack) cardStack.classList.remove('swiping');
-                    }
-                } else {
-                    // Not a tap or valid swipe, smoothly return to center
-                    if (cardElement) {
-                        cardElement.classList.remove('swiping');
-                        setTimeout(() => cardElement.style.transform = '', 10);
-                    }
-                    if (cardStack) cardStack.classList.remove('swiping');
-                }
-
-                // Reset touch positions
-                touchStartX = 0;
-                touchStartY = 0;
-            }, { passive: true });
-
-            function handleSwipe() {
-                const deltaX = touchEndX - touchStartX;
-                const deltaY = touchEndY - touchStartY;
-
-                // Both swipe directions go to next card (the preview card)
-                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-                    if (cards.length > 0) {
-                        nextCard();
-                        return true;
-                    }
-                }
-                return false;
+                return { x: e.clientX, y: e.clientY };
             }
+
+            function onStart(e) {
+                const target = e.target;
+                if (shouldExcludeTouchTarget(target)) return;
+                if (!target.closest('#cardDisplay') && !target.closest('.card-container')) return;
+                if (cards.length === 0) return;
+
+                const pos = getPos(e);
+                startX = pos.x; startY = pos.y;
+                startTime = Date.now();
+                isDragging = true;
+                dragX = 0; dragY = 0;
+                peakDist = 0;
+
+                const cardEl = document.querySelector('.card');
+                const cardStack = document.querySelector('.card-stack');
+                if (cardEl) {
+                    cardEl.classList.add('swiping');
+                    cardEl.style.userSelect = 'none';
+                    cardEl.style.webkitUserSelect = 'none';
+                }
+                if (cardStack) cardStack.classList.add('swiping');
+            }
+
+            function onMove(e) {
+                if (!isDragging) return;
+                const target = e.target || e.srcElement;
+                if (shouldExcludeTouchTarget(target)) return;
+
+                const pos = e.touches ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : { x: e.clientX, y: e.clientY };
+                dragX = pos.x - startX;
+                dragY = pos.y - startY;
+                const dist = Math.sqrt(dragX * dragX + dragY * dragY);
+                if (dist > peakDist) peakDist = dist;
+
+                if (dist > 10) {
+                    const cardEl = document.querySelector('.card');
+                    if (cardEl) {
+                        // Follow finger/mouse in all directions with subtle rotation
+                        const rotation = dragX * 0.03;
+                        const tiltY = dragY * 0.01;
+                        cardEl.style.transform = `translateX(${dragX}px) translateY(${dragY}px) rotateZ(${rotation}deg) rotateX(${-tiltY}deg)`;
+                        cardEl.classList.add('swiping');
+
+                        // Show next/prev peek based on direction
+                        const cardStack = document.querySelector('.card-stack');
+                        if (cardStack) cardStack.classList.add('swiping');
+                    }
+                }
+            }
+
+            function onEnd(e) {
+                if (!isDragging) return;
+                isDragging = false;
+
+                const cardEl = document.querySelector('.card');
+                const cardStack = document.querySelector('.card-stack');
+
+                // Restore text selection
+                if (cardEl) {
+                    cardEl.style.userSelect = '';
+                    cardEl.style.webkitUserSelect = '';
+                }
+                const elapsed = Date.now() - startTime;
+                const finalDist = Math.sqrt(dragX * dragX + dragY * dragY);
+
+                // Tap: finger barely moved at any point during the gesture
+                if (elapsed < MAX_TAP_TIME && peakDist < PEAK_DRAG_SUPPRESS_FLIP && finalDist < MIN_DRAG_TO_SUPPRESS_FLIP) {
+                    if (cardEl) { cardEl.classList.remove('swiping'); cardEl.style.transform = ''; }
+                    if (cardStack) cardStack.classList.remove('swiping');
+                    lastTouchTime = Date.now();
+                    flipCard();
+                    return;
+                }
+
+                // Determine swipe: use final offset from start position
+                const absX = Math.abs(dragX), absY = Math.abs(dragY);
+
+                if (finalDist >= MIN_SWIPE) {
+                    if (absX >= absY) {
+                        // Horizontal dominant
+                        if (dragX > 0) prevCard(); else nextCard();
+                    } else {
+                        // Vertical dominant
+                        if (dragY > 0) prevCard(); else nextCard();
+                    }
+                    if (cardEl) { cardEl.classList.remove('swiping'); cardEl.style.transform = ''; }
+                    if (cardStack) cardStack.classList.remove('swiping');
+                } else {
+                    // Not enough — snap back smoothly
+                    if (cardEl) {
+                        cardEl.style.transition = 'transform 0.25s ease';
+                        cardEl.style.transform = '';
+                        cardEl.classList.remove('swiping');
+                        setTimeout(() => { if (cardEl) cardEl.style.transition = ''; }, 260);
+                    }
+                    if (cardStack) cardStack.classList.remove('swiping');
+                }
+
+                startX = 0; startY = 0; dragX = 0; dragY = 0; peakDist = 0;
+            }
+
+            // Touch events
+            document.addEventListener('touchstart', onStart, { passive: true });
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                const target = e.target;
+                if (shouldExcludeTouchTarget(target)) return;
+                if (!target.closest('#cardDisplay') && !target.closest('.card-container')) return;
+                onMove(e);
+            }, { passive: true });
+            document.addEventListener('touchend', function(e) {
+                if (!isDragging) return;
+                if (e.changedTouches) {
+                    dragX = e.changedTouches[0].clientX - startX;
+                    dragY = e.changedTouches[0].clientY - startY;
+                }
+                onEnd(e);
+            }, { passive: true });
+
+            // Mouse events for PC
+            document.addEventListener('mousedown', function(e) {
+                if (e.button !== 0) return; // left button only
+                onStart(e);
+            });
+            window.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                onMove(e);
+            });
+            window.addEventListener('mouseup', function(e) {
+                if (!isDragging) return;
+                onEnd(e);
+            });
+
+            // Prevent text/image selection while dragging
+            document.addEventListener('dragstart', function(e) {
+                if (isDragging) e.preventDefault();
+            });
         }
 
         // Add click listener for desktop (mouse clicks only - not touch-synthesized clicks)
@@ -2577,7 +2700,8 @@
             const isExcluded = target.closest('.modal') || target.closest('.btn') ||
                               target.closest('.nav-btn') || target.closest('.audio-btn') ||
                               target.closest('.fullscreen-btn') || target.closest('.counter') ||
-                              target.closest('.controls') || target.closest('.header');
+                              target.closest('.controls') || target.closest('.header') ||
+                              target.closest('#settingsMenu');
 
             if (isCardElement && !isExcluded) {
                 flipCard();
@@ -4668,6 +4792,9 @@
         }
 
         let loadedSessionData = null;
+        // 'overlay' = Option A (hover window), 'expand' = Option B (expand down)
+        // Change this to switch which option is active:
+        let previewMode = 'overlay';
 
         function openLoadOptions() {
             document.body.style.overflow = 'hidden';
@@ -4675,13 +4802,104 @@
             // Reset file input and info
             document.getElementById('loadFileInput').value = '';
             document.getElementById('loadFileInfo').style.display = 'none';
+            document.getElementById('previewBtn').style.display = 'none';
+            document.getElementById('previewExpandPanel').style.display = 'none';
+            document.getElementById('replaceAllBtn').style.display = 'none';
+            document.getElementById('addToExistingBtn').style.display = 'none';
+            document.getElementById('loadDirectBtn').style.display = 'none';
             loadedSessionData = null;
         }
 
         function closeLoadOptions() {
             document.body.style.overflow = '';
             document.getElementById('loadOptionsModal').classList.remove('active');
+            closePreviewOverlay();
+            closePreviewExpand();
             loadedSessionData = null;
+        }
+
+        function buildPreviewGrid(containerId) {
+            const grid = document.getElementById(containerId);
+            const data = loadedSessionData;
+            if (!grid || !data) return;
+            grid.innerHTML = data.cards.map((card, i) => {
+                // Strip HTML tags and newlines, trim whitespace for clean label
+                const rawLabel = (card.backText || '')
+                    .replace(/<[^>]*>/g, '')   // remove any HTML tags
+                    .replace(/[\r\n]+/g, ' ')  // collapse newlines to space
+                    .trim();
+                const label = rawLabel !== '' ? rawLabel : `Card ${i + 1}`;
+                const escapedLabel = label.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                return `
+                <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; align-items:center;">
+                    ${card.frontImage
+                        ? `<img src="${card.frontImage}" style="width:100%; aspect-ratio:1; object-fit:cover;">`
+                        : `<div style="width:100%; aspect-ratio:1; background:#e0e0e0; display:flex; align-items:center; justify-content:center; font-size:24px;">🖼️</div>`}
+                    <div style="padding:5px 6px; font-size:12px; font-weight:600; color:#333; text-align:center; width:100%; box-sizing:border-box; background:white; border-top:1px solid #eee; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapedLabel}">
+                        ${label}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openPreview() {
+            if (previewMode === 'overlay') {
+                const modal = document.getElementById('previewOverlayModal');
+                modal.style.display = 'flex';
+                // Defer grid build so overlay is fully painted before images load
+                requestAnimationFrame(() => buildPreviewGrid('previewOverlayGrid'));
+            } else {
+                const panel = document.getElementById('previewExpandPanel');
+                if (panel.style.display === 'block') {
+                    closePreviewExpand();
+                } else {
+                    panel.style.display = 'block';
+                    requestAnimationFrame(() => buildPreviewGrid('previewExpandGrid'));
+                }
+            }
+        }
+
+        // Preview all currently loaded session cards — reuses the same overlay
+        function openSessionPreview() {
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+
+            if (cards.length === 0) { showToast('⚠️ No cards to preview', 2000); return; }
+
+            const modal = document.getElementById('previewOverlayModal');
+            const title = modal.querySelector('span');
+            if (title) title.textContent = `👁️ Card Preview (${cards.length})`;
+            modal.style.display = 'flex';
+
+            const grid = document.getElementById('previewOverlayGrid');
+            requestAnimationFrame(() => {
+                grid.innerHTML = cards.map((card, i) => {
+                    const rawLabel = (card.backText || '')
+                        .replace(/<[^>]*>/g, '')
+                        .replace(/[\r\n]+/g, ' ')
+                        .trim();
+                    const label = rawLabel !== '' ? rawLabel : `Card ${i + 1}`;
+                    const escapedLabel = label.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    return `
+                    <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; align-items:center; cursor:pointer;"
+                         onclick="closePreviewOverlay(); currentIndex=${i}; isFlipped=false; renderDisplay();">
+                        ${card.frontImage
+                            ? `<img src="${card.frontImage}" style="width:100%; aspect-ratio:1; object-fit:cover;">`
+                            : `<div style="width:100%; aspect-ratio:1; background:#e0e0e0; display:flex; align-items:center; justify-content:center; font-size:24px;">🖼️</div>`}
+                        <div style="padding:5px 6px; font-size:12px; font-weight:600; color:#333; text-align:center; width:100%; box-sizing:border-box; background:white; border-top:1px solid #eee; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapedLabel}">
+                            ${label}
+                        </div>
+                    </div>`;
+                }).join('');
+            });
+        }
+
+        function closePreviewOverlay() {
+            document.getElementById('previewOverlayModal').style.display = 'none';
+        }
+
+        function closePreviewExpand() {
+            document.getElementById('previewExpandPanel').style.display = 'none';
         }
 
         function handleFileLoad(event) {
@@ -4710,15 +4928,30 @@
                         document.getElementById('loadFileName').textContent = fileName;
                         document.getElementById('loadFileCards').textContent = data.cards.length;
                         document.getElementById('loadFileInfo').style.display = 'block';
+                        document.getElementById('previewBtn').style.display = '';
 
-                        // Disable "Add to Existing" if would exceed 30 cards
+                        const replaceBtn = document.getElementById('replaceAllBtn');
                         const addBtn = document.getElementById('addToExistingBtn');
-                        if (cards.length + data.cards.length > 30) {
-                            addBtn.disabled = true;
-                            addBtn.textContent = `➕ Add to Existing (Would exceed 30 limit)`;
+
+                        if (cards.length === 0) {
+                            // No existing cards — show Load, Cancel, Preview only
+                            replaceBtn.style.display = 'none';
+                            addBtn.style.display = 'none';
+                            document.getElementById('loadDirectBtn').style.display = '';
                         } else {
-                            addBtn.disabled = false;
-                            addBtn.textContent = `➕ Add to Existing Cards`;
+                            // Cards exist — show Add, Cancel, Replace, Preview
+                            document.getElementById('loadDirectBtn').style.display = 'none';
+                            replaceBtn.style.display = '';
+                            // Disable "Add" if would exceed 30 cards
+                            if (cards.length + data.cards.length > 30) {
+                                addBtn.disabled = true;
+                                addBtn.style.display = '';
+                                addBtn.innerHTML = '➕ Add <span style="font-size:10px;">(limit)</span>';
+                            } else {
+                                addBtn.disabled = false;
+                                addBtn.style.display = '';
+                                addBtn.innerHTML = '➕ Add';
+                            }
                         }
 
                     } catch (error) {
@@ -4733,6 +4966,47 @@
             }
         }
 
+        function confirmReplace(btn) {
+            if (btn.dataset.confirming === 'true') {
+                // Second tap — execute
+                btn.dataset.confirming = 'false';
+                btn.innerHTML = '⚠️ Replace';
+                btn.style.flex = '1';
+                btn.style.background = '';
+                loadSession('replace');
+            } else {
+                // First tap — expand button to show full warning
+                btn.dataset.confirming = 'true';
+                btn.innerHTML = '⚠️ Replace All Existing Cards?';
+                btn.style.flex = '3';
+                btn.style.background = '#c62828';
+                btn.style.color = 'white';
+                btn.style.fontSize = '';
+
+                const resetBtn = () => {
+                    if (btn.dataset.confirming === 'true') {
+                        btn.dataset.confirming = 'false';
+                        btn.innerHTML = '⚠️ Replace';
+                        btn.style.flex = '1';
+                        btn.style.background = '';
+                    }
+                };
+
+                // Reset on outside click
+                setTimeout(() => {
+                    document.addEventListener('click', function outsideClick(e) {
+                        if (e.target !== btn) {
+                            resetBtn();
+                            document.removeEventListener('click', outsideClick);
+                        }
+                    });
+                }, 10);
+
+                // Also auto-reset after 4 seconds
+                setTimeout(resetBtn, 4000);
+            }
+        }
+
         function loadSession(mode) {
             if (!loadedSessionData) {
                 showToast('⚠️ No file loaded', 2000);
@@ -4743,11 +5017,10 @@
                 const cardCount = loadedSessionData.cards.length; // Save count before closing modal
 
                 if (mode === 'replace') {
-                    // Replace all cards
                     cards = loadedSessionData.cards;
                     currentIndex = 0;
+                    isFlipped = false;
                 } else if (mode === 'add') {
-                    // Add to existing
                     const newCards = loadedSessionData.cards;
                     const totalAfter = cards.length + newCards.length;
 
@@ -4757,6 +5030,7 @@
                     }
 
                     cards = cards.concat(newCards);
+                    isFlipped = false;
                 }
 
                 // Reset guess game state to prevent continuing with old cards
@@ -4859,6 +5133,80 @@
             }
         }
 
+        // Toggle the Manage dropdown on the empty state screen
+        function toggleEmptyManageDropdown(btn) {
+            const panel = document.getElementById('emptyManagePanel');
+            const listEl = document.getElementById('emptyManageList');
+            if (!panel) return;
+
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+                return;
+            }
+
+            // Position panel below the button
+            const btnRect = btn.getBoundingClientRect();
+            panel.style.top = (btnRect.bottom + 8) + 'px';
+            panel.style.left = (btnRect.left + btnRect.width / 2) + 'px';
+            panel.style.transform = 'translateX(-50%)';
+            panel.style.display = 'block';
+
+            // Populate with units using same logic as loadQuickLoadList
+            listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#666;">Loading...</div>';
+
+            const renderUnits = (units) => {
+                if (!units || units.length === 0) {
+                    listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#666; font-size:14px;">No units configured yet.<br>Tap "Manage Units" to add.</div>';
+                    return;
+                }
+                listEl.innerHTML = units.map(unit => {
+                    let cardCount = 0;
+                    try { cardCount = JSON.parse(unit.fileData).cards?.length || 0; } catch(e) {}
+                    return `
+                        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-weight:600; font-size:15px; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${unit.name}</div>
+                                <div style="font-size:12px; color:#999; margin-top:2px;">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
+                            </div>
+                            <button class="quick-load-item" data-unit-id="${unit.id}" data-action="load" title="Load"
+                                style="width:40px;height:40px;padding:0;background:#4CAF50;color:white;border:none;border-radius:5px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+                                onclick="document.getElementById('emptyManagePanel').style.display='none'">📂</button>
+                            <button title="Delete unit"
+                                style="width:40px;height:40px;padding:0;background:#f44336;color:white;border:none;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+                                onclick="event.stopPropagation(); handleUnitDelete(${unit.id}, this)"
+                                ontouchend="event.stopPropagation(); event.preventDefault(); handleUnitDelete(${unit.id}, this)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>`;
+                }).join('');
+            };
+
+            // Use cache if available
+            if (unitsCache !== null) {
+                renderUnits(unitsCache);
+            } else {
+                loadUnitsFromDB().then(units => {
+                    unitsCache = units;
+                    renderUnits(units);
+                }).catch(() => {
+                    listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#c00;">Error loading units.</div>';
+                });
+            }
+
+            // Close when tapping outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeEmptyManage(e) {
+                    if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+                        panel.style.display = 'none';
+                        document.removeEventListener('click', closeEmptyManage);
+                    }
+                });
+            }, 10);
+        }
+
         // Close Quick Load dropdown
         function closeQuickLoadDropdown() {
             const dropdown = document.getElementById('quickLoadDropdownContent');
@@ -4869,6 +5217,25 @@
         function invalidateUnitsCache() {
             unitsCache = null;
             unitsCacheMap.clear();
+        }
+
+        // Single source of truth: always refresh both the dropdown and the manage window together
+        function syncUnitsEverywhere() {
+            invalidateUnitsCache();
+            loadQuickLoadList(true);
+            if (document.getElementById('unitConfigModal')?.classList.contains('active')) {
+                loadUnitsList();
+            }
+            // Refresh empty state manage panel if it's open
+            const emptyPanel = document.getElementById('emptyManagePanel');
+            if (emptyPanel && emptyPanel.style.display === 'block') {
+                const emptyBtn = document.getElementById('emptyManageBtn');
+                if (emptyBtn) {
+                    // Close and reopen to refresh
+                    emptyPanel.style.display = 'none';
+                    toggleEmptyManageDropdown(emptyBtn);
+                }
+            }
         }
 
         // Load and display quick load list (with caching for performance)
@@ -4905,31 +5272,44 @@
                         }
 
                         if (isCurrentlyLoaded) {
-                            // This unit is currently loaded - show Remove button
+                            // This unit is currently loaded - show Load and Delete buttons
                             return `
                             <div style="padding: 12px; border-bottom: 1px solid #eee; background: white; display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1; min-width: 0;">
                                     <div style="font-weight: 600; font-size: 15px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${unit.name}</div>
                                     <div style="font-size: 12px; color: #999; margin-top: 2px; white-space: nowrap;">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
                                 </div>
-                                <button class="quick-load-item" data-unit-id="${unit.id}" data-action="remove" title="Remove" style="width: 40px; height: 40px; padding: 0; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    ✖️
+                                <button class="quick-load-item" data-unit-id="${unit.id}" data-action="load" title="Load" style="width: 40px; height: 40px; padding: 0; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    📂
+                                </button>
+                                <button title="Delete unit" style="width: 40px; height: 40px; padding: 0; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+                                    onclick="event.stopPropagation(); handleUnitDelete(${unit.id}, this)"
+                                    ontouchend="event.stopPropagation(); event.preventDefault(); handleUnitDelete(${unit.id}, this)">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
                                 </button>
                             </div>
                             `;
                         } else {
-                            // Not loaded - show Add and Load icon buttons
+                            // Not loaded - show Load and Delete buttons
                             return `
                             <div style="padding: 12px; border-bottom: 1px solid #eee; background: white; display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1; min-width: 0;">
                                     <div style="font-weight: 600; font-size: 15px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${unit.name}</div>
                                     <div style="font-size: 12px; color: #999; margin-top: 2px; white-space: nowrap;">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
                                 </div>
-                                <button class="quick-load-item" data-unit-id="${unit.id}" data-action="add" title="Add" style="width: 40px; height: 40px; padding: 0; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    ➕
-                                </button>
                                 <button class="quick-load-item" data-unit-id="${unit.id}" data-action="load" title="Load" style="width: 40px; height: 40px; padding: 0; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                     📂
+                                </button>
+                                <button title="Delete unit" style="width: 40px; height: 40px; padding: 0; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+                                    onclick="event.stopPropagation(); handleUnitDelete(${unit.id}, this)"
+                                    ontouchend="event.stopPropagation(); event.preventDefault(); handleUnitDelete(${unit.id}, this)">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
                                 </button>
                             </div>
                             `;
@@ -5211,8 +5591,7 @@
                 document.getElementById('filenamePreviewText').textContent = '';
 
                 // Invalidate cache and reload list
-                invalidateUnitsCache();
-                loadUnitsList();
+                syncUnitsEverywhere();
 
             } catch (error) {
                 console.error('JSON parse error:', error);
@@ -5268,7 +5647,7 @@
                                     <button onclick="renameUnit(${unit.id}, '${escapedName}')" style="background: #2196F3; color: white; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; font-size: 14px;">
                                         ✏️ Rename
                                     </button>
-                                    <button onclick="deleteUnit(${unit.id})" style="background: #f44336; color: white; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; font-size: 14px;">
+                                    <button onclick="event.stopPropagation(); handleUnitDelete(${unit.id}, this)" ontouchend="event.stopPropagation(); event.preventDefault(); handleUnitDelete(${unit.id}, this)" style="background: #f44336; color: white; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; font-size: 14px;">
                                         🗑️ Delete
                                     </button>
                                 </div>
@@ -5345,23 +5724,38 @@
             listContainer.unitsClickHandler = clickHandler;
         }
 
-        // Delete unit
-        async function deleteUnit(unitId) {
-            if (!confirm('Are you sure you want to delete this unit?')) {
-                return;
+        // Shared delete handler for dropdown and empty state panel - touch safe, no confirm()
+        function handleUnitDelete(unitId, btn) {
+            if (btn.dataset.confirming === 'true') {
+                // Second tap - execute delete
+                btn.dataset.confirming = 'false';
+                deleteUnitFromDB(unitId).then(() => {
+                    showToast('✅ Unit deleted', 2000);
+                    syncUnitsEverywhere();
+                }).catch(() => showToast('⚠️ Error deleting unit', 2000));
+            } else {
+                // First tap - show inline confirmation
+                btn.dataset.confirming = 'true';
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<span style="font-size:10px;font-weight:700;line-height:1.2;text-align:center;pointer-events:none;">Sure?</span>';
+                btn.style.background = '#c62828';
+                setTimeout(() => {
+                    if (btn.dataset.confirming === 'true') {
+                        btn.dataset.confirming = 'false';
+                        btn.innerHTML = originalHTML;
+                        btn.style.background = '#f44336';
+                    }
+                }, 3000);
             }
+        }
 
-            try {
-                await deleteUnitFromDB(unitId);
-                showToast('✅ Unit deleted', 2000);
-
-                // Invalidate cache so Quick Load dropdown refreshes
-                invalidateUnitsCache();
-
-                loadUnitsList();
-            } catch (error) {
-                console.error('Error deleting unit:', error);
-                showToast('⚠️ Error deleting unit', 2000);
+        // Delete unit - called from Manage Units window
+        function deleteUnit(unitId) {
+            const btn = document.querySelector(`#unitsList button[onclick*="deleteUnit(${unitId})"]`);
+            if (btn) {
+                handleUnitDelete(unitId, btn);
+            } else {
+                handleUnitDelete(unitId, { dataset: { confirming: 'true' }, innerHTML: '', style: {} });
             }
         }
 
@@ -5408,8 +5802,7 @@
             try {
                 await updateUnitNameInDB(renameUnitId, newName);
                 showToast('✅ Unit renamed', 2000);
-                invalidateUnitsCache();
-                loadUnitsList();
+                syncUnitsEverywhere();
                 closeRenameUnitModal();
             } catch (error) {
                 console.error('Error renaming unit:', error);
@@ -5479,9 +5872,34 @@
             const quickLoadItem = event.target.closest('.quick-load-item');
             if (quickLoadItem) {
                 const unitId = parseInt(quickLoadItem.dataset.unitId, 10);
-                const action = quickLoadItem.dataset.action || 'load'; // 'load' or 'add'
+                const action = quickLoadItem.dataset.action || 'load';
                 if (!isNaN(unitId)) {
-                    quickLoadUnit(unitId, action);
+                    if (action === 'delete') {
+                        // Two-tap confirmation - touch safe, no confirm() dialog
+                        if (quickLoadItem.dataset.confirming === 'true') {
+                            // Second tap - execute delete
+                            quickLoadItem.dataset.confirming = 'false';
+                            deleteUnitFromDB(unitId).then(() => {
+                                showToast('✅ Unit deleted', 2000);
+                                syncUnitsEverywhere();
+                            }).catch(() => showToast('⚠️ Error deleting unit', 2000));
+                        } else {
+                            // First tap - ask for confirmation inline
+                            quickLoadItem.dataset.confirming = 'true';
+                            const originalHTML = quickLoadItem.innerHTML;
+                            quickLoadItem.innerHTML = '<span style="font-size:10px;font-weight:700;line-height:1.1;text-align:center;">Sure?</span>';
+                            quickLoadItem.style.background = '#c62828';
+                            setTimeout(() => {
+                                if (quickLoadItem.dataset.confirming === 'true') {
+                                    quickLoadItem.dataset.confirming = 'false';
+                                    quickLoadItem.innerHTML = originalHTML;
+                                    quickLoadItem.style.background = '#f44336';
+                                }
+                            }, 3000);
+                        }
+                    } else {
+                        quickLoadUnit(unitId, action);
+                    }
                 }
                 event.stopPropagation();
             }
@@ -6559,6 +6977,12 @@
         }
 
         function renderDisplay() {
+            // Make controls visible now that JS has run (prevents flash of old layout)
+            const topControls = document.getElementById('topControls');
+            const quickLoadDropdownEl = document.getElementById('quickLoadDropdown');
+            if (topControls) topControls.style.visibility = 'visible';
+            if (quickLoadDropdownEl) quickLoadDropdownEl.style.visibility = 'visible';
+
             // PERFORMANCE FIX: Use cached DOM references
             const display = domCache.cardDisplay || document.getElementById('cardDisplay');
             const shuffleBtn = domCache.shuffleBtn || document.getElementById('shuffleBtn');
@@ -6569,49 +6993,63 @@
             const saveBtn = domCache.saveBtn || document.getElementById('saveBtn');
             const loadBtn = domCache.loadBtn || document.getElementById('loadBtn');
             const moreDropdown = domCache.moreDropdown || document.getElementById('moreDropdown');
+            const addBtn = document.getElementById('addBtn');
+            const quickLoadDropdown = document.getElementById('quickLoadDropdown');
 
             if (cards.length === 0) {
                 display.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">📋</div>
-                        <h3>No cards yet</h3>
-                        <p>Tap "Add Card" to create your first flashcard</p>
+                        <div class="empty-state-card">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>No cards yet</h3>
+                            <p>Tap "add, load, or manage"</p>
+                            <div class="empty-action-btn-row" style="display:flex;flex-direction:row;justify-content:center;gap:16px;width:100%;margin-top:28px;">
+                                <button class="empty-action-btn" onclick="openCreateModal()">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                                    </svg>
+                                    <span>Add</span>
+                                </button>
+                                <button class="empty-action-btn" onclick="openLoadOptions()">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <span>Load</span>
+                                </button>
+                                <div style="position:relative; flex:1; max-width:100px; display:flex; flex-direction:column; align-items:center;">
+                                    <button class="empty-action-btn" id="emptyManageBtn" style="width:100%;" onclick="toggleEmptyManageDropdown(this)">
+                                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                        </svg>
+                                        <span>Manage</span>
+                                    </button>
+                                    <div id="emptyManagePanel" style="display:none; position:fixed; background:white; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.2); min-width:240px; z-index:1200; overflow:hidden;">
+                                        <div id="emptyManageList" style="max-height:300px; overflow-y:auto; border-radius:8px 8px 0 0;"></div>
+                                        <div style="border-top:1px solid #ddd; padding:8px;">
+                                            <button onclick="openUnitConfigModal(); document.getElementById('emptyManagePanel').style.display='none';" class="btn btn-success" style="width:100%; padding:10px; font-size:14px; cursor:pointer; pointer-events:auto;">
+                                                ⚙️ Manage Units
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
-                if (shuffleBtn) {
-                    shuffleBtn.disabled = true;
-                    shuffleBtn.style.display = 'none';
-                }
-                if (clearBtn) {
-                    clearBtn.disabled = true;
-                    clearBtn.style.display = 'none';
-                }
-                if (deleteBtn) {
-                    deleteBtn.disabled = true;
-                    deleteBtn.style.display = 'none';
-                }
-                if (renameCardBtn) {
-                    renameCardBtn.disabled = true;
-                    renameCardBtn.style.display = 'none';
-                }
-                if (gameBtn) {
-                    gameBtn.disabled = true;
-                    gameBtn.style.display = 'none';
-                }
-                if (saveBtn) {
-                    saveBtn.disabled = true;
-                    saveBtn.style.display = 'none';
-                }
-
-                // Hide dropdown when no cards
-                if (moreDropdown) {
-                    moreDropdown.style.display = 'none';
-                }
-
-                // Load button stays visible on default page
-                if (loadBtn) {
-                    loadBtn.style.display = 'flex';
-                }
+                // Hide ALL top bar controls on empty state
+                if (addBtn) addBtn.style.display = 'none';
+                if (loadBtn) loadBtn.style.display = 'none';
+                if (quickLoadDropdown) quickLoadDropdown.style.display = 'none';
+                if (shuffleBtn) { shuffleBtn.disabled = true; shuffleBtn.style.display = 'none'; }
+                if (clearBtn) { clearBtn.disabled = true; clearBtn.style.display = 'none'; }
+                if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.style.display = 'none'; }
+                if (renameCardBtn) { renameCardBtn.disabled = true; renameCardBtn.style.display = 'none'; }
+                if (gameBtn) { gameBtn.disabled = true; gameBtn.style.display = 'none'; }
+                if (saveBtn) { saveBtn.disabled = true; saveBtn.style.display = 'none'; }
+                if (moreDropdown) moreDropdown.style.display = 'none';
 
                 return;
             }
@@ -6627,6 +7065,19 @@
             if (gameBtn) {
                 gameBtn.disabled = false;
                 gameBtn.style.display = 'flex';
+            }
+
+            // Restore Add button and Quick Load when cards are loaded
+            if (addBtn) addBtn.style.display = 'flex';
+            if (quickLoadDropdown) {
+                quickLoadDropdown.style.position = '';
+                quickLoadDropdown.style.top = '';
+                quickLoadDropdown.style.left = '';
+                quickLoadDropdown.style.transform = '';
+                quickLoadDropdown.style.display = 'inline-block';
+                quickLoadDropdown.style.zIndex = '';
+                const qlTriggerBtn = quickLoadDropdown.querySelector('button');
+                if (qlTriggerBtn) qlTriggerBtn.style.display = '';
             }
 
             // Show dropdown when cards are loaded
@@ -6689,14 +7140,48 @@
                         </div>
                         ` : ''}
                     </div>
-                    <button class="fullscreen-btn" 
-                            onclick="event.stopPropagation(); toggleFullscreen()" 
-                            ontouchend="event.stopPropagation(); event.preventDefault(); toggleFullscreen()"
-                            title="View fullscreen">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-                        </svg>
-                    </button>
+                    <div style="position:absolute; bottom:20px; left:20px; z-index:1000;">
+                        <button class="fullscreen-btn" style="position:relative; bottom:auto; left:auto;"
+                                onclick="event.stopPropagation(); toggleSettingsMenu()"
+                                ontouchend="event.stopPropagation(); event.preventDefault(); toggleSettingsMenu()"
+                                title="Settings">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                        </button>
+                        <div id="settingsMenu" style="display:none; position:absolute; bottom:60px; left:0; background:white; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,0.25); overflow:hidden; min-width:160px;">
+                            <button onclick="event.stopPropagation(); openCropTool()" ontouchend="event.stopPropagation(); event.preventDefault(); openCropTool()"
+                                style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
+                                </svg>
+                                Clip Image
+                            </button>
+                            <button onclick="event.stopPropagation()" ontouchend="event.stopPropagation(); event.preventDefault()"
+                                style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
+                                </svg>
+                                Resize Text
+                            </button>
+                            <button onclick="event.stopPropagation(); openSessionPreview()" ontouchend="event.stopPropagation(); event.preventDefault(); openSessionPreview()"
+                                style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                                Preview Cards
+                            </button>
+                            <button id="hideUIBtn" onclick="event.stopPropagation(); toggleHideUI()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleHideUI()"
+                                style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                </svg>
+                                Hide Buttons
+                            </button>
+                        </div>
+                    </div>
                     <div class="counter">
                         <span>${currentIndex + 1} / ${cards.length}</span>
                         ${card.backText ? '<button class="audio-btn" onclick="event.stopPropagation(); speakText(\'' + card.backText.replace(/'/g, "\\'") + '\')">🔊</button>' : ''}
@@ -6824,6 +7309,47 @@
             }
         });
         // Dropdown toggle functions
+        function toggleHideUI() {
+            const isHidden = document.body.classList.toggle('hide-ui');
+            const btn = document.getElementById('hideUIBtn');
+            if (btn) {
+                btn.innerHTML = isHidden
+                    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show Buttons`
+                    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Hide Buttons`;
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+        }
+
+        function toggleSettingsMenu() {
+            const menu = document.getElementById('settingsMenu');
+            const btn = menu?.closest('div')?.querySelector('.fullscreen-btn');
+            if (!menu) return;
+            const isOpen = menu.style.display === 'block';
+            menu.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) {
+                setTimeout(() => {
+                    const closeMenu = (e) => {
+                        const menu = document.getElementById('settingsMenu');
+                        // Don't close if clicking/touching the toggle button itself — let the toggle handle it
+                        const toggleBtn = document.querySelector('.fullscreen-btn');
+                        if (toggleBtn && (toggleBtn === e.target || toggleBtn.contains(e.target))) {
+                            document.removeEventListener('click', closeMenu);
+                            document.removeEventListener('touchstart', closeMenu);
+                            return;
+                        }
+                        if (menu && !menu.contains(e.target)) {
+                            menu.style.display = 'none';
+                            document.removeEventListener('click', closeMenu);
+                            document.removeEventListener('touchstart', closeMenu);
+                        }
+                    };
+                    document.addEventListener('click', closeMenu);
+                    document.addEventListener('touchstart', closeMenu);
+                }, 10);
+            }
+        }
+
         function toggleMoreDropdown() {
             closeQuickLoadDropdown(); // Close other dropdown first
             const content = document.getElementById('moreDropdownContent');
@@ -6898,43 +7424,8 @@
             // Save to sessionStorage using the correct function
             saveCards();
 
-            // Clear the display completely
-            const display = document.getElementById('cardDisplay');
-            display.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📋</div>
-                    <h3>No cards yet</h3>
-                    <p>Tap "Add Card" to create your first flashcard</p>
-                </div>
-            `;
-
-            // Hide all card-dependent buttons
-            const shuffleBtn = document.getElementById('shuffleBtn');
-            const deleteBtn = document.getElementById('deleteBtn');
-            const gameBtn = document.getElementById('gameBtn');
-            const moreDropdown = document.getElementById('moreDropdown');
-
-            if (shuffleBtn) {
-                shuffleBtn.disabled = true;
-                shuffleBtn.style.display = 'none';
-            }
-            if (deleteBtn) {
-                deleteBtn.disabled = true;
-                deleteBtn.style.display = 'none';
-            }
-            if (gameBtn) {
-                gameBtn.disabled = true;
-                gameBtn.style.display = 'none';
-            }
-            if (moreDropdown) {
-                moreDropdown.style.display = 'none';
-            }
-
-            // Show Load button again on default page
-            const loadBtn = document.getElementById('loadBtn');
-            if (loadBtn) {
-                loadBtn.style.display = 'flex';
-            }
+            // renderDisplay handles the new empty state layout and all button visibility
+            renderDisplay();
 
             showToast('All cards cleared!', 2000);
         }
@@ -6995,9 +7486,10 @@
             const inModal = document.querySelector('.modal.active');
             const inDropdown = document.getElementById('quickLoadDropdown')?.style.display === 'block' ||
                               document.getElementById('moreDropdown')?.querySelector('.dropdown-content.show');
-            
+            const inInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+
             // Only enable keyboard shortcuts if we're in main flashcard view
-            if (!inModal && !inDropdown && cards.length > 0) {
+            if (!inModal && !inDropdown && !inInput && cards.length > 0) {
                 // Right Arrow - Next card
                 if (e.key === 'ArrowRight') {
                     e.preventDefault();
@@ -7015,10 +7507,333 @@
                     e.preventDefault();
                     flipCard();
                 }
+
+                // Delete / Backspace - Delete current card
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    deleteCard();
+                }
             }
         }, { passive: false });
 
+        // ==================== CROP IMAGE ====================
+
+        let cropState = {
+            img: null,
+            originalSrc: null,             // stores the original before any crop
+            imgNaturalW: 0, imgNaturalH: 0,
+            displayW: 0, displayH: 0,
+            offsetX: 0, offsetY: 0,
+            scale: 1,
+            crop: { x: 0, y: 0, w: 0, h: 0 },
+            dragging: false,
+            resizing: null,
+            lastX: 0, lastY: 0,
+            cardIndex: -1
+        };
+
+        const HANDLE_SIZE = 22;
+
+        function openCropTool() {
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+
+            cropState.cardIndex = currentIndex;
+            const card = cards[currentIndex];
+            if (!card?.frontImage) { showToast('⚠️ No image on this card', 2000); return; }
+
+            // Store original only if not already stored (preserve the true original across multiple crops)
+            if (!card.originalFrontImage) {
+                card.originalFrontImage = card.frontImage;
+            }
+            cropState.originalSrc = card.originalFrontImage;
+
+            const overlay = document.getElementById('cropOverlay');
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            // Show revert button only if image has previously been cropped (original differs from current)
+            const revertBtn = document.getElementById('revertCropBtn');
+            if (revertBtn) {
+                revertBtn.style.display = (card.originalFrontImage && card.originalFrontImage !== card.frontImage) ? 'block' : 'none';
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                cropState.img = img;
+                cropState.imgNaturalW = img.naturalWidth;
+                cropState.imgNaturalH = img.naturalHeight;
+                requestAnimationFrame(initCropCanvas);
+            };
+            img.src = card.frontImage;
+        }
+
+        function initCropCanvas() {
+            const canvas = document.getElementById('cropCanvas');
+            const container = document.getElementById('cropCanvasWrap');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            canvas.width = cw;
+            canvas.height = ch;
+
+            const img = cropState.img;
+            const scaleX = cw / img.naturalWidth;
+            const scaleY = ch / img.naturalHeight;
+            const scale = Math.min(scaleX, scaleY, 1);
+            cropState.scale = scale;
+
+            const dw = img.naturalWidth * scale;
+            const dh = img.naturalHeight * scale;
+            cropState.displayW = dw;
+            cropState.displayH = dh;
+            cropState.offsetX = (cw - dw) / 2;
+            cropState.offsetY = (ch - dh) / 2;
+
+            // Default crop = full image
+            cropState.crop = { x: cropState.offsetX, y: cropState.offsetY, w: dw, h: dh };
+            drawCrop();
+        }
+
+        function drawCrop() {
+            const canvas = document.getElementById('cropCanvas');
+            const ctx = canvas.getContext('2d');
+            const s = cropState;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw image
+            ctx.drawImage(s.img, s.offsetX, s.offsetY, s.displayW, s.displayH);
+
+            // Dark overlay outside crop
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
+
+            // Redraw image inside crop (so it looks bright)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
+            ctx.clip();
+            ctx.drawImage(s.img, s.offsetX, s.offsetY, s.displayW, s.displayH);
+            ctx.restore();
+
+            // Crop border
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
+
+            // Rule-of-thirds grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(s.crop.x + s.crop.w * i / 3, s.crop.y);
+                ctx.lineTo(s.crop.x + s.crop.w * i / 3, s.crop.y + s.crop.h);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(s.crop.x, s.crop.y + s.crop.h * i / 3);
+                ctx.lineTo(s.crop.x + s.crop.w, s.crop.y + s.crop.h * i / 3);
+                ctx.stroke();
+            }
+
+            // Corner handles
+            const hs = HANDLE_SIZE / 2;
+            const corners = getCropCorners();
+            corners.forEach(({ x, y }) => {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(x, y, hs, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function getCropCorners() {
+            const c = cropState.crop;
+            return [
+                { x: c.x,        y: c.y,        id: 'tl' },
+                { x: c.x + c.w,  y: c.y,        id: 'tr' },
+                { x: c.x,        y: c.y + c.h,  id: 'bl' },
+                { x: c.x + c.w,  y: c.y + c.h,  id: 'br' },
+                { x: c.x + c.w / 2, y: c.y,     id: 'tm' },
+                { x: c.x + c.w / 2, y: c.y + c.h, id: 'bm' },
+                { x: c.x,        y: c.y + c.h / 2, id: 'ml' },
+                { x: c.x + c.w,  y: c.y + c.h / 2, id: 'mr' },
+            ];
+        }
+
+        function getEventPos(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {
+                x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+                y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function hitHandle(x, y) {
+            const corners = getCropCorners();
+            for (const c of corners) {
+                if (Math.hypot(x - c.x, y - c.y) < HANDLE_SIZE) return c.id;
+            }
+            return null;
+        }
+
+        function insideCrop(x, y) {
+            const c = cropState.crop;
+            return x > c.x && x < c.x + c.w && y > c.y && y < c.y + c.h;
+        }
+
+        function cropPointerDown(e) {
+            e.preventDefault();
+            const canvas = document.getElementById('cropCanvas');
+            const { x, y } = getEventPos(e, canvas);
+            const handle = hitHandle(x, y);
+            cropState.lastX = x; cropState.lastY = y;
+            if (handle) {
+                cropState.resizing = handle;
+            } else if (insideCrop(x, y)) {
+                cropState.dragging = true;
+            }
+        }
+
+        function cropPointerMove(e) {
+            e.preventDefault();
+            if (!cropState.dragging && !cropState.resizing) return;
+            const canvas = document.getElementById('cropCanvas');
+            const { x, y } = getEventPos(e, canvas);
+            const dx = x - cropState.lastX;
+            const dy = y - cropState.lastY;
+            cropState.lastX = x; cropState.lastY = y;
+
+            const s = cropState;
+            const minSize = 40;
+            // Image bounds in display coords
+            const imgLeft   = s.offsetX;
+            const imgTop    = s.offsetY;
+            const imgRight  = s.offsetX + s.displayW;
+            const imgBottom = s.offsetY + s.displayH;
+
+            if (s.dragging) {
+                s.crop.x = Math.max(imgLeft,  Math.min(s.crop.x + dx, imgRight  - s.crop.w));
+                s.crop.y = Math.max(imgTop,   Math.min(s.crop.y + dy, imgBottom - s.crop.h));
+            } else if (s.resizing) {
+                const r = s.resizing;
+                let { x: cx, y: cy, w: cw, h: ch } = s.crop;
+                let right  = cx + cw;
+                let bottom = cy + ch;
+
+                if (r.includes('r') || r === 'mr') {
+                    right = Math.min(imgRight,  Math.max(cx + minSize, right + dx));
+                }
+                if (r.includes('l') || r === 'ml') {
+                    cx = Math.max(imgLeft,  Math.min(right - minSize, cx + dx));
+                }
+                if (r.includes('b') || r === 'bm') {
+                    bottom = Math.min(imgBottom, Math.max(cy + minSize, bottom + dy));
+                }
+                if (r.includes('t') || r === 'tm') {
+                    cy = Math.max(imgTop,   Math.min(bottom - minSize, cy + dy));
+                }
+
+                s.crop = { x: cx, y: cy, w: right - cx, h: bottom - cy };
+            }
+            drawCrop();
+        }
+
+        function cropPointerUp(e) {
+            cropState.dragging = false;
+            cropState.resizing = null;
+        }
+
+        function applyCrop() {
+            const s = cropState;
+            const canvas = document.createElement('canvas');
+            // Convert display coords back to natural image coords
+            const sx = (s.crop.x - s.offsetX) / s.scale;
+            const sy = (s.crop.y - s.offsetY) / s.scale;
+            const sw = s.crop.w / s.scale;
+            const sh = s.crop.h / s.scale;
+            canvas.width = Math.round(sw);
+            canvas.height = Math.round(sh);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(s.img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+            const cropped = canvas.toDataURL('image/jpeg', 0.92);
+            cards[s.cardIndex].frontImage = cropped;
+            saveCards();
+            renderDisplay();
+            closeCropTool();
+            showToast('✅ Image cropped!', 2000);
+        }
+
+        function resetCrop() {
+            const s = cropState;
+            s.crop = { x: s.offsetX, y: s.offsetY, w: s.displayW, h: s.displayH };
+            drawCrop();
+        }
+
+        function revertToOriginal() {
+            const card = cards[cropState.cardIndex];
+            if (!card?.originalFrontImage) { showToast('⚠️ No original to revert to', 2000); return; }
+            card.frontImage = card.originalFrontImage;
+            delete card.originalFrontImage;
+            saveCards();
+            renderDisplay();
+            closeCropTool();
+            showToast('↩️ Reverted to original!', 2000);
+        }
+
+        function closeCropTool() {
+            document.getElementById('cropOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+            cropState.img = null;
+        }
+
+        // Wire up canvas events on load
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('cropCanvas');
+            if (!canvas) return;
+            // Mouse
+            canvas.addEventListener('mousedown', cropPointerDown);
+            canvas.addEventListener('mousemove', cropPointerMove);
+            canvas.addEventListener('mouseup', cropPointerUp);
+            canvas.addEventListener('mouseleave', cropPointerUp);
+            // Touch
+            canvas.addEventListener('touchstart', cropPointerDown, { passive: false });
+            canvas.addEventListener('touchmove', cropPointerMove, { passive: false });
+            canvas.addEventListener('touchend', cropPointerUp);
+            // Resize
+            window.addEventListener('resize', () => {
+                if (document.getElementById('cropOverlay').style.display === 'flex') {
+                    initCropCanvas();
+                }
+            });
+        });
+
+        // ==================== END CROP IMAGE ====================
+
 </script>
+    <!-- Crop Image Overlay -->
+    <div id="cropOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:3000; flex-direction:column;">
+        <!-- Toolbar -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#1a1a1a; flex-shrink:0;">
+            <button onclick="closeCropTool()" style="background:none; border:none; color:white; font-size:16px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.12);">Cancel</button>
+            <span style="color:white; font-size:17px; font-weight:700; letter-spacing:0.3px;">Clip Image</span>
+            <button onclick="resetCrop()" style="background:none; border:none; color:#f0a500; font-size:15px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(240,165,0,0.15);">Reset</button>
+        </div>
+        <!-- Canvas area -->
+        <div id="cropCanvasWrap" style="flex:1; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+            <canvas id="cropCanvas" style="display:block; cursor:crosshair; touch-action:none; max-width:100%; max-height:100%;"></canvas>
+        </div>
+        <!-- Bottom bar -->
+        <div style="display:flex; justify-content:center; align-items:center; gap:12px; padding:16px; background:#1a1a1a; flex-shrink:0;">
+            <button id="revertCropBtn" onclick="revertToOriginal()" style="display:none; background:rgba(255,255,255,0.12); color:white; border:none; border-radius:12px; padding:14px 24px; font-size:15px; font-weight:600; cursor:pointer;">
+                ↩️ Revert to Original
+            </button>
+            <button onclick="applyCrop()" style="background:#35654D; color:white; border:none; border-radius:12px; padding:14px 48px; font-size:17px; font-weight:700; cursor:pointer; letter-spacing:0.3px;">
+                ✓ Done
+            </button>
+        </div>
+    </div>
+
 </body>
 </html>
 
