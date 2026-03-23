@@ -2313,6 +2313,22 @@
         </div>
     </div>
 
+    <!-- Sample Deck Modal -->
+    <div id="sampleDeckModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:white; border-radius:16px; width:100%; max-width:560px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+            <div style="background:#35654D; padding:14px 18px; border-radius:16px 16px 0 0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+                <span style="color:white; font-weight:700; font-size:17px;">Sample Deck</span>
+            </div>
+            <div id="sampleDeckGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px; overflow-y:auto; flex:1; min-height:120px;">
+                <div id="sampleDeckStatus" style="grid-column:1/-1; text-align:center; padding:20px; color:#666;">Loading sample cards...</div>
+            </div>
+            <div style="padding:12px 16px; border-top:1px solid #eee; flex-shrink:0; display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="closeSampleDeck()" class="btn btn-secondary" style="padding:10px 24px;">Close</button>
+                <button id="sampleDeckCreateBtn" onclick="createFromSampleDeck()" class="btn btn-success" style="padding:10px 24px;" disabled>Create</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Unit Configuration Modal -->
     <div class="modal" id="unitConfigModal">
         <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
@@ -5227,6 +5243,89 @@
             document.getElementById('previewExpandPanel').style.display = 'none';
         }
 
+        // ==================== SAMPLE DECK ====================
+
+        let sampleDeckData = null;
+        const SAMPLE_DECK_URL = 'https://raw.githubusercontent.com/Weeksder/burstcard/main/Fruits_Sample_Set.json';
+
+        async function openSampleDeck() {
+            const modal = document.getElementById('sampleDeckModal');
+            const grid = document.getElementById('sampleDeckGrid');
+            const createBtn = document.getElementById('sampleDeckCreateBtn');
+            const statusEl = document.getElementById('sampleDeckStatus');
+
+            // Show modal with loading state
+            modal.style.display = 'flex';
+            grid.innerHTML = '<div id="sampleDeckStatus" style="grid-column:1/-1; text-align:center; padding:20px; color:#666;">Loading sample cards...</div>';
+            createBtn.disabled = true;
+            sampleDeckData = null;
+
+            try {
+                const response = await fetch(SAMPLE_DECK_URL);
+                if (!response.ok) throw new Error('Failed to fetch sample deck');
+                const data = await response.json();
+
+                if (!data.cards || !Array.isArray(data.cards)) {
+                    throw new Error('Invalid sample deck format');
+                }
+
+                sampleDeckData = data;
+                createBtn.disabled = false;
+
+                // Build preview grid
+                grid.innerHTML = data.cards.map((card, i) => {
+                    const rawLabel = (card.backText || '')
+                        .replace(/<[^>]*>/g, '')
+                        .replace(/[\r\n]+/g, ' ')
+                        .trim();
+                    const label = rawLabel !== '' ? rawLabel : `Card ${i + 1}`;
+                    const escapedLabel = label.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                    return `
+                    <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; align-items:center;">
+                        ${card.frontImage
+                            ? `<img src="${card.frontImage}" style="width:100%; aspect-ratio:1; object-fit:cover;">`
+                            : `<div style="width:100%; aspect-ratio:1; background:#e0e0e0; display:flex; align-items:center; justify-content:center; font-size:24px;">🖼️</div>`}
+                        <div style="padding:5px 6px; font-size:12px; font-weight:600; color:#333; text-align:center; width:100%; box-sizing:border-box; background:white; border-top:1px solid #eee; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapedLabel}">
+                            ${label}
+                        </div>
+                    </div>`;
+                }).join('');
+
+            } catch (err) {
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:#c62828;">⚠️ Could not load sample deck.<br><small>${err.message}</small></div>`;
+            }
+        }
+
+        function closeSampleDeck() {
+            document.getElementById('sampleDeckModal').style.display = 'none';
+            sampleDeckData = null;
+        }
+
+        function createFromSampleDeck() {
+            if (!sampleDeckData || !sampleDeckData.cards) {
+                showToast('⚠️ Sample data not ready', 2000);
+                return;
+            }
+
+            const cardCount = sampleDeckData.cards.length;
+            cards = sampleDeckData.cards;
+            currentIndex = 0;
+            isFlipped = false;
+
+            guessGameState.gameCards = [];
+            guessGameState.currentRoundCards = null;
+            guessGameState.correctCards = {};
+            guessGameState.selectedCard = null;
+            guessGameState.currentCardOrder = 0;
+
+            saveCards();
+            closeSampleDeck();
+            renderDisplay();
+            showToast(`✅ Loaded ${cardCount} sample cards!`, 2000);
+        }
+
+        // ==================== END SAMPLE DECK ====================
+
         function handleFileLoad(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -7360,7 +7459,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button class="empty-action-btn">
+                                <button class="empty-action-btn" onclick="openSampleDeck()">
                                     <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
                                     </svg>
