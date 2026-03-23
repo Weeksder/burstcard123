@@ -2415,6 +2415,8 @@
         let currentLoadedUnitId = null; // Track which unit is currently loaded
         let currentIndex = 0;
         let isFlipped = false;
+        // Remember which side each card was last on
+        const cardFlipStates = {};
         let newCard = { frontImage: null, backText: '', backImage: null, editedNames: null };
         let clearAllClickCount = 0;
         let clearAllTimeout = null;
@@ -2782,7 +2784,9 @@
                     if (cardEl) {
                         const rotation = dragX * 0.03;
                         const tiltY = dragY * 0.01;
-                        cardEl.style.transform = `translateX(${dragX}px) translateY(${dragY}px) rotateZ(${rotation}deg) rotateX(${-tiltY}deg)`;
+                        // Keep flip rotation so back side stays visible during drag
+                        const flipRot = isFlipped ? ' rotateY(180deg)' : '';
+                        cardEl.style.transform = `translateX(${dragX}px) translateY(${dragY}px) rotateZ(${rotation}deg) rotateX(${-tiltY}deg)${flipRot}`;
                         cardEl.classList.add('swiping');
                         const cardStack = document.querySelector('.card-stack');
                         if (cardStack) cardStack.classList.add('swiping');
@@ -2798,9 +2802,6 @@
                 const cardStack = document.querySelector('.card-stack');
                 const cardContainer = document.querySelector('.card-container');
 
-                // Restore overflow
-                document.body.style.overflow = 'hidden';
-
                 if (cardEl) {
                     cardEl.style.userSelect = '';
                     cardEl.style.webkitUserSelect = '';
@@ -2810,6 +2811,11 @@
 
                 const elapsed = Date.now() - startTime;
                 const finalDist = Math.sqrt(dragX * dragX + dragY * dragY);
+
+                // Restore overflow for non-swipe cases
+                if (finalDist < MIN_SWIPE) {
+                    document.body.style.overflow = 'hidden';
+                }
 
                 // Tap
                 if (elapsed < MAX_TAP_TIME && peakDist < PEAK_DRAG_SUPPRESS_FLIP && finalDist < MIN_DRAG_TO_SUPPRESS_FLIP) {
@@ -2823,25 +2829,29 @@
                 const absX = Math.abs(dragX), absY = Math.abs(dragY);
 
                 if (finalDist >= MIN_SWIPE) {
-                    // Animate the current card flying off in the swipe direction first,
-                    // keeping its current flip state visible, then navigate
-                    const flyX = absX >= absY ? (dragX > 0 ? window.innerWidth : -window.innerWidth) : 0;
-                    const flyY = absX < absY ? (dragY > 0 ? window.innerHeight : -window.innerHeight) : 0;
+                    const flyX = absX >= absY ? (dragX > 0 ? window.innerWidth * 1.2 : -window.innerWidth * 1.2) : 0;
+                    const flyY = absX < absY ? (dragY > 0 ? window.innerHeight * 1.2 : -window.innerHeight * 1.2) : 0;
                     const flyRot = dragX * 0.15;
+                    // Preserve flip rotation so back side stays visible during fly-off
+                    const flipRot = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
                     if (cardEl) {
+                        cardEl.classList.remove('flipped'); // remove CSS class so we control transform manually
                         cardEl.style.transition = 'transform 0.28s ease-in';
-                        cardEl.style.transform = `translateX(${flyX}px) translateY(${flyY}px) rotateZ(${flyRot}deg)`;
+                        cardEl.style.transform = `translateX(${flyX}px) translateY(${flyY}px) rotateZ(${flyRot}deg) ${flipRot}`;
                     }
                     if (cardStack) cardStack.classList.remove('swiping');
 
+                    document.body.style.overflow = 'visible';
+
                     setTimeout(() => {
+                        document.body.style.overflow = 'hidden';
                         if (absX >= absY) {
                             if (dragX > 0) prevCard(); else nextCard();
                         } else {
                             if (dragY > 0) prevCard(); else nextCard();
                         }
-                    }, 280);
+                    }, 290);
                 } else {
                     // Snap back
                     if (cardEl) {
@@ -4827,16 +4837,18 @@
         function nextCard() {
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
+            cardFlipStates[currentIndex] = isFlipped; // save current card's side
             currentIndex = (currentIndex + 1) % cards.length;
-            isFlipped = false; // new card always shows front (image side)
+            isFlipped = false; // new card always starts on front
             renderDisplay();
         }
 
         function prevCard() {
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
+            cardFlipStates[currentIndex] = isFlipped; // save current card's side
             currentIndex = (currentIndex - 1 + cards.length) % cards.length;
-            isFlipped = false; // new card always shows front (image side)
+            isFlipped = false; // new card always starts on front
             renderDisplay();
         }
 
@@ -7601,7 +7613,7 @@
             }
         });
         // Dropdown toggle functions
-        const TEXT_SCALES = [0.7, 1.0, 1.3]; // -30%, default, +30%
+        const TEXT_SCALES = [0.7, 1.0, 1.3, 1.6]; // -30%, default, +30%, +60%
         let cardTextScaleIndex = 1; // start at default
 
         function applyCardTextScale() {
@@ -8188,7 +8200,6 @@
 
 </body>
 </html>
-
 
 
 
