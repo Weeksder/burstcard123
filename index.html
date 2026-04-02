@@ -227,7 +227,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             min-width: 160px;
-            z-index: 1100;
+            z-index: 10002;
         }
 
         .dropdown-content.show {
@@ -424,9 +424,11 @@
 
         .card-container {
             perspective: 1000px;
+            -webkit-perspective: 1000px;
             margin-bottom: 0;
             position: relative;
             transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
             flex: 1 1 0;
             min-height: 0;
             overflow: visible;
@@ -529,6 +531,10 @@
             -o-transform: rotateY(180deg);
         }
 
+        /* Block ghost taps on hidden face — backface-visibility:hidden is visual only on iOS */
+        .card:not(.flipped) .card-back  { pointer-events: none; }
+        .card.flipped        .card-front { pointer-events: none; }
+
         .card-face {
             position: absolute;
             width: 100%;
@@ -627,7 +633,7 @@
             color: white;
             transform: rotateY(180deg);
             -webkit-transform: rotateY(180deg);
-            border: 6px solid white;
+            box-shadow: inset 0 0 0 3px white, 0 10px 40px rgba(0,0,0,0.3);
             padding: 20px;
             box-sizing: border-box;
             overflow: hidden;
@@ -707,7 +713,10 @@
         body.hide-ui .counter,
         body.hide-ui #cardOverlayCounter,
         body.hide-ui #cardOverlayTTS,
-        body.hide-ui #cardOverlayNav {
+        body.hide-ui #cardOverlayNav,
+        body.hide-ui .nav-btn,
+        body.hide-ui #navIndexLabel,
+        body.hide-ui #navHintLabel {
             display: none !important;
         }
 
@@ -740,8 +749,8 @@
         }
 
         .nav-btn {
-            width: 50px;
-            height: 50px;
+            width: 36px;
+            height: 36px;
             border: none;
             border-radius: 50%;
             background: white;
@@ -753,8 +762,6 @@
             justify-content: center;
             user-select: none;
             -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
             padding: 0;
             box-shadow: 0 3px 10px rgba(0,0,0,0.3);
             transition: all 0.3s;
@@ -778,13 +785,8 @@
         }
 
         .nav-btn svg {
-            width: 40px;
-            height: 40px;
-        }
-
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 28px;
+            height: 28px;
         }
 
         .counter {
@@ -1379,13 +1381,13 @@
             }
 
             .nav-btn {
-                width: 60px;
-                height: 60px;
+                width: 40px;
+                height: 40px;
             }
 
             .nav-btn svg {
-                width: 50px;
-                height: 50px;
+                width: 32px;
+                height: 32px;
             }
 
             .audio-btn {
@@ -1435,13 +1437,13 @@
             }
 
             .nav-btn {
-                width: 65px;
-                height: 65px;
+                width: 40px;
+                height: 40px;
             }
 
             .nav-btn svg {
-                width: 55px;
-                height: 55px;
+                width: 32px;
+                height: 32px;
             }
 
             .nav-btn.next {
@@ -1460,10 +1462,6 @@
 
 
         @media (min-width: 1025px) {
-            .card-back {
-                border: 12px solid white;
-                padding: 30px;
-            }
         }
 
         .toast-notification {
@@ -1838,6 +1836,8 @@
                 font-size: 13px !important;
                 padding: 10px 12px !important;
             }
+            .nav-btn { width: 28px; height: 28px; }
+            .nav-btn svg { width: 22px; height: 22px; }
         }
 
         /* Load modal buttons — stack gracefully on small screens */
@@ -1887,8 +1887,8 @@
             #cardOverlayCounter { bottom: 10px; }
             .counter { padding: 5px 12px; font-size: 0.85rem; border-radius: 10px; }
             .audio-btn { width: 38px; height: 38px; }
-            .nav-btn { width: 40px; height: 40px; }
-            .nav-btn svg { width: 32px; height: 32px; }
+            .nav-btn { width: 32px; height: 32px; }
+            .nav-btn svg { width: 26px; height: 26px; }
         }
 
         /* Ensure modal content never overflows on any screen */
@@ -2006,7 +2006,7 @@
             </button>
 
             <!-- Quick Load Dropdown -->
-            <div class="dropdown" id="quickLoadDropdown" style="position: relative; display: inline-block; z-index: 100;">
+            <div class="dropdown" id="quickLoadDropdown" style="position: relative; display: inline-block; z-index: 10001;">
                 <button class="btn btn-primary" onclick="toggleQuickLoadDropdown()" style="position: relative; z-index: 101;">
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
@@ -2034,7 +2034,7 @@
                         <circle cx="19" cy="12" r="2" fill="currentColor"></circle>
                     </svg>
                 </button>
-                <div class="dropdown-content" id="moreDropdownContent">
+                <div class="dropdown-content" id="moreDropdownContent" style="z-index:1100;">
                     <button onclick="openLoadOptions(); closeMoreDropdown();" ontouchend="handleMenuItemTouch(event, openLoadOptions)">📁 Load</button>
                     <button onclick="openSaveOptions(); closeMoreDropdown();" ontouchend="handleMenuItemTouch(event, openSaveOptions)">💾 Save</button>
                     <button onclick="openRenameModal(); closeMoreDropdown();" ontouchend="handleMenuItemTouch(event, openRenameModal)">✏️ Rename</button>
@@ -2095,11 +2095,26 @@
                     Hide Buttons
                 </button>
                 <button id="showTextBtn" onclick="event.stopPropagation(); toggleTextOnFront()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleTextOnFront()"
-                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
+                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
                     </svg>
                     Show Text
+                </button>
+                <button id="lockSideBtn" onclick="event.stopPropagation(); toggleLockSide()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleLockSide()"
+                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    Lock Side (Back Only)
+                </button>
+                <button id="muteBtn" onclick="event.stopPropagation(); toggleMute()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleMute()"
+                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
+                    <svg id="muteIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    </svg>
+                    Mute Sounds
                 </button>
             </div>
         </div>
@@ -2110,23 +2125,8 @@
         <div id="cardOverlayCounter" style="display:none; position:fixed; top:28px; left:50%; transform:translateX(-50%); z-index:10000;">
             <div class="counter" style="position:relative; top:auto; left:auto; transform:none;"></div>
         </div>
-        <!-- Permanent fixed nav buttons — positioned to match card container -->
-        <div id="cardOverlayNav" style="display:none; position:fixed; z-index:10000; pointer-events:none;">
-            <button class="nav-btn prev" style="position:absolute; pointer-events:auto; top:20px; left:20px; width:45px; height:45px;" onclick="event.stopPropagation(); prevCard()" ontouchend="event.stopPropagation(); event.preventDefault(); prevCard()">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
-                    <path d="M14 8L10 12L14 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            <span id="navIndexLabel" style="position:absolute; top:20px; left:75px; height:45px; display:flex; align-items:center; font-size:0.7rem; opacity:0.6; color:#333; pointer-events:none;"></span>
-            <span id="navHintLabel" style="position:absolute; top:20px; right:75px; height:45px; display:flex; align-items:center; font-size:0.7rem; opacity:0.6; color:#333; pointer-events:none;"></span>
-            <button class="nav-btn next" style="position:absolute; pointer-events:auto; top:20px; right:20px; width:45px; height:45px;" onclick="event.stopPropagation(); nextCard()" ontouchend="event.stopPropagation(); event.preventDefault(); nextCard()">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
-                    <path d="M10 8L14 12L10 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-        </div>
+        <!-- cardOverlayNav replaced by embedded nav in card-stack — stub kept for JS references -->
+        <div id="cardOverlayNav" style="display:none;"></div>
     </div>
 
     <div class="modal" id="createModal">
@@ -2570,9 +2570,12 @@
 
     <script>
         let cards = [];
+        let isShuffling = false;
         let currentLoadedUnitId = null; // Track which unit is currently loaded
         let currentIndex = 0;
         let isFlipped = false;
+        let lockSide = false; // when true, every new card opens on the locked side
+        let isMuted = false;
         let showTextOnFront = false; // overlay back text on card front
         let cachedFrontTextSize = null; // cached font size so all cards scale consistently
 
@@ -2584,7 +2587,6 @@
         function showCardOverlays() {
             if (cards.length === 0) return;
             document.getElementById('cardOverlaySettings').style.display = 'block';
-            document.getElementById('cardOverlayNav').style.display = 'block';
             const card = cards[currentIndex];
             if (card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
             requestAnimationFrame(() => positionNavOverlay());
@@ -2592,25 +2594,20 @@
 
         function positionNavOverlay() {
             const container = document.querySelector('.card-container');
-            const nav = document.getElementById('cardOverlayNav');
-            if (!container || !nav) return;
+            if (!container) return;
             const rect = container.getBoundingClientRect();
-            nav.style.top = rect.top + 'px';
-            nav.style.left = rect.left + 'px';
-            nav.style.width = rect.width + 'px';
-            nav.style.height = rect.height + 'px';
 
-            // Anchor settings (bottom-left) and TTS (bottom-right) to card boundary
+            // Position settings (bottom-left) and TTS (bottom-right) anchored to card
             const settings = document.getElementById('cardOverlaySettings');
             const tts = document.getElementById('cardOverlayTTS');
             const offset = 14;
             if (settings) {
                 settings.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
-                settings.style.left = (rect.left + offset) + 'px';
+                settings.style.left   = (rect.left + offset) + 'px';
             }
             if (tts) {
                 tts.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
-                tts.style.right = (window.innerWidth - rect.right + offset) + 'px';
+                tts.style.right  = (window.innerWidth - rect.right + offset) + 'px';
             }
         }
         // Remember which side each card was last on
@@ -2896,7 +2893,7 @@
                    target.closest('.nav-btn') || target.closest('.audio-btn') ||
                    target.closest('.fullscreen-btn') || target.closest('.counter') ||
                    target.closest('.controls') || target.closest('.header') ||
-                   target.closest('#settingsMenu') || target.closest('#cardOverlayNav');
+                   target.closest('#settingsMenu');
         }
 
         // Flag to prevent click event from firing after touch event (prevents double flip)
@@ -2922,6 +2919,7 @@
 
             function onStart(e) {
                 const target = e.target;
+                if (isShuffling) return;
                 if (shouldExcludeTouchTarget(target)) return;
                 if (!target.closest('#cardDisplay') && !target.closest('.card-container')) return;
                 if (cards.length === 0) return;
@@ -3006,7 +3004,7 @@
                     if (cardEl) { cardEl.classList.remove('swiping'); cardEl.style.transform = ''; }
                     if (cardStack) cardStack.classList.remove('swiping');
                     lastTouchTime = Date.now();
-                    flipCard();
+                    requestAnimationFrame(() => flipCard());
                     return;
                 }
 
@@ -3417,6 +3415,7 @@
 
         // Helper function to play sound effects (backwards compatible)
         function playSound(soundId) {
+            if (isMuted) return;
             audioManager.play(soundId);
         }
 
@@ -4991,6 +4990,11 @@
         function shuffleCards() {
             window.speechSynthesis.cancel();
             if (cards.length === 0) return;
+            if (isShuffling) return;
+            isShuffling = true;
+
+            // Hide embedded nav immediately — same frame as the button click, before any paint
+            document.querySelectorAll('.card-stack div[style*="position:absolute"]').forEach(el => el.style.display = 'none');
 
             playSound('shuffleSound');
             hideCardOverlays();
@@ -5002,6 +5006,7 @@
                 currentIndex = 0;
                 isFlipped = false;
                 saveCards();
+                isShuffling = false;
                 renderDisplay();
                 return;
             }
@@ -5106,29 +5111,37 @@
                 isFlipped = false;
                 saveCards();
                 overlay.remove();
+                isShuffling = false;
                 renderDisplay();
             }, 1300);
         }
 
         function nextCard() {
+            if (isShuffling) return;
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
             cardFlipStates[currentIndex] = isFlipped; // save current card's side
             currentIndex = (currentIndex + 1) % cards.length;
-            isFlipped = false; // new card always starts on front
+            isFlipped = lockSide ? lockSide === 'back' : false;
             renderDisplay();
         }
 
         function prevCard() {
+            if (isShuffling) return;
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
             cardFlipStates[currentIndex] = isFlipped; // save current card's side
             currentIndex = (currentIndex - 1 + cards.length) % cards.length;
-            isFlipped = false; // new card always starts on front
+            isFlipped = lockSide ? lockSide === 'back' : false;
             renderDisplay();
         }
 
+        let lastFlipTime = 0;
         function flipCard() {
+            if (isShuffling) return;
+            const now = Date.now();
+            if (now - lastFlipTime < 400) return;
+            lastFlipTime = now;
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
             playSound('flipSound');
@@ -5136,7 +5149,7 @@
             const cardEl = document.querySelector('.card');
             if (cardEl) cardEl.classList.toggle('flipped');
             const navHint = document.getElementById('navHintLabel');
-            if (navHint) navHint.textContent = isFlipped ? 'Tap to flip back' : 'Tap to flip';
+            if (navHint) navHint.textContent = isFlipped ? 'Tap to flip' : 'Tap to flip';
         }
 
         function highlightVowels(text) {
@@ -5269,6 +5282,7 @@
                     cards = [];
                     currentIndex = 0;
                     isFlipped = false;
+                    lockSide = false;
                     // Clear hash cache
                     imageHashCache.clear();
                     sessionStorage.removeItem('flashcards');
@@ -7826,12 +7840,17 @@
                     <div class="card-stack">
                         ${prevCard && cards.length > 1 ? `
                         <div class="card-prev">
+                            ${lockSide === 'back' ? `
+                            <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
+                                ${prevCard.backImage ? '<img src="' + prevCard.backImage + '" class="card-image">' : ''}
+                                ${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}
+                            </div>` : `
                             <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}">
                                 <img src="${prevCard.frontImage}" class="card-image">
                                 ${showTextOnFront && prevCard.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(prevCard.backText)}</div>
                                 ` : ''}
-                            </div>
+                            </div>`}
                         </div>
                         ` : ''}
                         <div class="card ${isFlipped ? 'flipped' : ''}" style="cursor: pointer;">
@@ -7848,12 +7867,42 @@
                         </div>
                         ${nextCard && cards.length > 1 ? `
                         <div class="card-next">
+                            ${lockSide === 'back' ? `
+                            <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
+                                ${nextCard.backImage ? '<img src="' + nextCard.backImage + '" class="card-image">' : ''}
+                                ${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}
+                            </div>` : `
                             <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}">
                                 <img src="${nextCard.frontImage}" class="card-image">
                                 ${showTextOnFront && nextCard.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(nextCard.backText)}</div>
                                 ` : ''}
-                            </div>
+                            </div>`}
+                        </div>
+                        ` : ''}
+
+                        ${cards.length > 1 ? `
+                        <div style="position:absolute;top:10px;left:8px;display:flex;align-items:center;gap:5px;z-index:20;pointer-events:none;">
+                            <button class="nav-btn prev" style="pointer-events:auto;flex-shrink:0;"
+                                onclick="event.stopPropagation();prevCard()"
+                                ontouchend="event.stopPropagation();event.preventDefault();prevCard()">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
+                                    <path d="M14 8L10 12L14 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <span id="navIndexLabel" style="font-size:0.65rem;opacity:0.6;color:#333;white-space:nowrap;">${currentIndex + 1} / ${cards.length}</span>
+                        </div>
+                        <div style="position:absolute;top:10px;right:8px;display:flex;align-items:center;gap:5px;z-index:20;pointer-events:none;">
+                            <span id="navHintLabel" style="font-size:0.65rem;opacity:0.6;color:#333;white-space:nowrap;">Tap to flip</span>
+                            <button class="nav-btn next" style="pointer-events:auto;flex-shrink:0;"
+                                onclick="event.stopPropagation();nextCard()"
+                                ontouchend="event.stopPropagation();event.preventDefault();nextCard()">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
+                                    <path d="M10 8L14 12L10 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
                         </div>
                         ` : ''}
                     </div>
@@ -7869,7 +7918,7 @@
             const navIndex = document.getElementById('navIndexLabel');
             const navHint = document.getElementById('navHintLabel');
             if (navIndex) navIndex.textContent = `${currentIndex + 1} / ${cards.length}`;
-            if (navHint) navHint.textContent = isFlipped ? 'Tap to flip back' : 'Tap to flip';
+            if (navHint) navHint.textContent = isFlipped ? 'Tap to flip' : 'Tap to flip';
 
             // Position nav overlay to match card container bounds
             requestAnimationFrame(() => positionNavOverlay());
@@ -8022,28 +8071,36 @@
             const imgEl = cardFront ? cardFront.querySelector('.card-image') : null;
             if (!cardFront || !imgEl) return;
 
-            const cardHeight = cardFront.offsetHeight;
+            const screenWidth = window.innerWidth;
+
+            // Match same size tiers as back-text scaling
+            let maxFontSize, minFontSize;
+            if (screenWidth <= 390)       { maxFontSize = 2.8; minFontSize = 0.7; }
+            else if (screenWidth <= 480)  { maxFontSize = 3.5; minFontSize = 0.8; }
+            else if (screenWidth <= 768)  { maxFontSize = 4.5; minFontSize = 1.0; }
+            else if (screenWidth <= 1024) { maxFontSize = 6.0; minFontSize = 1.2; }
+            else                          { maxFontSize = 7.5; minFontSize = 1.4; }
+
             const cardWidth = cardFront.offsetWidth - 20;
 
-            let fontSize;
-            if (cachedFrontTextSize !== null) {
-                // Reuse cached size — consistent across all cards
-                fontSize = cachedFrontTextSize;
-                textEl.style.fontSize = fontSize + 'px';
-            } else {
-                // First time: compute and cache
-                fontSize = 96;
-                const minFontSize = 20;
-                textEl.style.fontSize = fontSize + 'px';
-                while (fontSize > minFontSize && textEl.scrollWidth > cardWidth) {
-                    fontSize -= 2;
-                    textEl.style.fontSize = fontSize + 'px';
+            // Single-line: scale down until it fits the card width
+            textEl.style.whiteSpace = 'nowrap';
+            textEl.style.fontSize = maxFontSize + 'rem';
+
+            if (textEl.scrollWidth > cardWidth) {
+                let lo = minFontSize, hi = maxFontSize, best = minFontSize;
+                for (let i = 0; i < 12; i++) {
+                    const mid = (lo + hi) / 2;
+                    textEl.style.fontSize = mid + 'rem';
+                    if (textEl.scrollWidth <= cardWidth) { best = mid; lo = mid; }
+                    else { hi = mid; }
                 }
-                cachedFrontTextSize = fontSize;
+                textEl.style.fontSize = best + 'rem';
             }
 
             // Adjust image height based on text block height
             requestAnimationFrame(() => {
+                const cardHeight = cardFront.offsetHeight;
                 const textHeight = textEl.offsetHeight + 12;
                 const imgHeight = cardHeight - textHeight - 20;
                 const imgPercent = Math.max(30, Math.min(80, (imgHeight / cardHeight) * 100));
@@ -8097,6 +8154,60 @@
             const menu = document.getElementById('settingsMenu');
             if (menu) menu.style.display = 'none';
             renderDisplay();
+        }
+
+        function toggleLockSide() {
+            lockSide = (lockSide === 'back') ? false : 'back';
+
+            const btn = document.getElementById('lockSideBtn');
+            if (btn) {
+                const active = lockSide !== false;
+                const sideName = lockSide === 'back' ? 'Back' : lockSide === 'front' ? 'Front' : '';
+                btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${active ? '#1a4a32' : '#35654D'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${active ? `Lock Side (${sideName})` : 'Lock Side'}`;
+                btn.style.background = active ? '#f0f9f4' : 'white';
+                btn.style.color = active ? '#35654D' : '#333';
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+            renderDisplay();
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('muteBtn');
+            const icon = document.getElementById('muteIcon');
+            if (btn) {
+                btn.style.background = isMuted ? '#f0f9f4' : 'white';
+                btn.style.color      = isMuted ? '#35654D' : '#333';
+                btn.lastChild.textContent = isMuted ? ' Unmute Sounds' : ' Mute Sounds';
+            }
+            if (icon) {
+                icon.setAttribute('stroke', isMuted ? '#1a4a32' : '#35654D');
+                icon.innerHTML = isMuted
+                    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+                    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('muteBtn');
+            const icon = document.getElementById('muteIcon');
+            if (btn) {
+                btn.style.background = isMuted ? '#f0f9f4' : 'white';
+                btn.style.color      = isMuted ? '#35654D' : '#333';
+                btn.lastChild.textContent = isMuted ? 'Unmute Sounds' : 'Mute Sounds';
+            }
+            if (icon) {
+                icon.setAttribute('stroke', isMuted ? '#1a4a32' : '#35654D');
+                icon.innerHTML = isMuted
+                    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+                    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
         }
 
         function toggleHideUI() {
@@ -8666,7 +8777,6 @@
 
 </body>
 </html>
-
 
 
 
