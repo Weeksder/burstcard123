@@ -2201,6 +2201,10 @@
                     🔤 Spelling Game
                 </button>
 
+                <button class="btn btn-success" onclick="startGame('match')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
+                    🖼️ Match the Picture
+                </button>
+
                 <button class="btn btn-secondary" onclick="closeGameMenu()" style="padding: 15px; justify-content: center;">
                     ← Back
                 </button>
@@ -2298,6 +2302,48 @@
                 <button class="btn btn-primary" onclick="startNewSpellingGame()" style="padding: 15px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; min-width: 60px;" title="Start New Game">
                     🔄
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match the Picture Game Modal -->
+    <div id="matchGameModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#35654D;z-index:20000;flex-direction:column;">
+        <!-- Top bar matching main menu style -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0;">
+            <button onclick="closeMatchGame()" style="background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;gap:6px;color:white;font-size:1rem;font-weight:600;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <span style="font-size:1rem;font-weight:700;color:white;">🖼️ Match the Picture</span>
+            <button onclick="openMatchHelp()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;font-size:1.4rem;">❓</button>
+        </div>
+        <!-- Card area — fills remaining height -->
+        <div id="matchGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 16px;box-sizing:border-box;"></div>
+    </div>
+
+    <!-- Match Game Help Modal -->
+    <div class="modal" id="matchGameHelpModal">
+        <div class="modal-content" style="max-width:400px;">
+            <h2>🖼️ Match the Picture</h2>
+            <p style="margin-bottom:15px;color:#666;">A picture is shown — tap the word that matches it.</p>
+            <ul style="text-align:left;color:#555;margin-bottom:20px;padding-left:20px;line-height:2;">
+                <li>✅ Correct — moves to next picture</li>
+                <li>❌ Wrong — try again</li>
+                <li>One question per card in your deck</li>
+            </ul>
+            <button class="btn btn-success" onclick="document.getElementById('matchGameHelpModal').classList.remove('active')" style="width:100%;padding:12px;justify-content:center;">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Match Game Extra Words Modal -->
+    <div class="modal" id="matchExtraWordsModal">
+        <div class="modal-content" style="max-width:420px;">
+            <h2>➕ Add Extra Words</h2>
+            <p style="color:#666;margin-bottom:15px;">Add extra words to make the choices harder. One word per line.</p>
+            <textarea id="matchExtraWordsInput" style="width:100%;height:140px;border:1.5px solid #ddd;border-radius:8px;padding:10px;font-size:15px;resize:vertical;box-sizing:border-box;" placeholder="e.g.&#10;Dog&#10;Cat&#10;Fish"></textarea>
+            <div style="display:flex;gap:10px;margin-top:14px;">
+                <button class="btn btn-secondary" onclick="document.getElementById('matchExtraWordsModal').classList.remove('active')" style="flex:1;padding:12px;justify-content:center;">Cancel</button>
+                <button class="btn btn-success" onclick="confirmMatchExtraWords()" style="flex:1;padding:12px;justify-content:center;">Start Game</button>
             </div>
         </div>
     </div>
@@ -2640,6 +2686,14 @@
             answerSlots: [],
             selectedLetter: null,
             correctWord: ''
+        };
+
+        let matchGameState = {
+            questions: [],       // [{card, wrongOptions:[]}]
+            currentQ: 0,
+            score: 0,
+            extraWords: [],
+            wrongAttempt: false
         };
 
         // DOM Cache - Performance optimization to avoid repeated queries
@@ -6900,8 +6954,247 @@
                 document.body.style.overflow = 'hidden';
                 document.getElementById('spellingGameModal').classList.add('active');
                 renderSpellingGame();
+            } else if (gameType === 'match') {
+                if (cards.length === 0) {
+                    alert('Please add some cards first!');
+                    openGameMenu();
+                    return;
+                }
+                const cardsWithText = cards.filter(c => c.backText && c.backText.trim());
+                if (cardsWithText.length === 0) {
+                    alert('Cards need text labels to play Match the Picture!');
+                    openGameMenu();
+                    return;
+                }
+                matchGameState.extraWords = [];
+                matchGameState._pendingCards = cardsWithText;
+                document.getElementById('matchExtraWordsInput').value = '';
+                document.body.style.overflow = 'hidden';
+                document.getElementById('matchExtraWordsModal').classList.add('active');
             }
         }
+
+        // ==================== MATCH THE PICTURE GAME ====================
+
+        function confirmMatchExtraWords() {
+            document.getElementById('matchExtraWordsModal').classList.remove('active');
+            const raw = document.getElementById('matchExtraWordsInput').value;
+            matchGameState.extraWords = raw.split('\n').map(s => s.trim()).filter(Boolean);
+            initMatchGame(matchGameState._pendingCards);
+        }
+
+        function initMatchGame(cardsWithText) {
+            const shuffled = fisherYatesShuffle(cardsWithText);
+            const allWords = [...new Set([
+                ...shuffled.map(c => c.backText.trim()),
+                ...matchGameState.extraWords
+            ])];
+
+            matchGameState.questions = shuffled.map(card => {
+                const correct = card.backText.trim();
+                const pool = fisherYatesShuffle(allWords.filter(w => w !== correct));
+                const wrong = pool.slice(0, 2); // 2 wrong = 3 total
+                return { card, correct, options: fisherYatesShuffle([correct, ...wrong]) };
+            });
+            matchGameState.currentQ = 0;
+            matchGameState.score = 0;
+            matchGameState.wrongAttempt = false;
+
+            document.getElementById('matchGameModal').style.display = 'flex';
+            renderMatchGame();
+        }
+
+        function closeMatchGame() {
+            document.body.style.overflow = '';
+            document.getElementById('matchGameModal').style.display = 'none';
+            openGameMenu();
+        }
+
+        function openMatchHelp() {
+            document.getElementById('matchGameHelpModal').classList.add('active');
+        }
+
+        function renderMatchGame() {
+            const content = document.getElementById('matchGameContent');
+            const { questions, currentQ, score } = matchGameState;
+
+            if (currentQ >= questions.length) {
+                playSound('winningSound');
+                content.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
+                        <div style="font-size:4rem;">🎉</div>
+                        <h2 style="font-size:2rem;color:white;margin:0;">All done!</h2>
+                        <p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">${score} / ${questions.length} correct first try</p>
+                        <button class="btn btn-success" onclick="startGame('match')" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔄 Play Again</button>
+                    </div>`;
+                return;
+            }
+
+            const q = questions[currentQ];
+
+            const tickSVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+            const crossSVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+            // Touch devices: landscape only when rotated (height < 600)
+            // PC/desktop: landscape whenever window is wider than tall
+            const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+            // PC: landscape when wider than tall
+            // Touch (phone/tablet): landscape when width > height AND aspect ratio clearly landscape (>1.2)
+            const isLandscape = window.innerWidth > window.innerHeight && (!isTouchDevice || (window.innerWidth / window.innerHeight) > 1.2);
+
+            const choicesHTML = q.options.map((opt, idx) => `
+                <button id="matchOpt${idx}"
+                    onclick="checkMatchAnswer('${opt.replace(/'/g,"\\'")}', ${idx})"
+                    style="width:100%;border:none;border-bottom:1.5px solid #ddd;background:transparent;
+                           padding:4px 8px;cursor:pointer;display:flex;align-items:center;
+                           justify-content:center;gap:10px;transition:all 0.18s;">
+                    <span id="matchIcon${idx}L" style="width:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0;"></span>
+                    <span id="matchLabel${idx}" style="font-family:'Nunito',Arial,sans-serif;font-size:4rem;
+                          font-weight:400;color:#1a1a1a;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${highlightVowelsFront(opt)}
+                    </span>
+                    <span id="matchIcon${idx}R" style="width:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0;"></span>
+                </button>
+            `).join('');
+
+            if (isLandscape) {
+                content.innerHTML = `
+                    <div style="width:100%;height:100%;background:white;border-radius:20px;
+                                box-shadow:0 10px 40px rgba(0,0,0,0.2);
+                                display:flex;flex-direction:row;
+                                padding:10px;box-sizing:border-box;overflow:hidden;position:relative;">
+
+                        <!-- Index badge -->
+                        <span style="position:absolute;top:10px;left:14px;z-index:2;
+                                     background:rgba(0,0,0,0.18);color:#555;font-size:0.72rem;font-weight:700;
+                                     border-radius:5px;padding:2px 7px;line-height:1.6;">
+                            ${currentQ + 1} / ${questions.length}
+                        </span>
+
+                        <!-- Left: choices stacked, centered vertically, lines go full width -->
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;
+                                    gap:2px;padding-top:28px;padding-right:10px;padding-bottom:8px;">
+                            ${choicesHTML}
+                        </div>
+
+                        <!-- Vertical divider -->
+                        <div style="width:1.5px;background:#eee;flex-shrink:0;margin:0 4px;"></div>
+
+                        <!-- Right: image centered vertically -->
+                        <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;">
+                            <img src="${q.card.frontImage}"
+                                 style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                        </div>
+
+                    </div>`;
+            } else {
+                content.innerHTML = `
+                    <div style="width:100%;height:100%;background:white;border-radius:20px;
+                                box-shadow:0 10px 40px rgba(0,0,0,0.2);
+                                display:flex;flex-direction:column;align-items:center;
+                                padding:10px;box-sizing:border-box;overflow:hidden;position:relative;">
+
+                        <!-- Index badge overlaid on image top-left -->
+                        <span style="position:absolute;top:14px;left:14px;z-index:2;
+                                     background:rgba(0,0,0,0.18);color:#555;font-size:0.72rem;font-weight:700;
+                                     border-radius:5px;padding:2px 7px;line-height:1.6;">
+                            ${currentQ + 1} / ${questions.length}
+                        </span>
+
+                        <!-- Image — constrained so choices stay close -->
+                        <div style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:4px;">
+                            <img src="${q.card.frontImage}"
+                                 style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                        </div>
+
+                        <!-- Divider -->
+                        <div style="width:100%;height:1.5px;background:#eee;flex-shrink:0;margin:4px 0;"></div>
+
+                        <!-- Choices -->
+                        <div style="width:100%;flex-shrink:0;display:flex;flex-direction:column;gap:2px;margin-bottom:8px;">
+                            ${choicesHTML}
+                        </div>
+
+                    </div>`;
+            }
+
+            requestAnimationFrame(() => scaleMatchLabels());
+        }
+
+        function scaleMatchLabels() {
+            for (let i = 0; i < 3; i++) {
+                const el = document.getElementById(`matchLabel${i}`);
+                if (!el) continue;
+                let size = 4.0;
+                el.style.fontSize = size + 'rem';
+                while (el.scrollWidth > el.clientWidth && size > 0.8) {
+                    size = Math.round((size - 0.05) * 100) / 100;
+                    el.style.fontSize = size + 'rem';
+                }
+            }
+        }
+
+        function scaleMatchWordText() {} // kept for safety
+
+        function checkMatchAnswer(chosen, btnIdx) {
+            const q = matchGameState.questions[matchGameState.currentQ];
+            const correct = q.correct;
+            const isCorrect = chosen === correct;
+
+            const btns = document.querySelectorAll('[id^="matchOpt"]');
+            btns.forEach(b => { b.onclick = null; b.style.cursor = 'default'; });
+
+            const tickSVG = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+            const crossSVG = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+            const label = document.getElementById(`matchLabel${btnIdx}`);
+            const iconL = document.getElementById(`matchIcon${btnIdx}L`);
+            const iconR = document.getElementById(`matchIcon${btnIdx}R`);
+
+            if (isCorrect) {
+                const chosenBtn = document.getElementById(`matchOpt${btnIdx}`);
+                if (label) label.style.color = '#2e7d32';
+                if (iconL) { iconL.innerHTML = tickSVG; iconL.style.opacity = '1'; }
+                if (iconR) { iconR.innerHTML = tickSVG; iconR.style.opacity = '1'; }
+                if (chosenBtn) {
+                    chosenBtn.style.background = 'rgba(46,125,50,0.12)';
+                    chosenBtn.style.transition = 'background 0.15s ease';
+                }
+                if (!matchGameState.wrongAttempt) matchGameState.score++;
+                playSound('correctSound');
+                setTimeout(() => {
+                    matchGameState.currentQ++;
+                    matchGameState.wrongAttempt = false;
+                    renderMatchGame();
+                }, 800);
+            } else {
+                matchGameState.wrongAttempt = true;
+                const chosenBtn = document.getElementById(`matchOpt${btnIdx}`);
+                if (label) label.style.color = '#c62828';
+                if (iconL) { iconL.innerHTML = crossSVG; iconL.style.opacity = '1'; }
+                if (iconR) { iconR.innerHTML = crossSVG; iconR.style.opacity = '1'; }
+                // Brief red background flash on the row
+                if (chosenBtn) {
+                    chosenBtn.style.background = 'rgba(198,40,40,0.12)';
+                    chosenBtn.style.transition = 'background 0.15s ease';
+                }
+                playSound('errorSound');
+                setTimeout(() => {
+                    if (label) label.style.color = '#1a1a1a';
+                    if (iconL) { iconL.innerHTML = ''; iconL.style.opacity = '0'; }
+                    if (iconR) { iconR.innerHTML = ''; iconR.style.opacity = '0'; }
+                    if (chosenBtn) {
+                        chosenBtn.style.background = 'transparent';
+                    }
+                    btns.forEach((b, i) => {
+                        b.onclick = () => checkMatchAnswer(q.options[i], i);
+                        b.style.cursor = 'pointer';
+                    });
+                }, 900);
+            }
+        }
+
+        // ==================== END MATCH THE PICTURE GAME ====================
 
         function closeGuessGame() {
             // If game is finished, clear the state
@@ -8736,10 +9029,13 @@
                 if (cards.length > 0) {
                     renderDisplay();
                     cachedFrontTextSize = null;
-                    // If a modal is open, hide overlays again after renderDisplay shows them
                     if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
                         hideCardOverlays();
                     }
+                }
+                // Re-render match game on rotation
+                if (document.getElementById('matchGameModal')?.style.display === 'flex') {
+                    renderMatchGame();
                 }
             }, 300);
         });
@@ -8749,9 +9045,12 @@
             resizeTimer = setTimeout(() => {
                 positionNavOverlay();
                 if (cards.length > 0) { cachedFrontTextSize = null; scaleFrontText(); }
-                // Re-hide overlays if a modal/overlay is open
                 if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
                     hideCardOverlays();
+                }
+                // Re-render match game on window resize (PC orientation change)
+                if (document.getElementById('matchGameModal')?.style.display === 'flex') {
+                    renderMatchGame();
                 }
             }, 250);
         });
