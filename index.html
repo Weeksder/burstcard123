@@ -2130,7 +2130,8 @@
     </div>
 
     <div class="modal" id="createModal">
-        <div class="modal-content" id="createModalContent">
+        <div class="modal-content" id="createModalContent" style="position:relative;">
+            <button onclick="closeCreateModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
             <h2 id="modalTitle">Create New Cards</h2>
 
             <div class="form-group">
@@ -2184,7 +2185,8 @@
     </div>
 
     <div class="modal" id="gameMenuModal">
-        <div class="modal-content" style="max-width: 340px;">
+        <div class="modal-content" style="max-width: 340px; position:relative;">
+            <button onclick="closeGameMenu()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
             <h2>🎮 Game Menu</h2>
             <p style="margin-bottom: 20px; color: #666;">Play games with your cards</p>
 
@@ -2217,8 +2219,11 @@
             <!-- Control Panel (stays with modal) -->
             <div id="guessGameControls" style="display: inline-flex; align-items: center; gap: 12px; background: white; border-radius: 12px; padding: 8px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); margin-bottom: clamp(6px, 1vh, 10px);">
                 <h2 style="margin: 0; font-size: clamp(1rem, 2.5vw, 1.2rem); color: #35654D; white-space: nowrap;">🎯 Guess the Word</h2>
-                <button onclick="startNewGuessGame()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; font-size: clamp(1.2rem, 3vw, 1.4rem);" title="Shuffle Cards">
-                    🔄
+                <button onclick="startNewGuessGame()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" title="Shuffle Cards">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                        <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                    </svg>
                 </button>
                 <button onclick="openGuessGameHelp()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; font-size: clamp(1.2rem, 3vw, 1.4rem);" title="How to Play">
                     ❓
@@ -2291,19 +2296,25 @@
         </div>
     </div>
 
-    <div class="modal" id="spellingGameModal">
-        <div class="modal-content" style="max-width: 900px;">
-            <div id="spellingGameContent"></div>
-
-            <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button class="btn btn-secondary" onclick="closeSpellingGame()" style="flex: 1; padding: 15px; justify-content: center;">
-                    ← Back to Game Menu
-                </button>
-                <button class="btn btn-primary" onclick="startNewSpellingGame()" style="padding: 15px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; min-width: 60px;" title="Start New Game">
-                    🔄
+    <div id="spellingGameModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#35654D;z-index:20000;flex-direction:column;">
+        <!-- Top bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0;">
+            <button onclick="closeSpellingGame()" style="background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;gap:6px;color:white;font-size:1rem;font-weight:600;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <span style="font-size:1rem;font-weight:700;color:white;">🔤 Spell the Word</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+                <button onclick="startNewSpellingGame()" style="background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;justify-content:center;" title="Shuffle / New Game">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                        <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                    </svg>
                 </button>
             </div>
         </div>
+        <!-- Game content -->
+        <div id="spellingGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 16px;box-sizing:border-box;overflow-y:auto;"></div>
     </div>
 
     <!-- Match the Picture Game Modal -->
@@ -2315,7 +2326,16 @@
                 Back
             </button>
             <span style="font-size:1rem;font-weight:700;color:white;">🖼️ Match the Picture</span>
-            <button onclick="openMatchHelp()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;font-size:1.4rem;">❓</button>
+            <div style="display:flex;align-items:center;gap:4px;">
+                <button onclick="shuffleMatchGame()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;display:flex;align-items:center;justify-content:center;"
+                    title="Shuffle">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                        <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                    </svg>
+                </button>
+                <button onclick="openMatchHelp()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;font-size:1.4rem;">❓</button>
+            </div>
         </div>
         <!-- Card area — fills remaining height -->
         <div id="matchGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 16px;box-sizing:border-box;"></div>
@@ -2376,7 +2396,8 @@
 
     <!-- Load Options Modal -->
     <div class="modal" id="loadOptionsModal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content" style="max-width: 500px; position:relative;">
+            <button onclick="closeLoadOptions()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
             <h2>📂 Load Flashcard Session</h2>
             <p style="margin-bottom: 20px; color: #666;">Select a saved flashcard file (.json or .zip)</p>
 
@@ -2447,7 +2468,8 @@
 
     <!-- Unit Configuration Modal -->
     <div class="modal" id="unitConfigModal">
-        <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto; position:relative;">
+            <button onclick="closeUnitConfigModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
             <h2>⚙️ Manage Quick Load Units <span style="font-size: 12px; color: #999; font-weight: normal;">(v2.0)</span></h2>
             <p style="margin-bottom: 20px; color: #666;">Configure your units for quick access</p>
 
@@ -2618,6 +2640,7 @@
         let cards = [];
         let isShuffling = false;
         let currentLoadedUnitId = null; // Track which unit is currently loaded
+        const loadedUnitIds = new Set(); // Track all unit IDs contributing to current deck
         let currentIndex = 0;
         let isFlipped = false;
         let lockSide = false; // when true, every new card opens on the locked side
@@ -2686,7 +2709,8 @@
             scrambledLetters: [],
             answerSlots: [],
             selectedLetter: null,
-            correctWord: ''
+            correctWord: '',
+            moveHistory: []  // stack of {scrambledLetters, answerSlots} snapshots for undo
         };
 
         let matchGameState = {
@@ -5024,22 +5048,43 @@
                 imageHashCache.delete(hash);
             }
 
-            // Simple approach - just delete without confirm for iPad compatibility
+            // Track which unit this card belonged to
+            const deletedUnitId = deletedCard && deletedCard._unitId;
+
             cards.splice(currentIndex, 1);
-            currentLoadedUnitId = null; // deck no longer matches the unit exactly
+
+            // If that unit no longer has any cards, remove it from the loaded set
+            if (deletedUnitId !== undefined) {
+                const stillHasCards = cards.some(c => c._unitId === deletedUnitId);
+                if (!stillHasCards) {
+                    loadedUnitIds.delete(deletedUnitId);
+                    if (currentLoadedUnitId === deletedUnitId) currentLoadedUnitId = null;
+                }
+            }
+            // If only one unit remains, keep currentLoadedUnitId in sync
+            if (loadedUnitIds.size === 1) {
+                currentLoadedUnitId = [...loadedUnitIds][0];
+            } else if (loadedUnitIds.size !== 1) {
+                currentLoadedUnitId = null;
+            }
+            if (cards.length === 0) {
+                loadedUnitIds.clear();
+                currentLoadedUnitId = null;
+            }
+
             if (currentIndex >= cards.length && cards.length > 0) {
                 currentIndex = cards.length - 1;
             } else if (cards.length === 0) {
                 currentIndex = 0;
             }
-            
+
             // Reset game states to prevent continuing with deleted cards
             guessGameState.gameCards = [];
             guessGameState.currentRoundCards = null;
             guessGameState.correctCards = {};
             guessGameState.selectedCard = null;
             guessGameState.currentCardOrder = 0;
-            
+
             saveCards();
             renderDisplay();
         }
@@ -5345,6 +5390,8 @@
                     currentIndex = 0;
                     isFlipped = false;
                     lockSide = false;
+                    loadedUnitIds.clear();
+                    currentLoadedUnitId = null;
                     // Clear hash cache
                     imageHashCache.clear();
                     sessionStorage.removeItem('flashcards');
@@ -5802,10 +5849,14 @@
                     cards = incoming.slice(0, 30);
                     currentIndex = 0;
                     isFlipped = false;
+                    loadedUnitIds.clear();
+                    currentLoadedUnitId = null;
                     if (discarded > 0) {
                         setTimeout(() => showToast(`⚠️ ${incoming.length} cards imported — ${discarded} discarded (30 max)`, 4000), 100);
                     }
                 } else if (mode === 'add') {
+                    loadedUnitIds.clear();
+                    currentLoadedUnitId = null;
                     const newCards = loadedSessionData.cards;
                     const totalAfter = cards.length + newCards.length;
 
@@ -6047,7 +6098,7 @@
                 } else {
                     // Horizontal layout: Unit Name | Card Count | Add Icon | Load Icon
                     listContainer.innerHTML = units.map(unit => {
-                        const isCurrentlyLoaded = (currentLoadedUnitId === unit.id);
+                        const isCurrentlyLoaded = loadedUnitIds.has(unit.id);
                         
                         // Parse fileData to get card count
                         let cardCount = 0;
@@ -6059,44 +6110,44 @@
                         }
 
                         if (isCurrentlyLoaded) {
-                            // This unit is currently loaded — highlight green
+                            // This unit is currently loaded — highlight green, show add + reload buttons
                             return `
                             <div style="padding: 12px; border-bottom: 1px solid #eee; background: #f0f9f4; border-left: 4px solid #35654D; display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1; min-width: 0;">
                                     <div style="font-weight: 700; font-size: 15px; color: #35654D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${unit.name}</div>
                                     <div style="font-size: 12px; color: #35654D; opacity:0.7; margin-top: 2px; white-space: nowrap;">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
                                 </div>
+                                <button class="quick-load-item" data-unit-id="${unit.id}" data-action="remove-added" title="Remove from deck" style="width: 40px; height: 40px; padding: 0; background: #FF9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 700; line-height: 1;">
+                                    ➖
+                                </button>
                                 <button class="quick-load-item" data-unit-id="${unit.id}" data-action="load" title="Reload" style="width: 40px; height: 40px; padding: 0; background: #35654D; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                     📂
                                 </button>
-                                <button title="Delete unit" style="width: 40px; height: 40px; padding: 0; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
-                                    onclick="event.stopPropagation(); handleUnitDelete(${unit.id}, this)"
-                                    ontouchend="event.stopPropagation(); event.preventDefault(); handleUnitDelete(${unit.id}, this)">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    </svg>
+                                <button title="Hide from list" style="width: 40px; height: 40px; padding: 0; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; font-weight: 700;"
+                                    onclick="event.stopPropagation(); this.closest('div[style*=border-bottom]').remove()"
+                                    ontouchend="event.stopPropagation(); event.preventDefault(); this.closest('div[style*=border-bottom]').remove()">
+                                    ✕
                                 </button>
                             </div>
                             `;
                         } else {
-                            // Not loaded - show Load and Delete buttons
+                            // Not loaded - show Add, Load and Delete buttons
                             return `
                             <div style="padding: 12px; border-bottom: 1px solid #eee; background: white; display: flex; align-items: center; gap: 10px;">
                                 <div style="flex: 1; min-width: 0;">
                                     <div style="font-weight: 600; font-size: 15px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${unit.name}</div>
                                     <div style="font-size: 12px; color: #999; margin-top: 2px; white-space: nowrap;">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
                                 </div>
+                                <button class="quick-load-item" data-unit-id="${unit.id}" data-action="add" title="Add to existing" style="width: 40px; height: 40px; padding: 0; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    ➕
+                                </button>
                                 <button class="quick-load-item" data-unit-id="${unit.id}" data-action="load" title="Load" style="width: 40px; height: 40px; padding: 0; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                     📂
                                 </button>
-                                <button title="Delete unit" style="width: 40px; height: 40px; padding: 0; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
-                                    onclick="event.stopPropagation(); handleUnitDelete(${unit.id}, this)"
-                                    ontouchend="event.stopPropagation(); event.preventDefault(); handleUnitDelete(${unit.id}, this)">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
-                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    </svg>
+                                <button title="Hide from list" style="width: 40px; height: 40px; padding: 0; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; font-weight: 700;"
+                                    onclick="event.stopPropagation(); this.closest('div[style*=border-bottom]').remove()"
+                                    ontouchend="event.stopPropagation(); event.preventDefault(); this.closest('div[style*=border-bottom]').remove()">
+                                    ✕
                                 </button>
                             </div>
                             `;
@@ -6120,8 +6171,24 @@
                     currentIndex = 0;
                     isFlipped = false;
                     currentLoadedUnitId = null;
+                    loadedUnitIds.clear();
                     updateDisplay();
                     showToast('🗑️ Unit removed', 2000);
+                    return;
+                }
+
+                // Handle remove-added: unload this unit's cards from the deck
+                if (mode === 'remove-added') {
+                    cards = cards.filter(c => c._unitId !== unitId);
+                    loadedUnitIds.delete(unitId);
+                    if (loadedUnitIds.size === 1) currentLoadedUnitId = [...loadedUnitIds][0];
+                    else currentLoadedUnitId = null;
+                    if (currentIndex >= cards.length) currentIndex = Math.max(0, cards.length - 1);
+                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+                    saveCards();
+                    renderDisplay();
+                    loadQuickLoadList(true);
+                    showToast('✅ Unit removed from deck', 2000);
                     return;
                 }
 
@@ -6179,10 +6246,32 @@
 
                 // Load or add the cards based on mode
                 if (mode === 'add') {
-                    const combined = cards.concat(jsonData.cards);
+                    // Check for existing cards from a different unit — show info message
+                    if (cards.length > 0 && loadedUnitIds.size === 0) {
+                        showToast(`ℹ️ Adding cards from "${unit.name}" to existing deck`, 2500);
+                    } else if (cards.length > 0 && loadedUnitIds.size > 0) {
+                        showToast(`ℹ️ Adding cards from "${unit.name}"`, 2000);
+                    }
+
+                    // Deduplicate: skip incoming cards whose frontImage already exists
+                    const existingHashes = new Set(cards.map(c => c.frontImage ? fastHash(c.frontImage) : null).filter(Boolean));
+                    const incoming = jsonData.cards.map(c => ({ ...c, _unitId: unitId }));
+                    const deduped = incoming.filter(c => {
+                        if (!c.frontImage) return true;
+                        const h = fastHash(c.frontImage);
+                        if (existingHashes.has(h)) return false;
+                        existingHashes.add(h);
+                        return true;
+                    });
+                    const skipped = incoming.length - deduped.length;
+
+                    const combined = cards.concat(deduped);
                     const discarded = Math.max(0, combined.length - 30);
                     cards = combined.slice(0, 30);
-                    currentLoadedUnitId = null; // mixed deck — no single unit
+
+                    // Track this unit as contributing to the deck
+                    loadedUnitIds.add(unitId);
+                    currentLoadedUnitId = loadedUnitIds.size === 1 ? unitId : null;
 
                     guessGameState.gameCards = [];
                     guessGameState.currentRoundCards = null;
@@ -6192,17 +6281,20 @@
 
                     saveCards();
                     renderDisplay();
-                    if (discarded > 0) {
-                        showToast(`⚠️ ${jsonData.cards.length} cards added — ${discarded} discarded (30 max)`, 4000);
-                    } else {
-                        showToast(`✅ Added ${jsonData.cards.length} cards! Total: ${cards.length}`, 2000);
-                    }
+
+                    let msg = `✅ Added ${deduped.length} cards! Total: ${cards.length}`;
+                    if (skipped > 0) msg += ` (${skipped} duplicate${skipped > 1 ? 's' : ''} skipped)`;
+                    if (discarded > 0) msg += ` — ${discarded} discarded (30 max)`;
+                    showToast(msg, 3000);
+                    loadQuickLoadList(true);
                 } else {
-                    const incoming = jsonData.cards;
+                    const incoming = jsonData.cards.map(c => ({ ...c, _unitId: unitId }));
                     const discarded = Math.max(0, incoming.length - 30);
                     cards = incoming.slice(0, 30);
                     currentIndex = 0;
-                    currentLoadedUnitId = unitId; // mark this unit as loaded
+                    currentLoadedUnitId = unitId;
+                    loadedUnitIds.clear();
+                    loadedUnitIds.add(unitId);
 
                     guessGameState.gameCards = [];
                     guessGameState.currentRoundCards = null;
@@ -6959,7 +7051,7 @@
                 spellingGameState.currentCardIndex = 0;
 
                 document.body.style.overflow = 'hidden';
-                document.getElementById('spellingGameModal').classList.add('active');
+                document.getElementById('spellingGameModal').style.display = 'flex';
                 renderSpellingGame();
             } else if (gameType === 'match') {
                 if (cards.length === 0) {
@@ -7015,6 +7107,26 @@
             document.body.style.overflow = '';
             document.getElementById('matchGameModal').style.display = 'none';
             openGameMenu();
+        }
+
+        function shuffleMatchGame() {
+            // Re-shuffle questions from the original card pool and restart from Q1
+            const allWords = [...new Set([
+                ...matchGameState.questions.map(q => q.correct),
+                ...matchGameState.extraWords
+            ])];
+            const shuffledCards = fisherYatesShuffle(matchGameState.questions.map(q => q.card));
+            matchGameState.questions = shuffledCards.map(card => {
+                const correct = card.backText.trim();
+                const pool = fisherYatesShuffle(allWords.filter(w => w !== correct));
+                const wrong = pool.slice(0, 2);
+                return { card, correct, options: fisherYatesShuffle([correct, ...wrong]) };
+            });
+            matchGameState.currentQ = 0;
+            matchGameState.score = 0;
+            matchGameState.wrongAttempt = false;
+            renderMatchGame();
+            showToast('🔀 Shuffled!', 1200);
         }
 
         function openMatchHelp() {
@@ -7601,12 +7713,14 @@
         }
 
         function closeSpellingGame() {
-            document.getElementById('spellingGameModal').classList.remove('active');
+            document.getElementById('spellingGameModal').style.display = 'none';
             openGameMenu();
         }
 
         function startNewSpellingGame() {
             spellingGameState.currentCardIndex = 0;
+            fisherYatesShuffle(spellingGameState.gameCards); // re-shuffle in place
+            spellingGameState.gameCards = fisherYatesShuffle(spellingGameState.gameCards);
             renderSpellingGame();
         }
 
@@ -7615,16 +7729,13 @@
             const { currentCardIndex, gameCards } = spellingGameState;
 
             if (currentCardIndex >= gameCards.length) {
-                // Game over
                 content.innerHTML = `
-                    <div style="text-align: center; padding: 20px;">
-                        <h2 style="font-size: clamp(2rem, 8vw, 3rem); margin-bottom: 20px;">🎉 All words spelled!</h2>
-                        <p style="font-size: clamp(1rem, 4vw, 1.5rem); margin-bottom: 20px;">Great job!</p>
-                        <button class="btn btn-success" onclick="startNewSpellingGame()" style="padding: 15px 30px; font-size: 1.2rem;">
-                            🔄 Play Again
-                        </button>
-                    </div>
-                `;
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
+                        <div style="font-size:4rem;">🎉</div>
+                        <h2 style="font-size:2rem;color:white;margin:0;">All words spelled!</h2>
+                        <p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">Great job!</p>
+                        <button class="btn btn-success" onclick="startNewSpellingGame()" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔀 Play Again</button>
+                    </div>`;
                 return;
             }
 
@@ -7632,203 +7743,399 @@
             const word = currentCard.backText.trim().toUpperCase();
             spellingGameState.correctWord = word;
 
-            // Check if it's multiple words (contains space)
             const words = word.split(' ');
             const isMultiWord = words.length > 1;
-
-            // Determine block size based on total character count (excluding spaces)
             const totalChars = word.replace(/\s/g, '').length;
-            let blockSize, fontSize, gap;
 
-            if (totalChars <= 6) {
-                blockSize = 'clamp(50px, 12vw, 60px)';
-                fontSize = 'clamp(1.5rem, 4vw, 2rem)';
-                gap = '10px';
-            } else if (totalChars <= 10) {
-                blockSize = 'clamp(45px, 10vw, 50px)';
-                fontSize = 'clamp(1.3rem, 3.5vw, 1.8rem)';
-                gap = '8px';
-            } else if (totalChars <= 15) {
-                blockSize = 'clamp(40px, 9vw, 45px)';
-                fontSize = 'clamp(1.2rem, 3vw, 1.5rem)';
-                gap = '8px';
-            } else {
-                blockSize = 'clamp(35px, 8vw, 40px)';
-                fontSize = 'clamp(1rem, 2.5vw, 1.3rem)';
-                gap = '6px';
-            }
-
-            // Scramble all letters but keep track of spaces
-            const letters = word.split('');
-            const lettersWithoutSpaces = letters.filter(l => l !== ' ');
-
-            // Keep scrambling until it's different from original
+            // Scramble letters
+            const lettersWithoutSpaces = word.split('').filter(l => l !== ' ');
             let scrambled;
-            do {
-                scrambled = fisherYatesShuffle(lettersWithoutSpaces);
-            } while (scrambled.join('') === lettersWithoutSpaces.join(''));
+            do { scrambled = fisherYatesShuffle([...lettersWithoutSpaces]); }
+            while (scrambled.join('') === lettersWithoutSpaces.join('') && totalChars > 1);
 
-            // Create answer slots with space gaps
             const answerSlotsArray = [];
             const scrambledArray = [];
-            let scrambledIndex = 0;
-
-            letters.forEach((char, index) => {
-                if (char === ' ') {
-                    answerSlotsArray.push('SPACE');
-                } else {
-                    answerSlotsArray.push(null);
-                    scrambledArray.push(scrambled[scrambledIndex]);
-                    scrambledIndex++;
-                }
+            let si = 0;
+            word.split('').forEach(char => {
+                if (char === ' ') { answerSlotsArray.push('SPACE'); }
+                else { answerSlotsArray.push(null); scrambledArray.push(scrambled[si++]); }
             });
 
             spellingGameState.scrambledLetters = scrambledArray;
             spellingGameState.answerSlots = answerSlotsArray;
             spellingGameState.selectedLetter = null;
+            spellingGameState.moveHistory = [];
 
-            // Build answer rows for multi-word
+            // Answer row: underlines — multiword tries single line first (flex-wrap:wrap with gap)
+            const lineH = 'clamp(44px,6vh,60px)';
+            const lineFS = totalChars <= 8 ? 'clamp(1.8rem,4.5vw,2.6rem)' : totalChars <= 12 ? 'clamp(1.5rem,3.8vw,2.2rem)' : 'clamp(1.2rem,3vw,1.8rem)';
+
+            const makeSlot = (idx) => `<div onclick="selectAnswerSlot(${idx})" class="answer-slot" data-index="${idx}"
+                ondragover="event.preventDefault()" ondrop="spellingDragDrop(event,${idx})"
+                ontouchstart="spellingTouchStart(event,${idx},'slot')"
+                ontouchmove="spellingTouchMove(event)"
+                ontouchend="spellingTouchEnd(event)"
+                style="min-width:28px;height:${lineH};border-bottom:3px solid #35654D;
+                       display:inline-flex;align-items:center;justify-content:center;
+                       font-size:${lineFS};font-weight:700;color:#1a1a1a;cursor:pointer;
+                       padding:0 4px;user-select:none;"></div>`;
+
             let answerRowsHTML = '';
             if (isMultiWord) {
+                // All words in one wrapping flex row — if they fit on one line they stay, else wrap
                 let slotIndex = 0;
-                words.forEach((w, wordIndex) => {
-                    const wordSlots = w.split('').map((letter, letterIndex) => {
-                        const currentSlotIndex = slotIndex;
-                        slotIndex++;
-                        return `
-                            <div onclick="selectAnswerSlot(${currentSlotIndex})"
-                                 class="answer-slot"
-                                 data-index="${currentSlotIndex}"
-                                 style="width: ${blockSize}; height: ${blockSize}; border: 3px solid #667eea; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: ${fontSize}; font-weight: bold; background: white; cursor: pointer; user-select: none;">
-                                ${spellingGameState.answerSlots[currentSlotIndex] === 'SPACE' ? '' : (spellingGameState.answerSlots[currentSlotIndex] || '')}
-                            </div>
-                        `;
-                    }).join('');
-
-                    answerRowsHTML += `
-                        <div style="display: flex; gap: ${gap}; justify-content: center; align-items: center; margin-bottom: ${wordIndex < words.length - 1 ? '15px' : '0'};">
-                            ${wordSlots}
-                        </div>
-                    `;
-
-                    // Skip over the SPACE entry in answerSlots array (if not the last word)
-                    if (wordIndex < words.length - 1) {
-                        slotIndex++;
-                    }
+                const wordGroups = words.map((w, wi) => {
+                    const slots = w.split('').map(() => makeSlot(slotIndex++)).join('');
+                    if (wi < words.length - 1) slotIndex++; // skip SPACE
+                    return `<div style="display:flex;gap:4px;align-items:flex-end;">${slots}</div>`;
                 });
+                answerRowsHTML = `<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">${wordGroups.join('')}</div>`;
             } else {
-                answerRowsHTML = `
-                    <div style="display: flex; gap: ${gap}; justify-content: center; flex-wrap: wrap;">
-                        ${spellingGameState.answerSlots.map((letter, index) => `
-                            <div onclick="selectAnswerSlot(${index})"
-                                 class="answer-slot"
-                                 data-index="${index}"
-                                 style="width: ${blockSize}; height: ${blockSize}; border: 3px solid #667eea; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: ${fontSize}; font-weight: bold; background: white; cursor: pointer; user-select: none;">
-                                ${letter === 'SPACE' ? '' : (letter || '')}
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
+                answerRowsHTML = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">${slots}</div>`;
             }
 
+            // Letter row — plain text centered in a single boxed line, drag/click supported
+            const letterRowFS = totalChars <= 8 ? 'clamp(1.8rem,4.5vw,2.6rem)' : totalChars <= 12 ? 'clamp(1.5rem,3.8vw,2.2rem)' : 'clamp(1.2rem,3vw,1.8rem)';
+            const letterSpans = scrambledArray.map((letter, idx) => {
+                const isVowel = ['A','E','I','O','U'].includes(letter);
+                return `<span class="letter-tile" data-index="${idx}"
+                    onclick="selectLetter(${idx})"
+                    draggable="true"
+                    ondragstart="spellingDragStart(event,${idx},'tile')"
+                    ontouchstart="spellingTouchStart(event,${idx},'tile')"
+                    ontouchmove="spellingTouchMove(event)"
+                    ontouchend="spellingTouchEnd(event)"
+                    style="display:inline-flex;align-items:center;justify-content:center;
+                           font-size:${letterRowFS};font-weight:700;padding:2px 8px;
+                           color:${isVowel ? '#ff9500' : '#35654D'};
+                           cursor:grab;user-select:none;flex-shrink:0;">
+                    ${letter}
+                </span>`;
+            }).join('');
+
             content.innerHTML = `
-                <div style="text-align: center; padding: 10px;">
-                    <div style="margin-bottom: 20px;">
-                        <img src="${currentCard.frontImage}" style="max-width: min(90vw, 300px); max-height: min(40vh, 300px); width: auto; height: auto; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                    </div>
+                <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;">
 
-                    <p style="font-size: clamp(1rem, 3vw, 1.2rem); margin-bottom: 20px; color: #35654D; font-weight: 600;">
-                        Card ${currentCardIndex + 1} / ${gameCards.length}
-                    </p>
+                    <!-- White card: everything inside -->
+                    <div style="width:100%;height:100%;background:white;border-radius:20px;
+                                box-shadow:0 10px 40px rgba(0,0,0,0.2);
+                                display:flex;flex-direction:column;align-items:center;
+                                padding:10px;box-sizing:border-box;overflow:hidden;position:relative;">
 
-                    <!-- Answer slots -->
-                    <div id="answerRow" style="margin-bottom: 30px;">
-                        ${answerRowsHTML}
-                    </div>
+                        <!-- Index badge top-left -->
+                        <span style="position:absolute;top:10px;left:12px;background:rgba(0,0,0,0.12);
+                                     color:#555;font-size:0.72rem;font-weight:700;border-radius:5px;
+                                     padding:2px 7px;line-height:1.6;z-index:2;">
+                            ${currentCardIndex + 1} / ${gameCards.length}
+                        </span>
 
-                    <!-- Letter tiles -->
-                    <div id="letterRow" style="display: flex; gap: ${gap}; justify-content: center; flex-wrap: wrap; max-width: 90vw; margin: 0 auto;">
-                        ${spellingGameState.scrambledLetters.map((letter, index) => {
-                            const isVowel = ['A', 'E', 'I', 'O', 'U'].includes(letter);
-                            const letterColor = isVowel ? '#ff9500' : 'white';
-                            return `
-                                <div onclick="selectLetter(${index})"
-                                     class="letter-tile"
-                                     data-index="${index}"
-                                     style="width: ${blockSize}; height: ${blockSize}; background: linear-gradient(135deg, #35654D 0%, #2d5542 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: ${fontSize}; font-weight: bold; color: ${letterColor}; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); user-select: none;">
-                                    ${letter}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-
-                    <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                        <button class="btn btn-success" onclick="checkSpelling()" style="padding: 15px 40px; font-size: clamp(1rem, 3vw, 1.2rem);">
-                            ✓ Check Answer
+                        <!-- Peek button top-right -->
+                        <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
+                                ontouchstart="event.stopPropagation();peekSpelling(true)"
+                                ontouchend="event.stopPropagation();peekSpelling(false)"
+                                style="position:absolute;top:8px;right:10px;z-index:2;
+                                       background:none;border:none;cursor:pointer;padding:4px;
+                                       font-size:1.3rem;line-height:1;user-select:none;">
+                            👁
                         </button>
-                        <button class="btn btn-primary" onclick="skipSpellingCard()" style="padding: 15px 40px; font-size: clamp(1rem, 3vw, 1.2rem);">
-                            ➡️ Skip
-                        </button>
+
+                        <!-- Image — takes remaining space, pushes content to bottom -->
+                        <div style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:4px;">
+                            <img src="${currentCard.frontImage}"
+                                 style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                        </div>
+
+                        <!-- Answer slots — directly below image, no divider -->
+                        <div style="width:100%;flex-shrink:0;padding:6px 4px 4px;box-sizing:border-box;">
+                            <div id="answerRow">${answerRowsHTML}</div>
+                        </div>
+
+                        <!-- Letter row — no dividers above or below, just the boxed line -->
+                        <div id="letterRow"
+                             ondragover="event.preventDefault()"
+                             ondrop="spellingDragDropToTile(event)"
+                             style="width:100%;flex-shrink:0;
+                                    display:flex;justify-content:center;align-items:center;
+                                    flex-wrap:nowrap;overflow-x:auto;
+                                    border:1.5px solid #ddd;border-radius:8px;
+                                    padding:4px 8px;box-sizing:border-box;
+                                    min-height:48px;gap:0;">
+                            ${letterSpans}
+                        </div>
+
+                        <!-- Buttons row — static width, centred -->
+                        <div style="flex-shrink:0;display:flex;gap:8px;justify-content:center;padding-top:8px;padding-bottom:2px;">
+                            <button onclick="checkSpelling()"
+                                style="width:100px;padding:10px 0;background:#35654D;border:none;border-radius:10px;
+                                       font-size:0.9rem;font-weight:700;color:white;cursor:pointer;">
+                                ✓ Check
+                            </button>
+                            <button onclick="undoSpelling()"
+                                style="width:80px;padding:10px 0;background:#f0f0f0;border:none;border-radius:10px;
+                                       font-size:0.9rem;font-weight:700;color:#888;cursor:pointer;">
+                                ↩ Undo
+                            </button>
+                            <button onclick="skipSpellingCard()"
+                                style="width:80px;padding:10px 0;background:#eee;border:none;border-radius:10px;
+                                       font-size:0.9rem;font-weight:700;color:#555;cursor:pointer;">
+                                ➡ Skip
+                            </button>
+                        </div>
+
                     </div>
-                </div>
-            `;
+                </div>`;
+
+            // Populate initial slot values
+            renderSpellingGameState();
+        }
+
+        function spellingSnapshot() {
+            return {
+                scrambledLetters: [...spellingGameState.scrambledLetters],
+                answerSlots: [...spellingGameState.answerSlots]
+            };
         }
 
         function selectLetter(letterIndex) {
-            // Find first empty slot (skip SPACE placeholders)
-            const firstEmptySlot = spellingGameState.answerSlots.findIndex(slot => slot === null);
-
-            if (firstEmptySlot === -1) return; // All slots filled
-
-            // Move letter to first empty slot
             const letter = spellingGameState.scrambledLetters[letterIndex];
+            if (letter === null) return;
+            const firstEmptySlot = spellingGameState.answerSlots.findIndex(slot => slot === null);
+            if (firstEmptySlot === -1) return;
+            spellingGameState.moveHistory.push(spellingSnapshot());
             spellingGameState.answerSlots[firstEmptySlot] = letter;
             spellingGameState.scrambledLetters[letterIndex] = null;
-
-            // Re-render
             renderSpellingGameState();
         }
 
         function selectAnswerSlot(slotIndex) {
-            // Skip if it's a space placeholder
             if (spellingGameState.answerSlots[slotIndex] === 'SPACE') return;
+            if (spellingGameState.answerSlots[slotIndex] === null) return;
+            const letter = spellingGameState.answerSlots[slotIndex];
+            // Find first null slot in scrambled array
+            let emptyIndex = spellingGameState.scrambledLetters.findIndex(l => l === null);
+            if (emptyIndex === -1) {
+                // All slots full — push to end (shouldn't happen but be safe)
+                spellingGameState.scrambledLetters.push(letter);
+                emptyIndex = spellingGameState.scrambledLetters.length - 1;
+            }
+            spellingGameState.moveHistory.push(spellingSnapshot());
+            spellingGameState.scrambledLetters[emptyIndex] = letter;
+            spellingGameState.answerSlots[slotIndex] = null;
+            renderSpellingGameState();
+        }
 
-            // Return letter to scrambled row
-            if (spellingGameState.answerSlots[slotIndex] !== null) {
-                const letter = spellingGameState.answerSlots[slotIndex];
+        function undoSpelling() {
+            if (spellingGameState.moveHistory.length === 0) return;
+            const prev = spellingGameState.moveHistory.pop();
+            spellingGameState.scrambledLetters = prev.scrambledLetters;
+            spellingGameState.answerSlots = prev.answerSlots;
+            renderSpellingGameState();
+        }
 
-                // Find empty spot in scrambled letters or original position
-                const emptyIndex = spellingGameState.scrambledLetters.findIndex(l => l === null);
-                if (emptyIndex !== -1) {
-                    spellingGameState.scrambledLetters[emptyIndex] = letter;
+        // ---- Mouse Drag & Drop ----
+        let _spellDragSource = null;
+
+        function spellingDragStart(e, index, type) {
+            _spellDragSource = { type, index };
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', index);
+        }
+
+        function spellingDragDrop(e, destSlotIdx) {
+            e.preventDefault();
+            if (!_spellDragSource) return;
+            const { type, index } = _spellDragSource;
+            _spellDragSource = null;
+
+            if (type === 'tile') {
+                const letter = spellingGameState.scrambledLetters[index];
+                if (letter === null) return;
+                spellingGameState.moveHistory.push(spellingSnapshot());
+                const existing = spellingGameState.answerSlots[destSlotIdx];
+                if (existing && existing !== 'SPACE') {
+                    // Swap existing back to tile row
+                    const emptyIdx = spellingGameState.scrambledLetters.findIndex(l => l === null);
+                    if (emptyIdx !== -1) spellingGameState.scrambledLetters[emptyIdx] = existing;
                 }
+                spellingGameState.answerSlots[destSlotIdx] = letter;
+                spellingGameState.scrambledLetters[index] = null;
+            } else if (type === 'slot') {
+                const fromLetter = spellingGameState.answerSlots[index];
+                if (!fromLetter || fromLetter === 'SPACE') return;
+                spellingGameState.moveHistory.push(spellingSnapshot());
+                const toExisting = spellingGameState.answerSlots[destSlotIdx];
+                spellingGameState.answerSlots[destSlotIdx] = fromLetter;
+                spellingGameState.answerSlots[index] = (toExisting && toExisting !== 'SPACE') ? toExisting : null;
+            }
+            renderSpellingGameState();
+        }
 
-                spellingGameState.answerSlots[slotIndex] = null;
+        function spellingDragDropToTile(e) {
+            e.preventDefault();
+            if (!_spellDragSource) return;
+            const { type, index } = _spellDragSource;
+            _spellDragSource = null;
+            if (type === 'slot') selectAnswerSlot(index);
+        }
 
-                // Re-render
+        // ---- Touch drag ----
+        let _spellTouch = null;
+        const SPELL_DRAG_THRESHOLD = 8; // px movement before considered a drag
+
+        function spellingTouchStart(e, index, type) {
+            if (type === 'tile' && spellingGameState.scrambledLetters[index] === null) return;
+            if (type === 'slot' && (spellingGameState.answerSlots[index] === null || spellingGameState.answerSlots[index] === 'SPACE')) return;
+            const t = e.touches[0];
+            const el = e.currentTarget;
+            const rect = el.getBoundingClientRect();
+            const letter = type === 'tile'
+                ? spellingGameState.scrambledLetters[index]
+                : spellingGameState.answerSlots[index];
+            if (!letter || letter === 'SPACE') return;
+
+            const ghostSize = Math.max(44, Math.min(rect.width, rect.height));
+            const ghost = document.createElement('div');
+            ghost.textContent = letter;
+            ghost.style.cssText = `position:fixed;z-index:99999;pointer-events:none;
+                width:${ghostSize}px;height:${ghostSize}px;
+                background:white;border-radius:8px;border:2.5px solid #35654D;
+                display:flex;align-items:center;justify-content:center;
+                font-size:1.4rem;font-weight:700;
+                color:#35654D;box-shadow:0 6px 20px rgba(0,0,0,0.35);
+                opacity:0;transition:opacity 0.1s;
+                top:${t.clientY - ghostSize/2}px;left:${t.clientX - ghostSize/2}px;`;
+            document.body.appendChild(ghost);
+
+            _spellTouch = {
+                type, index, ghost, letter,
+                startX: t.clientX, startY: t.clientY,
+                offX: ghostSize / 2, offY: ghostSize / 2,
+                isDragging: false
+            };
+        }
+
+        function spellingTouchMove(e) {
+            if (!_spellTouch) return;
+            const t = e.touches[0];
+            const dx = Math.abs(t.clientX - _spellTouch.startX);
+            const dy = Math.abs(t.clientY - _spellTouch.startY);
+
+            if (!_spellTouch.isDragging && (dx > SPELL_DRAG_THRESHOLD || dy > SPELL_DRAG_THRESHOLD)) {
+                _spellTouch.isDragging = true;
+                _spellTouch.ghost.style.opacity = '0.92';
+                e.preventDefault();
+            }
+            if (_spellTouch.isDragging) {
+                e.preventDefault();
+                _spellTouch.ghost.style.left = (t.clientX - _spellTouch.offX) + 'px';
+                _spellTouch.ghost.style.top  = (t.clientY - _spellTouch.offY) + 'px';
+
+                // Highlight the slot under finger
+                document.querySelectorAll('.answer-slot').forEach(s => s.style.background = '');
+                const midEl = document.elementFromPoint(t.clientX, t.clientY);
+                const slotEl = midEl && midEl.closest('.answer-slot');
+                if (slotEl) slotEl.style.background = '#e8f5e9';
+            }
+        }
+
+        function spellingTouchEnd(e) {
+            if (!_spellTouch) return;
+            const t = e.changedTouches[0];
+            const { type, index, ghost, isDragging } = _spellTouch;
+            _spellTouch = null;
+
+            // Clear slot highlights
+            document.querySelectorAll('.answer-slot').forEach(s => s.style.background = '');
+            ghost.style.display = 'none';
+            const dropTarget = document.elementFromPoint(t.clientX, t.clientY);
+            ghost.remove();
+
+            if (!isDragging) {
+                // Pure tap — use click handlers
+                if (type === 'tile') selectLetter(index);
+                else if (type === 'slot') selectAnswerSlot(index);
+                return;
+            }
+
+            // Dragged — find what's under finger
+            if (!dropTarget) return;
+            const slotEl = dropTarget.closest('.answer-slot');
+            const inLetterRow = dropTarget.closest('#letterRow');
+
+            if (type === 'tile' && slotEl) {
+                const destIdx = parseInt(slotEl.dataset.index);
+                if (spellingGameState.answerSlots[destIdx] === 'SPACE') return;
+                spellingGameState.moveHistory.push(spellingSnapshot());
+                const existing = spellingGameState.answerSlots[destIdx];
+                if (existing && existing !== 'SPACE') {
+                    const emptyIdx = spellingGameState.scrambledLetters.findIndex(l => l === null);
+                    if (emptyIdx !== -1) spellingGameState.scrambledLetters[emptyIdx] = existing;
+                }
+                spellingGameState.answerSlots[destIdx] = spellingGameState.scrambledLetters[index];
+                spellingGameState.scrambledLetters[index] = null;
                 renderSpellingGameState();
+            } else if (type === 'tile' && !slotEl) {
+                // Dropped outside slots — snap to first empty slot
+                selectLetter(index);
+            } else if (type === 'slot' && (inLetterRow || !slotEl)) {
+                // Dragged slot letter back to tile row or anywhere not a slot
+                selectAnswerSlot(index);
+            } else if (type === 'slot' && slotEl) {
+                // Slot to slot
+                const destIdx = parseInt(slotEl.dataset.index);
+                if (destIdx === index) return;
+                spellingDragDrop({ preventDefault: () => {} }, destIdx);
+                _spellDragSource = { type, index };
+                spellingDragDrop({ preventDefault: () => {} }, destIdx);
             }
         }
 
         function renderSpellingGameState() {
-            // Update answer slots using their data-index attribute
             const answerSlots = document.querySelectorAll('.answer-slot');
             answerSlots.forEach((slot) => {
                 const index = parseInt(slot.getAttribute('data-index'));
                 const value = spellingGameState.answerSlots[index];
-                slot.innerHTML = (value === 'SPACE' || value === null) ? '' : value;
+                slot.textContent = (value === 'SPACE' || value === null) ? '' : value;
             });
 
-            // Update letter tiles
             const letterTiles = document.querySelectorAll('.letter-tile');
             letterTiles.forEach((tile, index) => {
                 if (spellingGameState.scrambledLetters[index] === null) {
                     tile.style.visibility = 'hidden';
                 } else {
                     tile.style.visibility = 'visible';
-                    tile.innerHTML = spellingGameState.scrambledLetters[index];
+                    tile.textContent = spellingGameState.scrambledLetters[index];
                 }
             });
+        }
+
+        function peekSpelling(show) {
+            const answerSlots = document.querySelectorAll('.answer-slot');
+            if (show) {
+                // Show the correct word in the slots temporarily
+                const word = spellingGameState.correctWord;
+                const chars = word.split('');
+                let charIdx = 0;
+                answerSlots.forEach(slot => {
+                    const idx = parseInt(slot.getAttribute('data-index'));
+                    const slotVal = spellingGameState.answerSlots[idx];
+                    if (slotVal === 'SPACE') { slot.textContent = ''; return; }
+                    slot.textContent = chars[charIdx] || '';
+                    slot.style.color = '#35654D';
+                    slot.style.opacity = '0.6';
+                    charIdx++;
+                });
+            } else {
+                // Restore actual state
+                answerSlots.forEach(slot => {
+                    const idx = parseInt(slot.getAttribute('data-index'));
+                    const value = spellingGameState.answerSlots[idx];
+                    slot.textContent = (value === 'SPACE' || value === null) ? '' : value;
+                    slot.style.color = '#1a1a1a';
+                    slot.style.opacity = '1';
+                });
+            }
         }
 
         function checkSpelling() {
@@ -7837,22 +8144,26 @@
 
             if (answer === correct) {
                 playSound('correctSound');
-                showToast('✅ Correct!', 1500);
-
-                setTimeout(() => {
-                    spellingGameState.currentCardIndex++;
-                    renderSpellingGame();
-                }, 1500);
+                spellingGameState.currentCardIndex++;
+                setTimeout(() => renderSpellingGame(), 400);
             } else {
                 playSound('errorSound');
-                showToast('❌ Try again!', 1500);
 
-                // Shake animation
-                const content = document.getElementById('spellingGameContent');
-                content.style.animation = 'shake 0.5s';
-                setTimeout(() => {
-                    content.style.animation = '';
-                }, 500);
+                // Turn Check button red with ✕ Wrong
+                const checkBtn = document.querySelector('[onclick="checkSpelling()"]');
+                if (checkBtn) {
+                    checkBtn.textContent = '✕ Wrong';
+                    checkBtn.style.background = '#e53935';
+                    checkBtn.style.color = 'white';
+                    setTimeout(() => {
+                        checkBtn.textContent = '✓ Check';
+                        checkBtn.style.background = '#35654D';
+                        checkBtn.style.color = 'white';
+                    }, 1000);
+                }
+
+                const contentEl = document.getElementById('spellingGameContent');
+                if (contentEl) { contentEl.style.animation = 'shake 0.5s'; setTimeout(() => { contentEl.style.animation = ''; }, 500); }
             }
         }
 
@@ -8543,8 +8854,10 @@
             const btn = document.getElementById('hideUIBtn');
             if (btn) {
                 btn.innerHTML = isHidden
-                    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show Buttons`
+                    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a4a32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show Buttons`
                     : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Hide Buttons`;
+                btn.style.background = isHidden ? '#f0f9f4' : 'white';
+                btn.style.color = isHidden ? '#35654D' : '#333';
             }
             const menu = document.getElementById('settingsMenu');
             if (menu) menu.style.display = 'none';
@@ -8644,6 +8957,8 @@
             cards = [];
             currentIndex = 0;
             isFlipped = false;
+            loadedUnitIds.clear();
+            currentLoadedUnitId = null;
 
             // Clear the image hash cache to prevent false duplicate warnings
             imageHashCache.clear();
