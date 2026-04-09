@@ -2623,6 +2623,10 @@
         .msp-unit-row.msp-dragging { opacity:0.35; }
         .msp-drag-handle { color:#ccc;cursor:grab;padding:0 4px;flex-shrink:0;display:flex;align-items:center; }
         .msp-drag-handle:active { cursor:grabbing; }
+        .msp-insert-above { box-shadow:0 -3px 0 0 #35654D; position:relative; }
+        .msp-insert-below { box-shadow:0 3px 0 0 #35654D; position:relative; }
+        .msp-insert-above::before { content:''; position:absolute; left:8px; top:-5px; width:8px; height:8px; border-radius:50%; background:#35654D; z-index:10; }
+        .msp-insert-below::after  { content:''; position:absolute; left:8px; bottom:-5px; width:8px; height:8px; border-radius:50%; background:#35654D; z-index:10; }
         </style>
         <div style="display:flex;align-items:center;justify-content:space-between;
                     padding:10px 16px;flex-shrink:0;">
@@ -6646,7 +6650,7 @@
                       '<button class="msp-btn" title="Reload" onclick="mspAction(' + unit.id + ',\'load\')">' + svgLoad + '</button>'
                     : (hasCards ? '<button class="msp-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>' : '') +
                       '<button class="msp-btn" title="Load" onclick="mspAction(' + unit.id + ',\'load\')">' + svgLoad + '</button>';
-                return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '" ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)">' +
+                return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '" ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)" ondragover="mspRowDragOver(event,this)" ondragleave="mspRowDragLeave(this)" ondrop="mspRowDrop(event,this,' + unit.id + ')">' +
                     '<span class="msp-drag-handle" title="Drag to group">' + svgHandle + '</span>' +
                     '<div class="msp-unit-info"><div class="msp-unit-name">' + unit.name + '</div>' +
                     '<div class="msp-unit-count">' + cardCount + ' card' + (cardCount !== 1 ? 's' : '') + '</div></div>' +
@@ -6690,8 +6694,49 @@
         }
         function mspDragEnd(event) {
             document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            document.querySelectorAll('.msp-insert-above,.msp-insert-below').forEach(function(el){ el.classList.remove('msp-insert-above'); el.classList.remove('msp-insert-below'); });
             if (_mspDragId !== null) { var r = document.getElementById('msp-row-' + _mspDragId); if(r) r.classList.remove('msp-dragging'); }
             _mspDragId = null;
+        }
+        function mspRowDragOver(event, rowEl) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            document.querySelectorAll('.msp-insert-above,.msp-insert-below').forEach(function(el){ el.classList.remove('msp-insert-above'); el.classList.remove('msp-insert-below'); });
+            var rect = rowEl.getBoundingClientRect();
+            rowEl.classList.add(event.clientY < (rect.top + rect.height / 2) ? 'msp-insert-above' : 'msp-insert-below');
+        }
+        function mspRowDragLeave(rowEl) {
+            rowEl.classList.remove('msp-insert-above'); rowEl.classList.remove('msp-insert-below');
+        }
+        function mspRowDrop(event, rowEl, targetUnitId) {
+            event.preventDefault(); event.stopPropagation();
+            rowEl.classList.remove('msp-insert-above'); rowEl.classList.remove('msp-insert-below');
+            document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            var draggedId = Number(event.dataTransfer.getData('text/plain') || _mspDragId);
+            if (!draggedId || draggedId === targetUnitId) return;
+            var rect = rowEl.getBoundingClientRect();
+            var insertBefore = event.clientY < (rect.top + rect.height / 2);
+            var groups = loadGroups();
+            var targetGroup = null;
+            groups.forEach(function(g){ if (g.unitIds.map(Number).indexOf(targetUnitId) !== -1) targetGroup = g; });
+            if (!targetGroup) return;
+            // Work on a clean numeric copy BEFORE any removal
+            var ids = targetGroup.unitIds.map(Number);
+            var fromIdx = ids.indexOf(draggedId);
+            var toIdx   = ids.indexOf(targetUnitId);
+            if (toIdx === -1) return;
+            // Remove dragged item
+            ids.splice(fromIdx, 1);
+            // Recalculate target index after removal
+            var newToIdx = ids.indexOf(targetUnitId);
+            ids.splice(insertBefore ? newToIdx : newToIdx + 1, 0, draggedId);
+            targetGroup.unitIds = ids;
+            // If dragged came from a different group, remove it there too
+            groups.forEach(function(g){
+                if (g !== targetGroup) g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== draggedId; });
+            });
+            saveGroups(groups);
+            loadUnitsFromDB().then(function(units){ renderMspList(units); });
         }
         function mspDropOnGroup(event, groupId, el) {
             event.preventDefault();
@@ -6699,12 +6744,15 @@
             var unitId = Number(event.dataTransfer.getData('text/plain') || _mspDragId);
             if (!unitId) return;
             var groups = loadGroups();
-            groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
             var tgt = groups.find(function(g){ return g.id === groupId; });
-            if (tgt && tgt.unitIds.indexOf(unitId) === -1) tgt.unitIds.push(unitId);
+            if (tgt && tgt.unitIds.map(Number).indexOf(unitId) !== -1) return;
+            groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
+            tgt = groups.find(function(g){ return g.id === groupId; });
+            if (tgt) tgt.unitIds.push(unitId);
             saveGroups(groups);
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
         }
+
         function mspToggleGroup(groupId, headerEl) {
             var groups = loadGroups();
             var g = groups.find(function(x){ return x.id === groupId; });
@@ -6771,32 +6819,69 @@
             var t = e.touches[0];
             _mspTouch.ghost.style.left = (t.clientX - _mspTouch.ghost.offsetWidth / 2) + 'px';
             _mspTouch.ghost.style.top  = (t.clientY - 28) + 'px';
-            // Highlight drop targets
+            // Clear all indicators
             document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            document.querySelectorAll('.msp-insert-above,.msp-insert-below').forEach(function(el){ el.classList.remove('msp-insert-above'); el.classList.remove('msp-insert-below'); });
             _mspTouch.ghost.style.display = 'none';
             var under = document.elementFromPoint(t.clientX, t.clientY);
             _mspTouch.ghost.style.display = '';
-            var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
-            if (hit) hit.classList.add('msp-drop-active');
+            if (!under) return;
+            var row = under.closest('.msp-unit-row');
+            if (row && Number(row.dataset.unitId) !== _mspTouch.id) {
+                var rect = row.getBoundingClientRect();
+                row.classList.add(t.clientY < (rect.top + rect.height / 2) ? 'msp-insert-above' : 'msp-insert-below');
+            } else {
+                var hit = under.closest('.msp-group-header') || under.closest('.msp-group-body');
+                if (hit) hit.classList.add('msp-drop-active');
+            }
         }
 
         function _mspTouchEnd(e) {
             document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            document.querySelectorAll('.msp-insert-above,.msp-insert-below').forEach(function(el){ el.classList.remove('msp-insert-above'); el.classList.remove('msp-insert-below'); });
             document.querySelectorAll('.msp-unit-row.msp-dragging').forEach(function(el){ el.classList.remove('msp-dragging'); });
 
             var droppedId = _mspTouch.id;
             _mspCleanGhost();
-
             if (!droppedId || !e.changedTouches) return;
+
             var t = e.changedTouches[0];
             var under = document.elementFromPoint(t.clientX, t.clientY);
-            var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
-            if (!hit) return;
+            if (!under) return;
 
+            // Check if dropped on a unit row (positional reorder)
+            var row = under.closest('.msp-unit-row');
+            if (row) {
+                var targetId = Number(row.dataset.unitId);
+                if (targetId && targetId !== droppedId) {
+                    var rect = row.getBoundingClientRect();
+                    var insertBefore = t.clientY < (rect.top + rect.height / 2);
+                    var groups = loadGroups();
+                    var targetGroup = null;
+                    groups.forEach(function(g){ if (g.unitIds.map(Number).indexOf(targetId) !== -1) targetGroup = g; });
+                    if (targetGroup) {
+                        var ids = targetGroup.unitIds.map(Number);
+                        var fromIdx = ids.indexOf(droppedId);
+                        var toIdx   = ids.indexOf(targetId);
+                        if (fromIdx !== -1) ids.splice(fromIdx, 1);
+                        var newToIdx = ids.indexOf(targetId);
+                        if (newToIdx === -1) newToIdx = ids.length;
+                        ids.splice(insertBefore ? newToIdx : newToIdx + 1, 0, droppedId);
+                        targetGroup.unitIds = ids;
+                        groups.forEach(function(g){ if (g !== targetGroup) g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== droppedId; }); });
+                        saveGroups(groups);
+                        loadUnitsFromDB().then(function(units){ renderMspList(units); });
+                    }
+                }
+                return;
+            }
+
+            // Dropped on group header/body
+            var hit = under.closest('.msp-group-header') || under.closest('.msp-group-body');
+            if (!hit) return;
             var gid = (hit.id || '').replace('msp-gbody-', '');
             if (!gid) { var m = (hit.getAttribute('onclick') || '').match(/'([^']+)'/); if (m) gid = m[1]; }
             if (!gid) return;
-
             var groups = loadGroups();
             groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== droppedId; }); });
             var tgt = groups.find(function(g){ return g.id === gid; });
