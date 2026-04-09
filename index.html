@@ -3418,7 +3418,8 @@
         }
 
         // Audio management system — uses Web Audio API for reliable, low-latency playback.
-        // Buffers are decoded once on first user interaction and replayed instantly thereafter.
+        // AudioContext + buffer decoding starts at page load (works while context is suspended).
+        // Only ctx.resume() requires a user gesture, so buffers are always ready by first tap.
         const audioManager = {
             ctx: null,
             buffers: {},
@@ -3433,55 +3434,68 @@
                 winningSound:   'Winning_Guess_the_word.wav'
             },
 
-            // Volume per sound (mobile uses lower values to avoid interrupting system audio)
             volume: function(soundId) {
                 if (soundId === 'winningSound') return 0.8;
                 return this.isMobile ? 0.25 : 1.0;
             },
 
             init: function() {
-                // Decode all buffers on the very first user gesture so the AudioContext
-                // is created inside a user-interaction handler (required by iOS/Android).
-                const setup = async () => {
-                    if (this.ctx) return;
-                    try {
-                        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                        if (this.ctx.state === 'suspended') await this.ctx.resume();
+                // Create AudioContext immediately — it starts suspended but can decode buffers
+                // straight away. This means all audio data is ready before the first tap.
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this._decodeAll();
+                } catch (e) {}
 
-                        await Promise.all(Object.entries(this.soundFiles).map(async ([id, file]) => {
-                            try {
-                                const res = await fetch(file);
-                                const raw = await res.arrayBuffer();
-                                this.buffers[id] = await this.ctx.decodeAudioData(raw);
-                            } catch (e) {}
-                        }));
-                    } catch (e) { this.ctx = null; }
+                // resume() must be called inside a user gesture handler (browser policy).
+                // We do it synchronously on first touch/click so ctx is running by the time
+                // play() is called from the same gesture.
+                const resume = () => {
+                    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
                 };
+                document.addEventListener('touchstart', resume, { once: true, passive: true });
+                document.addEventListener('mousedown',  resume, { once: true });
+            },
 
-                document.addEventListener('touchstart', setup, { once: true, passive: true });
-                document.addEventListener('mousedown',  setup, { once: true });
+            _decodeAll: async function() {
+                if (!this.ctx) return;
+                await Promise.all(Object.entries(this.soundFiles).map(async ([id, file]) => {
+                    try {
+                        const res = await fetch(file);
+                        const raw = await res.arrayBuffer();
+                        this.buffers[id] = await this.ctx.decodeAudioData(raw);
+                    } catch (e) {}
+                }));
             },
 
             play: function(soundId) {
-                // Primary path: AudioContext BufferSource — instantaneous, no re-fetch needed
                 if (this.ctx && this.buffers[soundId]) {
-                    if (this.ctx.state === 'suspended') this.ctx.resume();
-                    const source = this.ctx.createBufferSource();
-                    source.buffer = this.buffers[soundId];
-                    const gain = this.ctx.createGain();
-                    gain.gain.value = this.volume(soundId);
-                    source.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    source.start(0);
+                    // If still suspended (edge case: play called before first gesture),
+                    // resume then schedule the sound to fire as soon as context is running.
+                    if (this.ctx.state === 'suspended') {
+                        this.ctx.resume().then(() => this._fireBuffer(soundId)).catch(() => {});
+                        return;
+                    }
+                    this._fireBuffer(soundId);
                     return;
                 }
 
-                // Fallback: HTML Audio element (used before first user interaction)
+                // Fallback: HTML Audio (buffers not ready yet — should only hit on very first tap)
                 const audio = document.getElementById(soundId);
                 if (!audio) return;
                 audio.volume = this.volume(soundId);
                 audio.currentTime = 0;
                 audio.play().catch(() => {});
+            },
+
+            _fireBuffer: function(soundId) {
+                const source = this.ctx.createBufferSource();
+                source.buffer = this.buffers[soundId];
+                const gain = this.ctx.createGain();
+                gain.gain.value = this.volume(soundId);
+                source.connect(gain);
+                gain.connect(this.ctx.destination);
+                source.start(0);
             }
         };
 
