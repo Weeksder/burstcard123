@@ -2062,18 +2062,18 @@
 
             <!-- Quick Load Dropdown -->
             <div class="dropdown" id="quickLoadDropdown" style="position: relative; display: inline-block; z-index: 10001;">
-                <button class="btn btn-primary" onclick="toggleQuickLoadDropdown()" style="position: relative; z-index: 101;">
+                <button class="btn btn-primary" onclick="openManageSidePanel()" style="position: relative; z-index: 101;">
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                     </svg>
                 </button>
-                <div class="dropdown-content" id="quickLoadDropdownContent">
+                <div class="dropdown-content" id="quickLoadDropdownContent" style="display:none;">
                     <div id="quickLoadList" style="max-height: 300px; overflow-y: auto; border-radius: 8px 8px 0 0;">
                         <!-- Quick load items will be populated here -->
                     </div>
                     <div style="border-top: 1px solid #ddd; padding: 8px;">
-                        <button onclick="event.stopPropagation(); openUnitConfigModal(); closeQuickLoadDropdown();" class="btn btn-success" style="width: 100%; padding: 10px; font-size: 14px; cursor: pointer; pointer-events: auto;">
+                        <button onclick="event.stopPropagation(); closeQuickLoadDropdown(); openManageSidePanel();" class="btn btn-success" style="width: 100%; padding: 10px; font-size: 14px; cursor: pointer; pointer-events: auto;">
                             ⚙️ Manage Units
                         </button>
                     </div>
@@ -2184,6 +2184,26 @@
         <div id="cardOverlayNav" style="display:none;"></div>
     </div>
 
+    <!-- Manage Side Panel overlay -->
+    <div id="manageSidePanelOverlay" onclick="closeManageSidePanel()"></div>
+
+    <!-- Manage Side Panel -->
+    <div id="manageSidePanel">
+        <div class="msp-header">
+            <span class="msp-title">📚 Quick Load Units</span>
+            <button class="msp-close" onclick="closeManageSidePanel()">×</button>
+        </div>
+        <div style="padding:10px 12px;border-bottom:1px solid #eee;flex-shrink:0;">
+            <button class="btn btn-success" style="width:100%;padding:10px;font-size:0.9rem;"
+                onclick="closeManageSidePanel(); openUnitConfigModal();">
+                ⚙️ Quick Load Units
+            </button>
+        </div>
+        <div class="msp-list" id="mspList">
+            <!-- populated by openManageSidePanel() -->
+        </div>
+    </div>
+
     <div class="modal" id="createModal">
         <div class="modal-content" id="createModalContent" style="position:relative;">
             <button onclick="closeCreateModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
@@ -2251,11 +2271,11 @@
                 </button>
 
                 <button class="btn btn-success" onclick="startGame('bomb')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
-                    💣 Bomb Game
+                    💣 Bomb
                 </button>
 
                 <button class="btn btn-success" onclick="startGame('spelling')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
-                    🔤 Spelling Game
+                    🔤 Spell the Word
                 </button>
 
                 <button class="btn btn-success" onclick="startGame('match')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
@@ -2463,6 +2483,121 @@
                 100% { transform: rotate(-8deg); }
             }
             .stw-wobble { animation: stwWobble 0.5s ease-in-out infinite; display:inline-block; }
+        </style>
+
+        <style>
+        /* ── Manage Side Panel ── */
+        #manageSidePanel {
+            position: fixed;
+            top: 0; left: -320px;
+            width: 300px; max-width: 82vw;
+            height: 100%;
+            background: white;
+            z-index: 30000;
+            transition: left 0.3s ease-out;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #manageSidePanel.open { left: 0; }
+        #manageSidePanelOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 29999;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+        #manageSidePanelOverlay.open { display: block; opacity: 1; }
+        .msp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 2px solid #e8f5e9;
+            flex-shrink: 0;
+            background: #35654D;
+            color: white;
+        }
+        .msp-title {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .msp-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: rgba(255,255,255,0.85);
+            cursor: pointer;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            line-height: 1;
+        }
+        .msp-close:hover { background: rgba(255,255,255,0.15); }
+        .msp-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .msp-unit-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .msp-unit-row.loaded { background: #f0f9f4; border-left: 4px solid #35654D; }
+        .msp-unit-info { flex: 1; min-width: 0; }
+        .msp-unit-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #222;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .msp-unit-row.loaded .msp-unit-name { color: #35654D; }
+        .msp-unit-count {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 2px;
+        }
+        .msp-unit-row.loaded .msp-unit-count { color: #35654D; opacity: 0.7; }
+        .msp-btn {
+            width: 36px; height: 36px;
+            border: none; border-radius: 7px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .msp-del-btn {
+            width: 36px; height: 36px;
+            border: none; border-radius: 7px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            background: #f44336;
+            color: white;
+            transition: background 0.15s;
+        }
+        .msp-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: #aaa;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .msp-footer {
+            padding: 12px;
+            border-top: 1px solid #eee;
+            flex-shrink: 0;
+        }
         </style>
         <div style="display:flex;align-items:center;justify-content:space-between;
                     padding:10px 16px;flex-shrink:0;">
@@ -6382,6 +6517,108 @@
             }
         }
 
+        // ── Manage Side Panel ──
+        async function openManageSidePanel() {
+            const panel = document.getElementById('manageSidePanel');
+            const overlay = document.getElementById('manageSidePanelOverlay');
+            const list = document.getElementById('mspList');
+
+            panel.classList.add('open');
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            list.innerHTML = '<div class="msp-empty">Loading…</div>';
+
+            try {
+                const units = await loadUnitsFromDB();
+                if (!units || units.length === 0) {
+                    list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>⚙️ Quick Load Units</strong> above to add your first JSON file.</div>';
+                    return;
+                }
+                renderMspList(units);
+            } catch(e) {
+                list.innerHTML = '<div class="msp-empty">Error loading units.</div>';
+                console.error('openManageSidePanel error:', e);
+            }
+        }
+
+        function renderMspList(units) {
+            const list = document.getElementById('mspList');
+            if (!list) return;
+            list.innerHTML = units.map(unit => {
+                const isLoaded = loadedUnitIds.has(unit.id);
+                let cardCount = 0;
+                try { const fd = JSON.parse(unit.fileData); cardCount = fd.cards ? fd.cards.length : 0; } catch(e) {}
+                const loadedClass = isLoaded ? ' loaded' : '';
+                const hasCards = cards.length > 0;
+                const actionBtns = isLoaded
+                    ? `<button class="msp-btn" title="Remove from deck"
+                            style="background:#FF9800;color:white;"
+                            onclick="mspAction(${unit.id},'remove-added')">➖</button>
+                       <button class="msp-btn" title="Reload"
+                            style="background:#35654D;color:white;"
+                            onclick="mspAction(${unit.id},'load')">📂</button>`
+                    : `${hasCards ? `<button class="msp-btn" title="Add to deck"
+                            style="background:#2196F3;color:white;"
+                            onclick="mspAction(${unit.id},'add')">➕</button>` : ''}
+                       <button class="msp-btn" title="Load"
+                            style="background:#4CAF50;color:white;"
+                            onclick="mspAction(${unit.id},'load')">📂</button>`;
+                return `
+                    <div class="msp-unit-row${loadedClass}" id="msp-row-${unit.id}">
+                        <div class="msp-unit-info">
+                            <div class="msp-unit-name">${unit.name}</div>
+                            <div class="msp-unit-count">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
+                        </div>
+                        ${actionBtns}
+                        <button class="msp-del-btn" id="msp-del-${unit.id}"
+                            onclick="mspDelete(${unit.id}, this)"
+                            ontouchend="event.stopPropagation(); event.preventDefault(); mspDelete(${unit.id}, this)"
+                            title="Delete unit">🗑️</button>
+                    </div>`;
+            }).join('');
+        }
+
+        function mspDelete(unitId, btn) {
+            if (btn.dataset.confirming === 'true') {
+                btn.dataset.confirming = 'false';
+                deleteUnitFromDB(unitId).then(() => {
+                    showToast('✅ Unit deleted', 2000);
+                    // Remove row from panel without closing it
+                    const row = document.getElementById('msp-row-' + unitId);
+                    if (row) row.remove();
+                    // Show empty message if no rows left
+                    const list = document.getElementById('mspList');
+                    if (list && list.querySelectorAll('.msp-unit-row').length === 0) {
+                        list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>⚙️ Quick Load Units</strong> above to add your first JSON file.</div>';
+                    }
+                    syncUnitsEverywhere();
+                }).catch(() => showToast('⚠️ Error deleting unit', 2000));
+            } else {
+                btn.dataset.confirming = 'true';
+                btn.innerHTML = '<span style="font-size:10px;font-weight:700;line-height:1.2;text-align:center;pointer-events:none;">Sure?</span>';
+                btn.style.background = '#c62828';
+                setTimeout(() => {
+                    if (btn.dataset.confirming === 'true') {
+                        btn.dataset.confirming = 'false';
+                        btn.innerHTML = '🗑️';
+                        btn.style.background = '#f44336';
+                    }
+                }, 3000);
+            }
+        }
+
+        function closeManageSidePanel() {
+            document.getElementById('manageSidePanel').classList.remove('open');
+            document.getElementById('manageSidePanelOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        async function mspAction(unitId, action) {
+            closeManageSidePanel();
+            const id = isNaN(unitId) ? unitId : Number(unitId);
+            await quickLoadUnit(id, action);
+        }
+
         // Open Unit Configuration Modal
         function openUnitConfigModal() {
             console.log('Opening Unit Config Modal');
@@ -7949,7 +8186,7 @@
                          height: 200px;
                          margin-left: -100px;
                          margin-top: -100px;
-                         z-index: 1000;
+                         z-index: 99999;
                          cursor: pointer;
                          pointer-events: none;
                          animation: expand-flip 0.8s ease-out forwards;">
@@ -8721,21 +8958,13 @@
                                     <span>Load</span>
                                 </button>
                                 <div style="position:relative; flex:1; max-width:100px; display:flex; flex-direction:column; align-items:center;">
-                                    <button class="empty-action-btn" id="emptyManageBtn" style="width:100%;" onclick="toggleEmptyManageDropdown(this)">
+                                    <button class="empty-action-btn" id="emptyManageBtn" style="width:100%;" onclick="openManageSidePanel()">
                                         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                                             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
                                         </svg>
                                         <span>Manage</span>
                                     </button>
-                                    <div id="emptyManagePanel" style="display:none; position:fixed; background:white; border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.2); min-width:240px; z-index:1200; overflow:hidden;">
-                                        <div id="emptyManageList" style="max-height:300px; overflow-y:auto; border-radius:8px 8px 0 0;"></div>
-                                        <div style="border-top:1px solid #ddd; padding:8px;">
-                                            <button onclick="openUnitConfigModal(); document.getElementById('emptyManagePanel').style.display='none';" class="btn btn-success" style="width:100%; padding:10px; font-size:14px; cursor:pointer; pointer-events:auto;">
-                                                ⚙️ Manage Units
-                                            </button>
-                                        </div>
-                                    </div>
                                 </div>
                                 <button class="empty-action-btn" onclick="openSampleDeck()">
                                     <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
