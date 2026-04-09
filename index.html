@@ -2263,7 +2263,6 @@
         <div class="modal-content" style="max-width: 340px; position:relative;">
             <button onclick="closeGameMenu()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
             <h2>🎮 Game Menu</h2>
-            <p style="margin-bottom: 20px; color: #666;">Play games with your cards</p>
 
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <button id="guessGameBtn" class="btn btn-success" onclick="startGame('guess')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
@@ -2569,23 +2568,32 @@
         .msp-unit-row.loaded .msp-unit-count { color: #35654D; opacity: 0.7; }
         .msp-btn {
             width: 36px; height: 36px;
-            border: none; border-radius: 7px;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .msp-del-btn {
-            width: 36px; height: 36px;
-            border: none; border-radius: 7px;
+            border: 2px solid #35654D;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
-            background: #f44336;
-            color: white;
-            transition: background 0.15s;
+            background: white;
+            color: #35654D;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            transition: all 0.2s;
         }
+        .msp-btn:active { transform: scale(0.93); }
+        .msp-del-btn {
+            width: 36px; height: 36px;
+            border: 2px solid #f44336;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            background: white;
+            color: #f44336;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            transition: all 0.2s;
+        }
+        .msp-del-btn:active { transform: scale(0.93); }
         .msp-empty {
             padding: 40px 20px;
             text-align: center;
@@ -2598,6 +2606,23 @@
             border-top: 1px solid #eee;
             flex-shrink: 0;
         }
+        .msp-group-header {
+            display:flex;align-items:center;gap:8px;
+            padding:10px 14px;background:#f0f4f0;
+            border-bottom:1px solid #e0e0e0;cursor:pointer;
+            user-select:none;-webkit-user-select:none;
+        }
+        .msp-group-header:hover { background:#e8f0e8; }
+        .msp-group-arrow { font-size:11px;color:#888;transition:transform 0.2s;flex-shrink:0; }
+        .msp-group-arrow.collapsed { transform:rotate(-90deg); }
+        .msp-group-name { font-size:0.88rem;font-weight:700;color:#35654D;flex:1; }
+        .msp-group-count { font-size:0.75rem;color:#aaa; }
+        .msp-group-body.collapsed { display:none; }
+        .msp-group-empty { padding:10px 20px 10px 36px;font-size:0.82rem;color:#bbb;font-style:italic; }
+        .msp-drop-active { background:#e8f5e9 !important;outline:2px dashed #35654D;outline-offset:-2px; }
+        .msp-unit-row.msp-dragging { opacity:0.35; }
+        .msp-drag-handle { color:#ccc;cursor:grab;padding:0 4px;flex-shrink:0;display:flex;align-items:center; }
+        .msp-drag-handle:active { cursor:grabbing; }
         </style>
         <div style="display:flex;align-items:center;justify-content:space-between;
                     padding:10px 16px;flex-shrink:0;">
@@ -2724,14 +2749,12 @@
     <div class="modal" id="unitConfigModal">
         <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto; position:relative;">
             <button onclick="closeUnitConfigModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
-            <h2>⚙️ Manage Quick Load Units <span style="font-size: 12px; color: #999; font-weight: normal;">(v2.0)</span></h2>
-            <p style="margin-bottom: 20px; color: #666;">Configure your units for quick access</p>
+            <h2>⚙️ Manage Quick Load Units</h2>
 
             <!-- Add New Unit Form -->
             <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="margin-top: 0;">Add New Unit</h3>
+                <h3 style="margin-top: 0;">Add New Unit (JSON File)</h3>
                 <div style="margin-bottom: 10px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">Select JSON File:</label>
                     <input type="file" id="newUnitFile" accept=".json" onchange="onUnitFileSelected()" style="width: 100%; padding: 10px; border: 2px solid #4CAF50; border-radius: 5px; background: white; cursor: pointer; font-size: 14px; display: block;">
                     <p style="font-size: 12px; color: #666; margin-top: 5px;">📁 File will be cached in your browser for quick access</p>
                 </div>
@@ -2760,6 +2783,19 @@
                 <div id="unitsList" style="margin-top: 10px;">
                     <!-- Units will be populated here -->
                 </div>
+            </div>
+
+            <!-- Groups Section -->
+            <div style="margin-top:24px;">
+                <h3>📁 Groups</h3>
+                <p style="font-size:13px;color:#666;margin:0 0 10px;">Create groups to organise units in the side panel. Then drag units into groups.</p>
+                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                    <input type="text" id="newGroupName" placeholder="e.g. Cambridge Phonics 1"
+                        style="flex:1;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;"
+                        onkeydown="if(event.key==='Enter')addGroup()">
+                    <button class="btn btn-success" onclick="addGroup()" style="padding:9px 16px;white-space:nowrap;">+ Add</button>
+                </div>
+                <div id="groupsList"></div>
             </div>
 
             <button class="btn btn-secondary" onclick="closeUnitConfigModal()" style="width: 100%; margin-top: 20px;">
@@ -6517,6 +6553,53 @@
             }
         }
 
+        // ── Groups (localStorage) ──
+        function loadGroups() {
+            try { return JSON.parse(localStorage.getItem('msp_groups') || '[]'); } catch(e) { return []; }
+        }
+        function saveGroups(groups) {
+            localStorage.setItem('msp_groups', JSON.stringify(groups));
+        }
+        function addGroup() {
+            const input = document.getElementById('newGroupName');
+            if (!input) return;
+            const name = input.value.trim();
+            if (!name) { input.focus(); return; }
+            const groups = loadGroups();
+            groups.push({ id: 'g_' + Date.now(), name: name, unitIds: [], collapsed: false });
+            saveGroups(groups);
+            input.value = '';
+            renderGroupsList();
+            if (document.getElementById('manageSidePanel').classList.contains('open')) {
+                loadUnitsFromDB().then(units => renderMspList(units));
+            }
+        }
+        function deleteGroup(groupId) {
+            const groups = loadGroups().filter(g => g.id !== groupId);
+            saveGroups(groups);
+            renderGroupsList();
+            if (document.getElementById('manageSidePanel').classList.contains('open')) {
+                loadUnitsFromDB().then(units => renderMspList(units));
+            }
+        }
+        function renderGroupsList() {
+            const container = document.getElementById('groupsList');
+            if (!container) return;
+            const groups = loadGroups();
+            if (groups.length === 0) {
+                container.innerHTML = '<div style="color:#aaa;font-size:13px;padding:8px 0;">No groups yet. Add one above.</div>';
+                return;
+            }
+            container.innerHTML = groups.map(g =>
+                '<div style="display:flex;align-items:center;gap:8px;background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:10px 12px;margin-bottom:6px;">' +
+                '<span style="font-size:1rem;">&#128193;</span>' +
+                '<span style="flex:1;font-size:14px;font-weight:600;color:#333;">' + g.name + '</span>' +
+                '<span style="font-size:12px;color:#aaa;">' + g.unitIds.length + ' unit' + (g.unitIds.length !== 1 ? 's' : '') + '</span>' +
+                '<button onclick="deleteGroup(\'' + g.id + '\')" style="background:none;border:none;color:#f44336;cursor:pointer;font-size:1.1rem;padding:2px 6px;" title="Delete group">&#x2715;</button>' +
+                '</div>'
+            ).join('');
+        }
+
         // ── Manage Side Panel ──
         async function openManageSidePanel() {
             const panel = document.getElementById('manageSidePanel');
@@ -6544,68 +6627,178 @@
         function renderMspList(units) {
             const list = document.getElementById('mspList');
             if (!list) return;
-            list.innerHTML = units.map(unit => {
+            const svgAdd    = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+            const svgLoad   = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
+            const svgTrash  = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+            const svgRemove = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+            const svgHandle = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>';
+            const hasCards = cards.length > 0;
+            const groups = loadGroups();
+            const assignedIds = new Set(groups.flatMap(function(g){ return g.unitIds.map(Number); }));
+
+            function makeUnitRow(unit) {
                 const isLoaded = loadedUnitIds.has(unit.id);
                 let cardCount = 0;
-                try { const fd = JSON.parse(unit.fileData); cardCount = fd.cards ? fd.cards.length : 0; } catch(e) {}
-                const loadedClass = isLoaded ? ' loaded' : '';
-                const hasCards = cards.length > 0;
-                const actionBtns = isLoaded
-                    ? `<button class="msp-btn" title="Remove from deck"
-                            style="background:#FF9800;color:white;"
-                            onclick="mspAction(${unit.id},'remove-added')">➖</button>
-                       <button class="msp-btn" title="Reload"
-                            style="background:#35654D;color:white;"
-                            onclick="mspAction(${unit.id},'load')">📂</button>`
-                    : `${hasCards ? `<button class="msp-btn" title="Add to deck"
-                            style="background:#2196F3;color:white;"
-                            onclick="mspAction(${unit.id},'add')">➕</button>` : ''}
-                       <button class="msp-btn" title="Load"
-                            style="background:#4CAF50;color:white;"
-                            onclick="mspAction(${unit.id},'load')">📂</button>`;
-                return `
-                    <div class="msp-unit-row${loadedClass}" id="msp-row-${unit.id}">
-                        <div class="msp-unit-info">
-                            <div class="msp-unit-name">${unit.name}</div>
-                            <div class="msp-unit-count">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
-                        </div>
-                        ${actionBtns}
-                        <button class="msp-del-btn" id="msp-del-${unit.id}"
-                            onclick="mspDelete(${unit.id}, this)"
-                            ontouchend="event.stopPropagation(); event.preventDefault(); mspDelete(${unit.id}, this)"
-                            title="Delete unit">🗑️</button>
-                    </div>`;
-            }).join('');
+                try { var fd = JSON.parse(unit.fileData); cardCount = fd.cards ? fd.cards.length : 0; } catch(e) {}
+                const lc = isLoaded ? ' loaded' : '';
+                const ab = isLoaded
+                    ? '<button class="msp-btn" title="Remove from deck" style="border-color:#FF9800;color:#FF9800;" onclick="mspAction(' + unit.id + ',\'remove-added\')">' + svgRemove + '</button>' +
+                      '<button class="msp-btn" title="Reload" onclick="mspAction(' + unit.id + ',\'load\')">' + svgLoad + '</button>'
+                    : (hasCards ? '<button class="msp-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>' : '') +
+                      '<button class="msp-btn" title="Load" onclick="mspAction(' + unit.id + ',\'load\')">' + svgLoad + '</button>';
+                return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '" ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)">' +
+                    '<span class="msp-drag-handle" title="Drag to group">' + svgHandle + '</span>' +
+                    '<div class="msp-unit-info"><div class="msp-unit-name">' + unit.name + '</div>' +
+                    '<div class="msp-unit-count">' + cardCount + ' card' + (cardCount !== 1 ? 's' : '') + '</div></div>' +
+                    ab +
+                    '<button class="msp-del-btn" id="msp-del-' + unit.id + '" onclick="mspDelete(' + unit.id + ', this)" ontouchend="event.stopPropagation();event.preventDefault();mspDelete(' + unit.id + ',this)" title="Delete unit">' + svgTrash + '</button>' +
+                    '</div>';
+            }
+
+            var html = '';
+            groups.forEach(function(g) {
+                var gu = g.unitIds.map(function(uid){ return units.find(function(u){ return u.id === Number(uid); }); }).filter(Boolean);
+                var ac = g.collapsed ? ' collapsed' : '';
+                html += '<div class="msp-group-header" onclick="mspToggleGroup(\'' + g.id + '\',this)" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
+                    '<span class="msp-group-arrow' + ac + '">&#9660;</span>' +
+                    '<span class="msp-group-name">&#128193; ' + g.name + '</span>' +
+                    '<span class="msp-group-count">' + gu.length + '</span></div>' +
+                    '<div class="msp-group-body' + ac + '" id="msp-gbody-' + g.id + '" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
+                    (gu.length === 0 ? '<div class="msp-group-empty">Drop units here</div>' : gu.map(makeUnitRow).join('')) +
+                    '</div>';
+            });
+
+            var uncat = units.filter(function(u){ return !assignedIds.has(u.id); });
+            if (uncat.length > 0) {
+                if (groups.length > 0) {
+                    html += '<div class="msp-group-header" style="background:#fafafa;">' +
+                        '<span class="msp-group-name" style="color:#888;">Uncategorized</span>' +
+                        '<span class="msp-group-count">' + uncat.length + '</span></div>';
+                }
+                html += uncat.map(makeUnitRow).join('');
+            }
+            list.innerHTML = html || '<div class="msp-empty">No units added yet.</div>';
+            setupMspTouchDrag(list);
+        }
+
+        var _mspDragId = null;
+        function mspDragStart(event, unitId) {
+            _mspDragId = unitId;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(unitId));
+            setTimeout(function(){ var r = document.getElementById('msp-row-' + unitId); if(r) r.classList.add('msp-dragging'); }, 0);
+        }
+        function mspDragEnd(event) {
+            document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            if (_mspDragId !== null) { var r = document.getElementById('msp-row-' + _mspDragId); if(r) r.classList.remove('msp-dragging'); }
+            _mspDragId = null;
+        }
+        function mspDropOnGroup(event, groupId, el) {
+            event.preventDefault();
+            el.classList.remove('msp-drop-active');
+            var unitId = Number(event.dataTransfer.getData('text/plain') || _mspDragId);
+            if (!unitId) return;
+            var groups = loadGroups();
+            groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
+            var tgt = groups.find(function(g){ return g.id === groupId; });
+            if (tgt && tgt.unitIds.indexOf(unitId) === -1) tgt.unitIds.push(unitId);
+            saveGroups(groups);
+            loadUnitsFromDB().then(function(units){ renderMspList(units); });
+        }
+        function mspToggleGroup(groupId, headerEl) {
+            var groups = loadGroups();
+            var g = groups.find(function(x){ return x.id === groupId; });
+            if (!g) return;
+            g.collapsed = !g.collapsed;
+            saveGroups(groups);
+            var body = document.getElementById('msp-gbody-' + groupId);
+            var arrow = headerEl.querySelector('.msp-group-arrow');
+            if (body) body.classList.toggle('collapsed', g.collapsed);
+            if (arrow) arrow.classList.toggle('collapsed', g.collapsed);
+        }
+        function setupMspTouchDrag(container) {
+            var touchId = null, ghost = null;
+            container.addEventListener('touchstart', function(e) {
+                var handle = e.target.closest('.msp-drag-handle');
+                if (!handle) return;
+                var row = handle.closest('.msp-unit-row');
+                if (!row) return;
+                touchId = Number(row.dataset.unitId);
+                row.classList.add('msp-dragging');
+                ghost = row.cloneNode(true);
+                ghost.style.cssText = 'position:fixed;z-index:99999;pointer-events:none;opacity:0.85;width:' + row.offsetWidth + 'px;box-shadow:0 6px 20px rgba(0,0,0,0.25);border-radius:8px;';
+                document.body.appendChild(ghost);
+            }, {passive:true});
+            container.addEventListener('touchmove', function(e) {
+                if (!touchId || !ghost) return;
+                e.preventDefault();
+                var t = e.touches[0];
+                ghost.style.left = (t.clientX - ghost.offsetWidth/2) + 'px';
+                ghost.style.top  = (t.clientY - 24) + 'px';
+                document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+                ghost.style.display = 'none';
+                var under = document.elementFromPoint(t.clientX, t.clientY);
+                ghost.style.display = '';
+                var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
+                if (hit) hit.classList.add('msp-drop-active');
+            }, {passive:false});
+            container.addEventListener('touchend', function(e) {
+                if (!touchId) return;
+                var t = e.changedTouches[0];
+                if (ghost) { ghost.remove(); ghost = null; }
+                document.querySelectorAll('.msp-drop-active, .msp-unit-row.msp-dragging').forEach(function(el){ el.classList.remove('msp-drop-active','msp-dragging'); });
+                var under = document.elementFromPoint(t.clientX, t.clientY);
+                var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
+                if (hit) {
+                    var gid = (hit.id || '').replace('msp-gbody-','');
+                    if (!gid) { var m = (hit.getAttribute('onclick')||'').match(/'([^']+)'/); if(m) gid=m[1]; }
+                    if (gid) {
+                        var groups = loadGroups();
+                        groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== touchId; }); });
+                        var tgt = groups.find(function(g){ return g.id === gid; });
+                        if (tgt && tgt.unitIds.indexOf(touchId) === -1) tgt.unitIds.push(touchId);
+                        saveGroups(groups);
+                        loadUnitsFromDB().then(function(units){ renderMspList(units); });
+                    }
+                }
+                touchId = null;
+            }, {passive:true});
         }
 
         function mspDelete(unitId, btn) {
             if (btn.dataset.confirming === 'true') {
                 btn.dataset.confirming = 'false';
-                deleteUnitFromDB(unitId).then(() => {
+                deleteUnitFromDB(unitId).then(function() {
                     showToast('✅ Unit deleted', 2000);
-                    // Remove row from panel without closing it
-                    const row = document.getElementById('msp-row-' + unitId);
+                    var groups = loadGroups();
+                    groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
+                    saveGroups(groups);
+                    var row = document.getElementById('msp-row-' + unitId);
                     if (row) row.remove();
-                    // Show empty message if no rows left
-                    const list = document.getElementById('mspList');
+                    var list = document.getElementById('mspList');
                     if (list && list.querySelectorAll('.msp-unit-row').length === 0) {
-                        list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>⚙️ Quick Load Units</strong> above to add your first JSON file.</div>';
+                        list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>&#9881;&#65039; Quick Load Units</strong> above to add your first JSON file.</div>';
                     }
                     syncUnitsEverywhere();
-                }).catch(() => showToast('⚠️ Error deleting unit', 2000));
+                }).catch(function(){ showToast('⚠️ Error deleting unit', 2000); });
             } else {
                 btn.dataset.confirming = 'true';
                 btn.innerHTML = '<span style="font-size:10px;font-weight:700;line-height:1.2;text-align:center;pointer-events:none;">Sure?</span>';
-                btn.style.background = '#c62828';
-                setTimeout(() => {
+                btn.style.background = '#f44336';
+                btn.style.color = 'white';
+                btn.style.borderColor = '#f44336';
+                setTimeout(function() {
                     if (btn.dataset.confirming === 'true') {
                         btn.dataset.confirming = 'false';
-                        btn.innerHTML = '🗑️';
-                        btn.style.background = '#f44336';
+                        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+                        btn.style.background = 'white';
+                        btn.style.color = '#f44336';
+                        btn.style.borderColor = '#f44336';
                     }
                 }, 3000);
             }
         }
+
 
         function closeManageSidePanel() {
             document.getElementById('manageSidePanel').classList.remove('open');
@@ -6634,6 +6827,7 @@
                 console.log('Modal classes:', modal.classList);
                 console.log('Calling loadUnitsList...');
                 loadUnitsList();
+                renderGroupsList();
             } catch (error) {
                 console.error('Error in openUnitConfigModal:', error);
                 alert('Error opening Unit Config Modal: ' + error.message);
@@ -6826,12 +7020,7 @@
                                     <div style="font-weight: 600; font-size: 16px; margin-bottom: 5px;">
                                         ${unit.sourceType === 'url' ? '☁️' : '💾'} ${unit.name}
                                     </div>
-                                    <div style="font-size: 13px; color: #666;">
-                                        ${unit.sourceType === 'url' ? 'Cloud URL: ' + unit.url : 'Cached File'}
-                                    </div>
-                                    <div style="font-size: 12px; color: #999; margin-top: 5px;">
-                                        Added: ${new Date(unit.createdAt).toLocaleDateString()}
-                                    </div>
+                                    ${unit.sourceType === 'url' ? `<div style="font-size: 13px; color: #666;">Cloud URL: ${unit.url}</div>` : ''}
                                 </div>
                                 <div style="display: flex; gap: 8px;">
                                     <button onclick="renameUnit(${unit.id}, '${escapedName}')" style="background: #2196F3; color: white; border: none; border-radius: 5px; padding: 8px 12px; cursor: pointer; font-size: 14px;">
