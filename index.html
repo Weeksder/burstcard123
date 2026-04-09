@@ -6661,7 +6661,7 @@
                 var ac = g.collapsed ? ' collapsed' : '';
                 html += '<div class="msp-group-header" onclick="mspToggleGroup(\'' + g.id + '\',this)" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
                     '<span class="msp-group-arrow' + ac + '">&#9660;</span>' +
-                    '<span class="msp-group-name">&#128193; ' + g.name + '</span>' +
+                    '<span class="msp-group-name">' + g.name + '</span>' +
                     '<span class="msp-group-count">' + gu.length + '</span></div>' +
                     '<div class="msp-group-body' + ac + '" id="msp-gbody-' + g.id + '" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
                     (gu.length === 0 ? '<div class="msp-group-empty">Drop units here</div>' : gu.map(makeUnitRow).join('')) +
@@ -6716,53 +6716,98 @@
             if (body) body.classList.toggle('collapsed', g.collapsed);
             if (arrow) arrow.classList.toggle('collapsed', g.collapsed);
         }
+        // Single persistent touch-drag state (not re-created per render)
+        var _mspTouch = { id: null, ghost: null, container: null, bound: false };
+
         function setupMspTouchDrag(container) {
-            var touchId = null, ghost = null;
-            container.addEventListener('touchstart', function(e) {
-                var handle = e.target.closest('.msp-drag-handle');
-                if (!handle) return;
-                var row = handle.closest('.msp-unit-row');
-                if (!row) return;
-                touchId = Number(row.dataset.unitId);
-                row.classList.add('msp-dragging');
-                ghost = row.cloneNode(true);
-                ghost.style.cssText = 'position:fixed;z-index:99999;pointer-events:none;opacity:0.85;width:' + row.offsetWidth + 'px;box-shadow:0 6px 20px rgba(0,0,0,0.25);border-radius:8px;';
-                document.body.appendChild(ghost);
-            }, {passive:true});
-            container.addEventListener('touchmove', function(e) {
-                if (!touchId || !ghost) return;
-                e.preventDefault();
-                var t = e.touches[0];
-                ghost.style.left = (t.clientX - ghost.offsetWidth/2) + 'px';
-                ghost.style.top  = (t.clientY - 24) + 'px';
-                document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
-                ghost.style.display = 'none';
-                var under = document.elementFromPoint(t.clientX, t.clientY);
-                ghost.style.display = '';
-                var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
-                if (hit) hit.classList.add('msp-drop-active');
-            }, {passive:false});
-            container.addEventListener('touchend', function(e) {
-                if (!touchId) return;
-                var t = e.changedTouches[0];
-                if (ghost) { ghost.remove(); ghost = null; }
-                document.querySelectorAll('.msp-drop-active, .msp-unit-row.msp-dragging').forEach(function(el){ el.classList.remove('msp-drop-active','msp-dragging'); });
-                var under = document.elementFromPoint(t.clientX, t.clientY);
-                var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
-                if (hit) {
-                    var gid = (hit.id || '').replace('msp-gbody-','');
-                    if (!gid) { var m = (hit.getAttribute('onclick')||'').match(/'([^']+)'/); if(m) gid=m[1]; }
-                    if (gid) {
-                        var groups = loadGroups();
-                        groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== touchId; }); });
-                        var tgt = groups.find(function(g){ return g.id === gid; });
-                        if (tgt && tgt.unitIds.indexOf(touchId) === -1) tgt.unitIds.push(touchId);
-                        saveGroups(groups);
-                        loadUnitsFromDB().then(function(units){ renderMspList(units); });
-                    }
-                }
-                touchId = null;
-            }, {passive:true});
+            // Only bind once — reuse the same listeners across re-renders
+            if (_mspTouch.bound && _mspTouch.container === container) return;
+            // If container changed (re-render), remove old listeners first
+            if (_mspTouch.container && _mspTouch.container !== container) {
+                _mspTouch.container.removeEventListener('touchstart',  _mspTouchStart);
+                _mspTouch.container.removeEventListener('touchmove',   _mspTouchMove);
+                _mspTouch.container.removeEventListener('touchend',    _mspTouchEnd);
+                _mspTouch.container.removeEventListener('touchcancel', _mspTouchEnd);
+            }
+            _mspTouch.container = container;
+            _mspTouch.bound = true;
+            container.addEventListener('touchstart',  _mspTouchStart, {passive:true});
+            container.addEventListener('touchmove',   _mspTouchMove,  {passive:false});
+            container.addEventListener('touchend',    _mspTouchEnd,   {passive:true});
+            container.addEventListener('touchcancel', _mspTouchEnd,   {passive:true});
+        }
+
+        function _mspTouchStart(e) {
+            var handle = e.target.closest('.msp-drag-handle');
+            if (!handle) return;
+            var row = handle.closest('.msp-unit-row');
+            if (!row) return;
+            _mspCleanGhost(); // clean up any leftover ghost
+            _mspTouch.id = Number(row.dataset.unitId);
+            row.classList.add('msp-dragging');
+            var ghost = row.cloneNode(true);
+            var rect = row.getBoundingClientRect();
+            // Position ghost immediately at the row's current position
+            ghost.style.cssText = [
+                'position:fixed',
+                'z-index:99999',
+                'pointer-events:none',
+                'opacity:0.85',
+                'width:' + row.offsetWidth + 'px',
+                'left:' + rect.left + 'px',
+                'top:' + rect.top + 'px',
+                'box-shadow:0 6px 20px rgba(0,0,0,0.25)',
+                'border-radius:8px',
+                'background:white',
+                'margin:0'
+            ].join(';');
+            document.body.appendChild(ghost);
+            _mspTouch.ghost = ghost;
+        }
+
+        function _mspTouchMove(e) {
+            if (!_mspTouch.id || !_mspTouch.ghost) return;
+            e.preventDefault();
+            var t = e.touches[0];
+            _mspTouch.ghost.style.left = (t.clientX - _mspTouch.ghost.offsetWidth / 2) + 'px';
+            _mspTouch.ghost.style.top  = (t.clientY - 28) + 'px';
+            // Highlight drop targets
+            document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            _mspTouch.ghost.style.display = 'none';
+            var under = document.elementFromPoint(t.clientX, t.clientY);
+            _mspTouch.ghost.style.display = '';
+            var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
+            if (hit) hit.classList.add('msp-drop-active');
+        }
+
+        function _mspTouchEnd(e) {
+            document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            document.querySelectorAll('.msp-unit-row.msp-dragging').forEach(function(el){ el.classList.remove('msp-dragging'); });
+
+            var droppedId = _mspTouch.id;
+            _mspCleanGhost();
+
+            if (!droppedId || !e.changedTouches) return;
+            var t = e.changedTouches[0];
+            var under = document.elementFromPoint(t.clientX, t.clientY);
+            var hit = under && (under.closest('.msp-group-header') || under.closest('.msp-group-body'));
+            if (!hit) return;
+
+            var gid = (hit.id || '').replace('msp-gbody-', '');
+            if (!gid) { var m = (hit.getAttribute('onclick') || '').match(/'([^']+)'/); if (m) gid = m[1]; }
+            if (!gid) return;
+
+            var groups = loadGroups();
+            groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== droppedId; }); });
+            var tgt = groups.find(function(g){ return g.id === gid; });
+            if (tgt && tgt.unitIds.indexOf(droppedId) === -1) tgt.unitIds.push(droppedId);
+            saveGroups(groups);
+            loadUnitsFromDB().then(function(units){ renderMspList(units); });
+        }
+
+        function _mspCleanGhost() {
+            if (_mspTouch.ghost) { _mspTouch.ghost.remove(); _mspTouch.ghost = null; }
+            _mspTouch.id = null;
         }
 
         function mspDelete(unitId, btn) {
