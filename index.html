@@ -2482,6 +2482,18 @@
                 100% { transform: rotate(-8deg); }
             }
             .stw-wobble { animation: stwWobble 0.5s ease-in-out infinite; display:inline-block; }
+
+            @keyframes stwPop {
+                0%   { transform: scale(0.4); opacity: 0; }
+                55%  { transform: scale(1.18); opacity: 1; }
+                70%  { transform: scale(0.95) rotate(-4deg); }
+                82%  { transform: scale(1.06) rotate(3deg); }
+                92%  { transform: scale(0.99) rotate(-1deg); }
+                100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
+            .stw-pop {
+                animation: stwPop 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards;
+            }
         </style>
 
         <style>
@@ -7706,6 +7718,12 @@
         let _stwRound = 1;
         let _stwCardA = null;
         let _stwCardB = null;
+        let _stwCurrentPattern = [];
+        const STW_TEMPOS = [100, 120, 140];
+        let _stwTempoIdx = 1; // default 120 BPM
+        let _stwBeat = 0;
+        let _stwPrevTile = -1;
+        let _stwPendingRound = false;
         let _stwPickerA = null;
         let _stwPickerB = null;
         const STW_TOTAL_ROUNDS = 5;
@@ -7722,6 +7740,7 @@
         }
 
         function stwClick(accent) {
+            if (isMuted) return;
             try {
                 if (!_stwAudioCtx) _stwAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const ctx = _stwAudioCtx;
@@ -7759,10 +7778,12 @@
             document.body.style.overflow = 'hidden';
             document.getElementById('stwModal').style.display = 'flex';
             stwRender();
+            window.addEventListener('resize', stwSizeGrid);
         }
 
         function stwClose() {
             stwStopAll();
+            window.removeEventListener('resize', stwSizeGrid);
             document.getElementById('stwModal').style.display = 'none';
             document.getElementById('stwPickerOverlay').style.display = 'none';
             document.body.style.overflow = '';
@@ -7837,7 +7858,7 @@
         function stwBlankTiles() {
             return [0,1,2,3,4,5,6,7].map(i =>
                 `<div id="stwT${i}" style="
-                    aspect-ratio:1/1;border-radius:10px;
+                    border-radius:10px;
                     border:3px solid transparent;
                     box-sizing:border-box;overflow:hidden;
                     background:rgba(255,255,255,0.18);
@@ -7859,6 +7880,45 @@
             return img + label;
         }
 
+        function stwSizeGrid() {
+            const grid = document.getElementById('stwGrid');
+            const content = document.getElementById('stwContent');
+            const labelEl = document.getElementById('stwRoundLabel');
+            const btnEl = document.getElementById('stwBtn');
+            if (!grid || !content) return;
+
+            const labelH = labelEl ? labelEl.offsetHeight : 36;
+            const btnH   = btnEl   ? btnEl.offsetHeight   : 52;
+            const padV   = 20; // top + bottom padding of stwContent
+            const gapV   = 16; // gaps between label, grid, button
+
+            const availW = content.clientWidth  - 24; // 12px side padding each side
+            const availH = content.clientHeight - labelH - btnH - padV - gapV;
+
+            // Tile must be square. 4 cols across, 2 rows tall.
+            // Tile size = min(availW/4, availH/2) accounting for gaps (8px × 3 col gaps, 8px × 1 row gap)
+            const tileFromW = Math.floor((availW - 8 * 3) / 4);
+            const tileFromH = Math.floor((availH - 8 * 1) / 2);
+            const tileSize  = Math.max(30, Math.min(tileFromW, tileFromH));
+
+            // Set grid to exactly fit 4×2 square tiles
+            const gridW = tileSize * 4 + 8 * 3;
+            const gridH = tileSize * 2 + 8 * 1;
+            grid.style.width  = gridW + 'px';
+            grid.style.height = gridH + 'px';
+            grid.style.flex   = 'none';
+            grid.style.gridTemplateColumns = `repeat(4, ${tileSize}px)`;
+            grid.style.gridTemplateRows    = `repeat(2, ${tileSize}px)`;
+
+            // Force every tile to be exactly tileSize × tileSize
+            for (let i = 0; i < 8; i++) {
+                const t = document.getElementById('stwT' + i);
+                if (!t) continue;
+                t.style.width  = tileSize + 'px';
+                t.style.height = tileSize + 'px';
+            }
+        }
+
         function stwRender() {
             stwStopAll();
             _stwRound = 1;
@@ -7872,18 +7932,52 @@
                     1 / ${STW_TOTAL_ROUNDS}
                 </div>
                 <div id="stwGrid" style="
-                    display:grid;grid-template-columns:repeat(4,1fr);
-                    gap:clamp(4px,1vw,8px);
-                    width:100%;flex:1;min-height:0;">
+                    display:grid;
+                    gap:8px;
+                    flex:none;">
                     ${stwBlankTiles()}
                 </div>
-                <button id="stwBtn" onclick="stwStart()"
-                    style="flex-shrink:0;margin-top:8px;padding:12px 44px;
-                           background:white;border:none;border-radius:14px;
-                           color:#35654D;font-size:1.1rem;font-weight:700;
-                           cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);">
-                    ▶ Start
-                </button>`;
+                <div style="flex-shrink:0;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;">
+                    <!-- BPM picker -->
+                    <div style="display:flex;align-items:center;background:rgba(255,255,255,0.2);border-radius:14px;overflow:hidden;">
+                        <button id="stwTempoDown" onclick="stwChangeTempo(-1)"
+                            style="background:none;border:none;color:white;font-size:1.3rem;font-weight:700;
+                                   padding:10px 14px;cursor:pointer;line-height:1;">‹</button>
+                        <span id="stwTempoLabel"
+                            style="color:white;font-size:0.95rem;font-weight:700;min-width:54px;text-align:center;line-height:1;">
+                            120 BPM
+                        </span>
+                        <button id="stwTempoUp" onclick="stwChangeTempo(1)"
+                            style="background:none;border:none;color:white;font-size:1.3rem;font-weight:700;
+                                   padding:10px 14px;cursor:pointer;line-height:1;">›</button>
+                    </div>
+                    <!-- Start button -->
+                    <button id="stwBtn" onclick="stwStart()"
+                        style="padding:12px 36px;background:white;border:none;border-radius:14px;
+                               color:#35654D;font-size:1.1rem;font-weight:700;
+                               cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);">
+                        ▶ Start
+                    </button>
+                </div>`;
+            requestAnimationFrame(stwSizeGrid);
+            // Sync tempo display to current selection
+            stwChangeTempo(0);
+        }
+
+        function stwChangeTempo(dir) {
+            _stwTempoIdx = Math.max(0, Math.min(STW_TEMPOS.length - 1, _stwTempoIdx + dir));
+            const lbl = document.getElementById('stwTempoLabel');
+            if (lbl) lbl.textContent = STW_TEMPOS[_stwTempoIdx] + ' BPM';
+            // Dim arrows at limits
+            const dn = document.getElementById('stwTempoDown');
+            const up = document.getElementById('stwTempoUp');
+            if (dn) dn.style.opacity = _stwTempoIdx === 0 ? '0.3' : '1';
+            if (up) up.style.opacity = _stwTempoIdx === STW_TEMPOS.length - 1 ? '0.3' : '1';
+            // If game is running, restart interval at new BPM (preserves beat position)
+            if (_stwInterval !== null) {
+                clearInterval(_stwInterval);
+                _stwInterval = setInterval(stwTick, Math.round(60000 / STW_TEMPOS[_stwTempoIdx]));
+            }
         }
 
         function stwResetHighlight() {
@@ -7893,18 +7987,31 @@
                 t.style.border = '3px solid transparent';
                 t.style.boxShadow = '';
                 t.style.transform = '';
+                t.classList.remove('stw-pop');
             }
         }
 
         function stwUpdateRoundTiles(round) {
-            const pattern = stwPattern(round);
-            pattern.forEach((which, i) => {
+            _stwCurrentPattern = stwPattern(round);
+            for (let i = 0; i < 8; i++) {
                 const t = document.getElementById('stwT' + i);
-                if (!t) return;
-                const card = which === 'A' ? _stwCardA : _stwCardB;
-                t.style.background = 'white';
-                t.innerHTML = stwCardTileContent(card);
-            });
+                if (!t) continue;
+                t.style.border = '3px solid transparent';
+                t.style.boxShadow = '';
+                t.style.transform = '';
+                t.classList.remove('stw-pop');
+                if (round === 1) {
+                    // Start blank — phase 1 reveals one by one
+                    t.innerHTML = '';
+                    t.style.background = 'rgba(255,255,255,0.18)';
+                } else {
+                    // Show all cards immediately
+                    const which = _stwCurrentPattern[i];
+                    const card = which === 'A' ? _stwCardA : _stwCardB;
+                    t.style.background = 'white';
+                    t.innerHTML = stwCardTileContent(card);
+                }
+            }
         }
 
         function stwStart() {
@@ -7926,53 +8033,71 @@
 
             stwUpdateRoundTiles(1);
 
-            const BPM = 500;
-            let beat = 0;
-            let prevTile = -1;
+            _stwBeat = 0;
+            _stwPrevTile = -1;
+            _stwPendingRound = false;
 
-            _stwInterval = setInterval(() => {
-                const roundBeat = beat % 16;
-                const localBeat = beat % 8;
+            _stwInterval = setInterval(stwTick, Math.round(60000 / STW_TEMPOS[_stwTempoIdx]));
+        }
+
+        function stwTick() {
+                // If a round just ended, apply the new pattern NOW (start of new round's beat 0)
+                if (_stwPendingRound) {
+                    _stwPendingRound = false;
+                    _stwPrevTile = -1;
+                    stwUpdateRoundTiles(_stwRound);
+                    const l = document.getElementById('stwRoundLabel');
+                    if (l) l.textContent = _stwRound + ' / ' + STW_TOTAL_ROUNDS;
+                }
+
+                const roundBeat = _stwBeat % 16;
+                const localBeat = _stwBeat % 8;
                 const isAccent = localBeat === 0;
                 stwClick(isAccent);
 
                 if (roundBeat < 8) {
-                    stwResetHighlight();
+                    // Phase 1
                     const t = document.getElementById('stwT' + localBeat);
                     if (t) {
-                        t.style.border = '4px solid rgba(255,255,255,0.8)';
-                        t.style.transform = 'scale(1.06)';
-                        setTimeout(() => {
-                            if (t) { t.style.border = '3px solid transparent'; t.style.transform = ''; }
-                        }, 200);
+                        if (_stwRound === 1) {
+                            // Round 1: reveal card with pop
+                            const which = _stwCurrentPattern[localBeat];
+                            const card = which === 'A' ? _stwCardA : _stwCardB;
+                            t.style.background = 'white';
+                            t.innerHTML = stwCardTileContent(card);
+                        }
+                        t.style.border = '3px solid transparent';
+                        t.style.boxShadow = '';
+                        t.style.transform = '';
+                        if (_stwRound === 1) {
+                            t.classList.remove('stw-pop');
+                            void t.offsetWidth;
+                            t.classList.add('stw-pop');
+                        }
                     }
                 } else {
-                    if (prevTile >= 0) {
-                        const prev = document.getElementById('stwT' + prevTile);
+                    // Phase 2: persistent highlight sweeps across revealed tiles
+                    if (_stwPrevTile >= 0) {
+                        const prev = document.getElementById('stwT' + _stwPrevTile);
                         if (prev) { prev.style.border = '3px solid transparent'; prev.style.boxShadow = ''; prev.style.transform = ''; }
                     }
                     const t = document.getElementById('stwT' + localBeat);
                     if (t) {
-                        t.style.border = '5px solid white';
-                        t.style.boxShadow = '0 0 0 3px rgba(255,255,255,0.5), 0 6px 24px rgba(0,0,0,0.3)';
+                        t.style.border = '5px solid #ff9500';
+                        t.style.boxShadow = '0 0 0 3px rgba(255,149,0,0.4), 0 6px 24px rgba(0,0,0,0.3)';
                         t.style.transform = 'scale(1.1)';
                     }
-                    prevTile = localBeat;
+                    _stwPrevTile = localBeat;
                 }
 
-                beat++;
+                _stwBeat++;
 
-                if (beat % 16 === 0) {
+                if (_stwBeat % 16 === 0) {
                     if (_stwRound < STW_TOTAL_ROUNDS) {
                         _stwRound++;
-                        prevTile = -1;
-                        stwResetHighlight();
-                        stwUpdateRoundTiles(_stwRound);
-                        const l = document.getElementById('stwRoundLabel');
-                        if (l) l.textContent = _stwRound + ' / ' + STW_TOTAL_ROUNDS;
+                        _stwPendingRound = true;
                     } else {
                         stwStopAll();
-                        stwResetHighlight();
                         const b = document.getElementById('stwBtn');
                         if (b) {
                             b.disabled = false;
@@ -7983,7 +8108,6 @@
                         }
                     }
                 }
-            }, BPM);
         }
 
         // ==================== END SAY THE WORD GAME ====================
