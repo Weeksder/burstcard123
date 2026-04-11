@@ -2453,11 +2453,20 @@
             <p style="margin-bottom: 25px; color: #666;">Choose how you'd like to save your session:</p>
 
             <div style="display: flex; flex-direction: column; gap: 15px;">
-                <button class="btn btn-primary" id="saveJSONBtn" style="padding: 20px; text-align: left; white-space: normal; line-height: 1.5;">
-                    <strong style="font-size: 1.2rem; display: block; margin-bottom: 5px;">📄 Quick Save (JSON)</strong>
-                    <span style="font-size: 0.85rem; display: block; opacity: 0.9;">Fast and simple • Human-readable • ~5-15MB</span>
-                    <span style="font-size: 0.8rem; display: block; opacity: 0.7; margin-top: 5px;">Best for: Quick backups, small decks (1-30 cards)</span>
-                </button>
+                <div style="border-radius: 10px; overflow: hidden; border: 2px solid #35654D;">
+                    <button class="btn btn-primary" id="saveJSONBtn" style="padding: 20px; text-align: left; white-space: normal; line-height: 1.5; width:100%; border-radius:0; border:none;">
+                        <strong style="font-size: 1.2rem; display: block; margin-bottom: 5px;">📄 Quick Save (JSON)</strong>
+                        <span style="font-size: 0.85rem; display: block; opacity: 0.9;">Fast and simple • Human-readable • ~5-15MB</span>
+                        <span style="font-size: 0.8rem; display: block; opacity: 0.7; margin-top: 5px;">Best for: Quick backups, small decks (1-30 cards)</span>
+                    </button>
+                    <div style="padding: 0 12px 12px; display: flex; align-items: center; gap: 8px; background: #f0f9f4;">
+                        <input type="text" id="saveJSONName" placeholder="flashcards_today"
+                            style="flex:1; padding: 8px 10px; border: 1.5px solid #b2d8c4; border-radius: 8px;
+                                   font-size: 0.9rem; color: #333; background: white;"
+                            onclick="event.stopPropagation()">
+                        <span style="font-size: 0.85rem; color: #888; white-space: nowrap;">.json</span>
+                    </div>
+                </div>
 
                 <button class="btn btn-success" id="saveZIPBtn" style="padding: 20px; text-align: left; white-space: normal; line-height: 1.5;">
                     <strong style="font-size: 1.2rem; display: block; margin-bottom: 5px;">📦 Export Package (ZIP)</strong>
@@ -2465,6 +2474,13 @@
                     <span style="font-size: 0.8rem; display: block; opacity: 0.7; margin-top: 5px;">Best for: Large decks, sharing with others</span>
                 </button>
             </div>
+
+                <button disabled style="padding: 20px; text-align: left; white-space: normal; line-height: 1.5;
+                    background: #f5f5f5; border: 2px dashed #bbb; border-radius: 10px; cursor: not-allowed; width: 100%; opacity: 0.6;">
+                    <strong style="font-size: 1.2rem; display: block; margin-bottom: 5px; color: #888;">🔒 Save Over Existing File</strong>
+                    <span style="font-size: 0.85rem; display: block; color: #888;">Directly overwrite your file — no rename, no extra steps</span>
+                    <span style="font-size: 0.8rem; display: block; color: #aaa; margin-top: 5px;">Available once on the App Store</span>
+                </button>
 
             <button class="btn btn-secondary" id="closeSaveBtn" style="margin-top: 20px; width: 100%;">
                 Cancel
@@ -2949,6 +2965,7 @@
         let currentIndex = 0;
         let isFlipped = false;
         let lockSide = false; // when true, every new card opens on the locked side
+        let currentLoadedFileName = ''; // Track the filename of the last loaded JSON
         let isMuted = false;
         let showTextOnFront = false; // overlay back text on card front
         let cachedFrontTextSize = null; // cached font size so all cards scale consistently
@@ -5680,6 +5697,55 @@
         function openSaveOptions() {
             document.body.style.overflow = 'hidden';
             document.getElementById('saveOptionsModal').classList.add('active');
+            // Pre-fill filename: use loaded deck name if exists, otherwise default date stamp
+            const defaultName = currentLoadedFileName || 'flashcards_' + new Date().toISOString().split('T')[0];
+            const nameInput = document.getElementById('saveJSONName');
+            if (nameInput) {
+                nameInput.value = defaultName;
+                nameInput.placeholder = defaultName;
+            }
+            // Also keep Save to Files name in sync (for future use)
+            const filesInput = document.getElementById('saveToFilesName');
+            if (filesInput) {
+                filesInput.value = currentLoadedFileName || '';
+                filesInput.placeholder = currentLoadedFileName || 'filename (e.g. unit1)';
+            }
+            const preview = document.getElementById('saveNamedPreview');
+            if (preview) {
+                preview.textContent = '→ saves as: ' + defaultName + '.json';
+            }
+        }
+
+        function saveAsJSONNamed() {
+            if (cards.length === 0) {
+                showToast('⚠️ No cards to save!', 2000);
+                closeSaveOptions();
+                return;
+            }
+            try {
+                const saveData = {
+                    version: '1.0',
+                    createdDate: new Date().toISOString(),
+                    totalCards: cards.length,
+                    cards: cards
+                };
+                const jsonString = JSON.stringify(saveData, null, 2);
+                const name = currentLoadedFileName || 'flashcards_' + new Date().toISOString().split('T')[0];
+                const filename = name + '.json';
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                closeSaveOptions();
+                showToast('✅ Saved as ' + filename, 2500);
+            } catch (error) {
+                showToast('⚠️ Error saving: ' + error.message, 3000);
+            }
         }
 
         function closeSaveOptions() {
@@ -5706,12 +5772,17 @@
                 // Convert to JSON string with formatting
                 const jsonString = JSON.stringify(saveData, null, 2);
 
+                // Use custom name from input if set, otherwise default
+                const nameInput = document.getElementById('saveJSONName');
+                const rawName = nameInput ? nameInput.value.trim() : '';
+                const filename = (rawName ? rawName.replace(/\.json$/i, '') : 'flashcards_' + new Date().toISOString().split('T')[0]) + '.json';
+
                 // Create blob and download
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `flashcards_${new Date().toISOString().split('T')[0]}.json`;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -5722,6 +5793,52 @@
             } catch (error) {
                 console.error('Error in saveAsJSON:', error);
                 showToast('⚠️ Error saving file: ' + error.message, 3000);
+            }
+        }
+
+        function saveToFiles() {
+            if (cards.length === 0) {
+                showToast('⚠️ No cards to save!', 2000);
+                closeSaveOptions();
+                return;
+            }
+            try {
+                const saveData = {
+                    version: '1.0',
+                    createdDate: new Date().toISOString(),
+                    totalCards: cards.length,
+                    cards: cards
+                };
+                const jsonString = JSON.stringify(saveData, null, 2);
+
+                // Use custom name if entered, otherwise default
+                const nameInput = document.getElementById('saveToFilesName');
+                const rawName = nameInput ? nameInput.value.trim() : '';
+                const filename = (rawName ? rawName.replace(/\.json$/i, '') : `flashcards_${new Date().toISOString().split('T')[0]}`) + '.json';
+
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const file = new File([blob], filename, { type: 'application/json' });
+
+                // Use Web Share API (iOS Files picker) if available
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({ files: [file], title: filename })
+                        .then(() => { closeSaveOptions(); showToast('✅ Shared!', 2000); })
+                        .catch(err => {
+                            if (err.name !== 'AbortError') showToast('⚠️ Share failed: ' + err.message, 3000);
+                        });
+                } else if (window.showSaveFilePicker) {
+                    window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }]
+                    }).then(fileHandle => fileHandle.createWritable())
+                      .then(writable => writable.write(blob).then(() => writable.close()))
+                      .then(() => { closeSaveOptions(); showToast('✅ File saved!', 2000); })
+                      .catch(err => { if (err.name !== 'AbortError') showToast('⚠️ ' + err.message, 3000); });
+                } else {
+                    showToast('⚠️ Not supported on this browser', 3000);
+                }
+            } catch (error) {
+                showToast('⚠️ Error: ' + error.message, 3000);
             }
         }
 
@@ -6002,6 +6119,9 @@
                         }
 
                         loadedSessionData = data;
+
+                        // Store the filename (without extension) for pre-filling Save to Files
+                        currentLoadedFileName = fileName.replace(/\.json$/i, '');
 
                         // Show file info
                         document.getElementById('loadFileName').textContent = fileName;
@@ -6497,6 +6617,7 @@
                 }
 
                 // Load or add the cards based on mode
+                currentLoadedFileName = unit.name; // track for Save to Files pre-fill
                 if (mode === 'add') {
                     // Check for existing cards from a different unit — show info message
                     if (cards.length > 0 && loadedUnitIds.size === 0) {
