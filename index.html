@@ -603,6 +603,33 @@
             object-fit: contain;
         }
 
+        /* Corner character overlay */
+        .card-char-label {
+            position: absolute;
+            top: 54px;
+            left: 10px;
+            font-family: 'Fredoka', Arial, sans-serif !important;
+            font-size: 9rem !important;
+            font-weight: 400;
+            color: #1a1a1a;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 5;
+            user-select: none;
+            background: white;
+            border-radius: 4px;
+            padding: 4px 14px 18px 14px;
+            display: inline-flex;
+            align-items: flex-start;
+            justify-content: center;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+            letter-spacing: -0.02em;
+        }
+        .card-front.show-char-active .card-image {
+            width: 88%;
+            max-height: 88%;
+        }
+
         .card-front-text {
             width: 100%;
             flex-shrink: 0;
@@ -2161,13 +2188,29 @@
                     </svg>
                     Hide Buttons
                 </button>
-                <button id="showTextBtn" onclick="event.stopPropagation(); toggleTextOnFront()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleTextOnFront()"
-                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
-                    </svg>
-                    Show Text
-                </button>
+                <div class="resize-row" style="width:100%; background:white; border-bottom:1px solid #f0f0f0; box-sizing:border-box; display:flex; align-items:center;">
+                    <div style="padding:13px 16px; display:flex; align-items:center; gap:10px; flex:1;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block;">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
+                        </svg>
+                        <span style="font-size:15px; font-weight:600; color:#333;">Show</span>
+                    </div>
+                    <div style="display:flex; align-items:stretch; border-left:1px solid #e8e8e8; align-self:stretch;">
+                        <button id="showCharBtn" onclick="event.stopPropagation(); toggleCharOnCard()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleCharOnCard()"
+                            style="background:white; border:none; border-right:1px solid #e8e8e8; cursor:pointer; padding:0 8px; display:flex; align-items:center; justify-content:center;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="2" width="20" height="20" rx="2"/>
+                                <text x="3.5" y="13.5" font-family="serif" font-size="10" font-weight="700" fill="#35654D" stroke="none">Aa</text>
+                            </svg>
+                        </button>
+                        <button id="showTextBtn" onclick="event.stopPropagation(); toggleTextOnFront()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleTextOnFront()"
+                            style="background:white; border:none; cursor:pointer; padding:0 8px; display:flex; align-items:center; justify-content:center;">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
                 <button id="lockSideBtn" onclick="event.stopPropagation(); toggleLockSide()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleLockSide()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3025,6 +3068,7 @@
         }
         let isMuted = false;
         let showTextOnFront = false; // overlay back text on card front
+        let showCharOnCard = false;  // show first character top-right corner
         let cachedFrontTextSize = null; // cached font size so all cards scale consistently
         const cachedBackTextSizes = {}; // per-card font size cache keyed by card index
 
@@ -9736,7 +9780,8 @@
                                 ${prevCard.backImage ? '<img src="' + prevCard.backImage + '" class="card-image">' : ''}
                                 ${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}
                             </div>` : `
-                            <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}">
+                            <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">
+                                ${showCharOnCard && prevCard.backText ? `<span class="card-char-label">${prevCard.backText.charAt(0).toUpperCase()}${prevCard.backText.charAt(0).toLowerCase()}</span>` : ''}
                                 <img src="${prevCard.frontImage}" class="card-image">
                                 ${showTextOnFront && prevCard.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(prevCard.backText)}</div>
@@ -9745,7 +9790,8 @@
                         </div>
                         ` : ''}
                         <div class="card ${isFlipped ? 'flipped' : ''}" style="cursor: pointer;">
-                            <div class="card-face card-front${showTextOnFront && card.backText ? ' show-text-active' : ''}">
+                            <div class="card-face card-front${showTextOnFront && card.backText ? ' show-text-active' : ''}${showCharOnCard && card.backText ? ' show-char-active' : ''}">
+                                ${showCharOnCard && card.backText ? `<span class="card-char-label">${card.backText.charAt(0).toUpperCase()}${card.backText.charAt(0).toLowerCase()}</span>` : ''}
                                 <img src="${card.frontImage}" class="card-image">
                                 ${showTextOnFront && card.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(card.backText)}</div>
@@ -9763,7 +9809,8 @@
                                 ${nextCard.backImage ? '<img src="' + nextCard.backImage + '" class="card-image">' : ''}
                                 ${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}
                             </div>` : `
-                            <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}">
+                            <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">
+                                ${showCharOnCard && nextCard.backText ? `<span class="card-char-label">${nextCard.backText.charAt(0).toUpperCase()}${nextCard.backText.charAt(0).toLowerCase()}</span>` : ''}
                                 <img src="${nextCard.frontImage}" class="card-image">
                                 ${showTextOnFront && nextCard.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(nextCard.backText)}</div>
@@ -10064,6 +10111,21 @@
                 btn.style.background = showTextOnFront ? '#f0f9f4' : 'white';
                 btn.style.color = showTextOnFront ? '#35654D' : '#333';
                 btn.querySelector('svg').setAttribute('stroke', showTextOnFront ? '#1a4a32' : '#35654D');
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+            renderDisplay();
+        }
+
+        function toggleCharOnCard() {
+            showCharOnCard = !showCharOnCard;
+            const btn = document.getElementById('showCharBtn');
+            if (btn) {
+                btn.style.background = showCharOnCard ? '#f0f9f4' : 'white';
+                const svgRect = btn.querySelector('rect');
+                if (svgRect) svgRect.setAttribute('stroke', showCharOnCard ? '#1a4a32' : '#35654D');
+                const svgText = btn.querySelector('text');
+                if (svgText) svgText.setAttribute('fill', showCharOnCard ? '#1a4a32' : '#35654D');
             }
             const menu = document.getElementById('settingsMenu');
             if (menu) menu.style.display = 'none';
