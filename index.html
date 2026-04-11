@@ -2193,10 +2193,16 @@
             <span class="msp-title">📚 Quick Load Units</span>
             <button class="msp-close" onclick="closeManageSidePanel()">×</button>
         </div>
-        <div style="padding:10px 12px;border-bottom:1px solid #eee;flex-shrink:0;">
-            <button class="btn btn-success" style="width:100%;padding:10px;font-size:0.9rem;"
+        <div style="padding:10px 12px;border-bottom:1px solid #eee;flex-shrink:0;display:flex;gap:8px;">
+            <button class="btn btn-success" style="flex:1;padding:10px;font-size:0.9rem;"
                 onclick="closeManageSidePanel(); openUnitConfigModal();">
                 ⚙️ Quick Load Units
+            </button>
+            <button id="mspSortBtn" type="button"
+                style="padding:10px 12px;background:white;border:1.5px solid #35654D;border-radius:8px;
+                       color:#35654D;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;"
+                onclick="mspToggleSort()">
+                Sort: Date
             </button>
         </div>
         <div class="msp-list" id="mspList">
@@ -2471,7 +2477,7 @@
                         </button>
                     </div>
                     <div id="saveAsExistingRow" style="display:none; padding: 0 12px 12px; background: #f0f9f4;">
-                        <button type="button" onclick="event.stopPropagation(); document.getElementById('saveJSONName').value = currentLoadedFileName;"
+                        <button type="button" onclick="event.stopPropagation(); document.getElementById('saveJSONName').value = getLoadedFileName();"
                             style="padding: 5px 10px; background: white; color: #35654D;
                                    border: 1.5px solid #35654D; border-radius: 6px;
                                    font-size: 0.78rem; font-weight: 600; cursor: pointer;">
@@ -2978,6 +2984,17 @@
         let isFlipped = false;
         let lockSide = false; // when true, every new card opens on the locked side
         let currentLoadedFileName = ''; // Track the filename of the last loaded JSON
+
+        function setLoadedFileName(name) {
+            currentLoadedFileName = name || '';
+            try { sessionStorage.setItem('_flashLoadedName', currentLoadedFileName); } catch(e) {}
+        }
+        function getLoadedFileName() {
+            if (!currentLoadedFileName) {
+                try { currentLoadedFileName = sessionStorage.getItem('_flashLoadedName') || ''; } catch(e) {}
+            }
+            return currentLoadedFileName;
+        }
         let isMuted = false;
         let showTextOnFront = false; // overlay back text on card front
         let cachedFrontTextSize = null; // cached font size so all cards scale consistently
@@ -5673,7 +5690,7 @@
                     lockSide = false;
                     loadedUnitIds.clear();
                     currentLoadedUnitId = null;
-                    currentLoadedFileName = '';
+                    setLoadedFileName('');
                     // Clear hash cache
                     imageHashCache.clear();
                     sessionStorage.removeItem('flashcards');
@@ -5737,7 +5754,7 @@
                     cards: cards
                 };
                 const jsonString = JSON.stringify(saveData, null, 2);
-                const name = currentLoadedFileName || 'flashcards_' + new Date().toISOString().split('T')[0];
+                const name = getLoadedFileName() || 'flashcards_' + new Date().toISOString().split('T')[0];
                 const filename = name + '.json';
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -5851,11 +5868,11 @@
 
         function saveAsExistingJSON() {
             if (cards.length === 0) { showToast('⚠️ No cards to save!', 2000); closeSaveOptions(); return; }
-            if (!currentLoadedFileName) { showToast('⚠️ No existing filename found', 2000); return; }
+            if (!getLoadedFileName()) { showToast('⚠️ No existing filename found', 2000); return; }
             try {
                 const saveData = { version: '1.0', createdDate: new Date().toISOString(), totalCards: cards.length, cards: cards };
                 const jsonString = JSON.stringify(saveData, null, 2);
-                const filename = currentLoadedFileName.replace(/\.json$/i, '') + '.json';
+                const filename = getLoadedFileName().replace(/\.json$/i, '') + '.json';
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -6146,7 +6163,7 @@
                         loadedSessionData = data;
 
                         // Store the filename (without extension) for pre-filling Save to Files
-                        currentLoadedFileName = fileName.replace(/\.json$/i, '');
+                        setLoadedFileName(fileName.replace(/.json$/i, ''));
 
                         // Show file info
                         document.getElementById('loadFileName').textContent = fileName;
@@ -6569,7 +6586,7 @@
                     isFlipped = false;
                     currentLoadedUnitId = null;
                     loadedUnitIds.clear();
-                    currentLoadedFileName = '';
+                    setLoadedFileName('');
                     updateDisplay();
                     showToast('🗑️ Unit removed', 2000);
                     return;
@@ -6643,7 +6660,7 @@
                 }
 
                 // Load or add the cards based on mode
-                currentLoadedFileName = unit.name; // track for Save to Files pre-fill
+                setLoadedFileName(unit.name); // track for Save to Files pre-fill // track for Save to Files pre-fill
                 if (mode === 'add') {
                     // Check for existing cards from a different unit — show info message
                     if (cards.length > 0 && loadedUnitIds.size === 0) {
@@ -6717,6 +6734,14 @@
         }
 
         // ── Groups (localStorage) ──
+        let _mspSortMode = 'date'; // 'date' or 'name'
+
+        function mspToggleSort() {
+            _mspSortMode = _mspSortMode === 'date' ? 'name' : 'date';
+            const btn = document.getElementById('mspSortBtn');
+            if (btn) btn.textContent = _mspSortMode === 'date' ? 'Sort: Date' : 'Sort: Name';
+            loadUnitsFromDB().then(units => renderMspList(units));
+        }
         function loadGroups() {
             try { return JSON.parse(localStorage.getItem('msp_groups') || '[]'); } catch(e) { return []; }
         }
@@ -6790,6 +6815,12 @@
         function renderMspList(units) {
             const list = document.getElementById('mspList');
             if (!list) return;
+
+            // Sort units by selected mode
+            const sorted = [...units].sort((a, b) => {
+                if (_mspSortMode === 'name') return a.name.localeCompare(b.name);
+                return (b.createdAt || 0) - (a.createdAt || 0); // date: newest first
+            });
             const svgAdd    = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
             const svgLoad   = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
             const svgTrash  = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
@@ -6820,7 +6851,7 @@
 
             var html = '';
             groups.forEach(function(g) {
-                var gu = g.unitIds.map(function(uid){ return units.find(function(u){ return u.id === Number(uid); }); }).filter(Boolean);
+                var gu = g.unitIds.map(function(uid){ return sorted.find(function(u){ return u.id === Number(uid); }); }).filter(Boolean);
                 var ac = g.collapsed ? ' collapsed' : '';
                 html += '<div class="msp-group-header" onclick="mspToggleGroup(\'' + g.id + '\',this)" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
                     '<span class="msp-group-arrow' + ac + '">&#9660;</span>' +
@@ -6831,7 +6862,7 @@
                     '</div>';
             });
 
-            var uncat = units.filter(function(u){ return !assignedIds.has(u.id); });
+            var uncat = sorted.filter(function(u){ return !assignedIds.has(u.id); });
             if (uncat.length > 0) {
                 if (groups.length > 0) {
                     html += '<div class="msp-group-header" style="background:#fafafa;">' +
@@ -9841,18 +9872,19 @@
             const closeSaveBtn = document.getElementById('closeSaveBtn');
 
             if (saveJSONBtn) {
+                let _saveJsonTouched = false;
                 saveJSONBtn.addEventListener('touchend', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
+                    _saveJsonTouched = true;
                     saveAsJSON();
+                    setTimeout(() => { _saveJsonTouched = false; }, 600);
                 });
                 saveJSONBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    if (e.sourceCapabilities && !e.sourceCapabilities.firesTouchEvents) {
-                        saveAsJSON();
-                    } else if (!('ontouchstart' in window)) {
-                        saveAsJSON();
-                    }
+                    e.stopPropagation();
+                    if (_saveJsonTouched) return; // already handled by touchend
+                    saveAsJSON();
                 });
             }
 
@@ -9864,8 +9896,12 @@
             }
 
             if (closeSaveBtn) {
-                closeSaveBtn.addEventListener('click', function() {
-                    console.log('Close button clicked');
+                closeSaveBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSaveOptions();
+                });
+                closeSaveBtn.addEventListener('click', function(e) {
                     closeSaveOptions();
                 });
             }
@@ -10131,7 +10167,7 @@
             isFlipped = false;
             loadedUnitIds.clear();
             currentLoadedUnitId = null;
-            currentLoadedFileName = '';
+            setLoadedFileName('');
 
             // Clear the image hash cache to prevent false duplicate warnings
             imageHashCache.clear();
