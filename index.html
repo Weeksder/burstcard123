@@ -626,8 +626,12 @@
             letter-spacing: -0.02em;
         }
         .card-front.show-char-active .card-image {
-            width: 88%;
-            max-height: 88%;
+            width: 80%;
+            height: 80%;
+            margin-top: auto;
+            margin-bottom: 8px;
+            margin-left: auto;
+            margin-right: 8px;
         }
 
         .card-front-text {
@@ -859,13 +863,12 @@
         .audio-btn {
             width: 50px;
             height: 50px;
-            border-radius: 50%;
-            -webkit-border-radius: 50%;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 0;
+            background: none;
+            color: #35654D;
+            border: none;
+            box-shadow: none;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             touch-action: manipulation;
             display: flex;
             align-items: center;
@@ -874,13 +877,14 @@
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-            transition: all 0.3s ease;
+            transition: opacity 0.2s ease;
             pointer-events: auto;
         }
 
         .audio-btn:hover {
-            background: rgba(0,0,0,0.8);
-            transform: scale(1.05);
+            background: none;
+            transform: scale(1.1);
+            opacity: 0.7;
         }
 
         .audio-btn:active {
@@ -893,56 +897,33 @@
             left: 20px;
             width: 50px;
             height: 50px;
-            border-radius: 50%;
-            -webkit-border-radius: 50%;
-            -moz-border-radius: 50%;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 0;
+            background: none;
+            color: #35654D;
+            border: none;
+            box-shadow: none;
             font-size: 1.5rem;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            -webkit-box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            -moz-box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             touch-action: manipulation;
             -ms-touch-action: manipulation;
             -webkit-touch-action: manipulation;
             display: flex;
-            display: -webkit-flex;
-            display: -moz-flex;
-            display: -ms-flexbox;
             align-items: center;
-            -webkit-align-items: center;
-            -moz-align-items: center;
-            -ms-flex-align: center;
             justify-content: center;
-            -webkit-justify-content: center;
-            -moz-justify-content: center;
-            -ms-flex-pack: center;
             z-index: 1000;
-            transition: all 0.3s ease;
-            -webkit-transition: all 0.3s ease;
-            -moz-transition: all 0.3s ease;
-            -ms-transition: all 0.3s ease;
-            -o-transition: all 0.3s ease;
+            transition: opacity 0.2s ease;
             pointer-events: auto;
         }
 
         .fullscreen-btn:hover {
-            background: rgba(0,0,0,0.8);
-            transform: scale(1.05);
-            -webkit-transform: scale(1.05);
-            -moz-transform: scale(1.05);
-            -ms-transform: scale(1.05);
-            -o-transform: scale(1.05);
+            background: none;
+            transform: scale(1.1);
+            opacity: 0.7;
         }
 
         .fullscreen-btn:active {
             transform: scale(0.95);
-            -webkit-transform: scale(0.95);
-            -moz-transform: scale(0.95);
-            -ms-transform: scale(0.95);
-            -o-transform: scale(0.95);
+        }
         }
 
         /* True Fullscreen Image Viewer - like iPhone Photos */
@@ -991,6 +972,7 @@
         }
         
         #fullscreenViewer .fs-close-btn {
+            display: none;
             position: fixed;
             top: 20px;
             right: 20px;
@@ -1002,11 +984,14 @@
             font-size: 24px;
             cursor: pointer;
             z-index: 100000;
-            display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             touch-action: manipulation;
+        }
+
+        #fullscreenViewer.active .fs-close-btn {
+            display: flex;
         }
         
         #fullscreenViewer .fs-close-btn:active {
@@ -2234,7 +2219,7 @@
 
         <!-- Fixed card overlays: always in DOM, unaffected by card-container size or overflow -->
         <div id="cardOverlaySettings" style="display:none; position:fixed; z-index:10000;">
-            <button class="fullscreen-btn" style="position:relative; bottom:auto; left:auto;"
+            <button class="fullscreen-btn" style="position:relative; bottom:auto; left:auto; color:#35654D;"
                     onclick="event.stopPropagation(); toggleSettingsMenu()"
                     ontouchend="event.stopPropagation(); event.preventDefault(); toggleSettingsMenu()"
                     title="Settings">
@@ -2379,10 +2364,6 @@
                 <label>Card Name</label>
                 <textarea id="backText" placeholder="Enter text for the back of the card..." disabled style="line-height:1.5;color:#222;"></textarea>
                 <div id="renameEditor" contenteditable="true" spellcheck="false"></div>
-                <div id="renameNamesList">
-                    <div id="renameNamesHeader">📝 Edit names</div>
-                    <div id="renameNamesBody"></div>
-                </div>
             </div>
 
             <div class="form-actions">
@@ -3122,7 +3103,7 @@
     <!-- Fullscreen Image Viewer (like iPhone Photos) -->
     <div id="fullscreenViewer">
         <div class="fs-image-container">
-            <img id="fsImage" class="fs-image" src="" alt="Fullscreen view">
+            <img id="fsImage" class="fs-image" src="" alt="">
         </div>
         <button class="fs-close-btn" onclick="closeFullscreenViewer()" ontouchend="event.preventDefault(); closeFullscreenViewer();">
             ✕
@@ -3204,6 +3185,25 @@
             if (tts) {
                 tts.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
                 tts.style.right  = (window.innerWidth - rect.right + offset) + 'px';
+            }
+
+            // Switch icon colors based on card face — white on green back, green on white front
+            const iconColor = isFlipped ? 'white' : '#35654D';
+            if (settings) {
+                const btn = settings.querySelector('button.fullscreen-btn');
+                if (btn) btn.style.color = iconColor;
+                settings.querySelectorAll('svg').forEach(svg => {
+                    svg.setAttribute('stroke', iconColor);
+                    svg.style.color = iconColor;
+                });
+            }
+            if (tts) {
+                tts.querySelectorAll('svg').forEach(svg => {
+                    svg.setAttribute('stroke', iconColor);
+                    svg.style.color = iconColor;
+                });
+                const ttsBtn = tts.querySelector('button');
+                if (ttsBtn) ttsBtn.style.color = iconColor;
             }
         }
         // Remember which side each card was last on
@@ -4182,6 +4182,7 @@
         }
 
         function toggleRenameCase() {
+            // Advance to next mode
             singleRenameCaseIndex = (singleRenameCaseIndex + 1) % CASE_MODES.length;
             const mode = CASE_MODES[singleRenameCaseIndex];
 
@@ -4196,21 +4197,12 @@
 
             const multiModal = document.getElementById('multiRenameModal');
             if (multiModal && multiModal.classList.contains('active')) {
-                // If a card is expanded, apply to its input only
-                if (_activeMultiCard !== null) {
-                    const input = document.getElementById('mc-input-' + _activeMultiCard);
-                    if (input) input.value = applyCase(input.value);
-                } else {
-                    // Apply to all cards
-                    cards.forEach((card, i) => {
-                        card.backText = applyCase(card.backText || '');
-                        delete cachedBackTextSizes[i];
-                    });
-                    // Re-render collapsed cards in the grid
-                    const grid = document.getElementById('multiRenameGrid');
-                    grid.innerHTML = cards.map((card, i) => _buildMultiCard(card, i, false)).join('');
-                }
+                // Apply to all multi-rename inputs
+                document.querySelectorAll('#multiRenameGrid input[data-index]').forEach(function(input) {
+                    input.value = applyCase(input.value);
+                });
             } else {
+                // Single rename — only apply if not manually edited
                 const input = document.getElementById('singleRenameInput');
                 if (input && !singleRenameUserEdited && input.value) {
                     input.value = applyCase(input.value);
@@ -4237,110 +4229,25 @@
 
         function openMultiRenameModal() {
             if (cards.length === 0) return;
-            _activeMultiCard = null;
             const grid = document.getElementById('multiRenameGrid');
-            grid.innerHTML = cards.map((card, i) => _buildMultiCard(card, i, false)).join('');
+            grid.innerHTML = cards.map((card, i) => `
+                <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+                    <img src="${card.frontImage}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:10px; border:1px solid #eee;">
+                    <input
+                        type="text"
+                        value="${(card.backText || '').replace(/"/g, '&quot;')}"
+                        data-index="${i}"
+                        readonly
+                        onkeydown="this.dataset.edited='1';"
+                        onclick="this.removeAttribute('readonly'); this.select();"
+                        ontouchend="event.preventDefault(); this.removeAttribute('readonly'); this.focus(); this.select();"
+                        style="width:100%; box-sizing:border-box; text-align:center; font-size:1rem; font-weight:600;
+                               border:none; border-bottom:2px solid #35654D; background:transparent; outline:none;
+                               padding:6px 2px; cursor:pointer; color:#1a1a1a;">
+                </div>
+            `).join('');
             document.body.style.overflow = 'hidden';
             document.getElementById('multiRenameModal').classList.add('active');
-        }
-
-        let _activeMultiCard = null;
-
-        function _buildMultiCard(card, i, expanded) {
-            const name = (card.backText || '').replace(/"/g, '&quot;');
-            const nameDisplay = (card.backText || '').replace(/</g,'&lt;') || '';
-            if (expanded) {
-                return `<div id="mc-${i}" style="display:flex;flex-direction:column;align-items:center;gap:8px;
-                            grid-column:span 2;background:#f0f9f4;border-radius:14px;padding:10px;
-                            box-shadow:0 4px 16px rgba(53,101,77,0.15);transition:all 0.25s;">
-                    <img src="${card.frontImage}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:2px solid #35654D;">
-                    <input id="mc-input-${i}" type="text" value="${name}"
-                        style="width:100%;box-sizing:border-box;text-align:center;font-size:1.05rem;font-weight:600;
-                               color:#1a1a1a;border:none;border-bottom:2px solid #35654D;background:transparent;
-                               outline:none;padding:8px 4px;-webkit-user-select:text;user-select:text;"
-                        onkeydown="if(event.key==='Enter'){event.preventDefault();collapseMultiCard(${i});}"
-                        onblur="collapseMultiCard(${i});">
-                </div>`;
-            } else {
-                return `<div id="mc-${i}" style="display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.25s;">
-                    <img src="${card.frontImage}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:1px solid #eee;">
-                    <div onclick="expandMultiCard(${i})"
-                         ontouchend="event.preventDefault();expandMultiCard(${i});"
-                         style="width:100%;box-sizing:border-box;text-align:center;font-size:1rem;font-weight:600;
-                                border-bottom:2px solid #35654D;padding:6px 2px;cursor:pointer;color:${nameDisplay ? '#1a1a1a' : '#bbb'};
-                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.8em;font-weight:${nameDisplay ? '600' : '400'};">
-                        ${nameDisplay || 'tap to name'}
-                    </div>
-                </div>`;
-            }
-        }
-
-        function expandMultiCard(i) {
-            // Collapse any currently active card first
-            if (_activeMultiCard !== null && _activeMultiCard !== i) {
-                collapseMultiCard(_activeMultiCard);
-            }
-            _activeMultiCard = i;
-            const cell = document.getElementById('mc-' + i);
-            if (!cell) return;
-            cell.outerHTML = _buildMultiCard(cards[i], i, true);
-            const input = document.getElementById('mc-input-' + i);
-            if (input) {
-                input.focus();
-                input.select();
-            }
-        }
-
-        function collapseMultiCard(i) {
-            if (_activeMultiCard === i) _activeMultiCard = null;
-            const input = document.getElementById('mc-input-' + i);
-            if (input) {
-                // Save the value
-                const newName = input.value.trim();
-                cards[i].backText = newName;
-                delete cachedBackTextSizes[i];
-            }
-            const cell = document.getElementById('mc-' + i);
-            if (!cell) return;
-            cell.outerHTML = _buildMultiCard(cards[i], i, false);
-        }
-
-        let _balloonIndex = null;
-        function openBalloon() {}
-        function closeBalloon() {}
-
-        let _nameEditTarget = null;
-
-        function openNameEditPopup(el) {
-            _nameEditTarget = el;
-            const input = document.getElementById('nameEditInput');
-            input.value = el.dataset.name || '';
-            const popup = document.getElementById('nameEditPopup');
-            popup.style.display = 'flex';
-            setTimeout(() => { input.focus(); input.select(); }, 50);
-            // Save on Enter
-            input.onkeydown = function(e) {
-                if (e.key === 'Enter') { e.preventDefault(); closeNameEditPopup(true); }
-                if (e.key === 'Escape') { closeNameEditPopup(false); }
-            };
-        }
-
-        function closeNameEditPopup(save) {
-            const popup = document.getElementById('nameEditPopup');
-            if (save && _nameEditTarget) {
-                const input = document.getElementById('nameEditInput');
-                const newName = input.value.trim();
-                const i = parseInt(_nameEditTarget.dataset.index);
-                // Update the display div
-                _nameEditTarget.dataset.name = newName;
-                _nameEditTarget.innerHTML = newName
-                    ? newName.replace(/</g, '&lt;')
-                    : '<span style="color:#bbb;font-weight:400;">tap to name</span>';
-                // Update the card data live
-                if (cards[i]) { cards[i].backText = newName; delete cachedBackTextSizes[i]; }
-            }
-            popup.style.display = 'none';
-            _nameEditTarget = null;
         }
 
         function closeMultiRenameModal() {
@@ -4349,8 +4256,11 @@
         }
 
         function saveMultiRename() {
-            // Collapse any expanded card to capture its value
-            if (_activeMultiCard !== null) collapseMultiCard(_activeMultiCard);
+            const inputs = document.querySelectorAll('#multiRenameGrid input[data-index]');
+            inputs.forEach(input => {
+                const i = parseInt(input.dataset.index);
+                if (cards[i]) { cards[i].backText = input.value.trim(); delete cachedBackTextSizes[i]; }
+            });
             saveCards();
             closeMultiRenameModal();
             renderDisplay();
@@ -4371,11 +4281,9 @@
             isMultiRenameMode = false;
             _renameUIActive = false;
 
-            // Hide both rename UIs
+            // Hide structured rename list if open
             const rnl = document.getElementById('renameNamesList');
             if (rnl) rnl.style.display = 'none';
-            const rnb = document.getElementById('renameNamesBody');
-            if (rnb) rnb.innerHTML = '';
             const bt = document.getElementById('backText');
             if (bt) { bt.style.display = ''; bt.style.color = ''; }
             const ov = document.getElementById('backTextOverlay');
@@ -4618,19 +4526,11 @@
 
             // If rename editor is open, remove that row and renumber
             if (_renameUIActive) {
-                if (_isTouchDevice()) {
-                    const rows = Array.from(document.querySelectorAll('#renameNamesBody .rename-name-row'));
-                    if (rows[index]) rows[index].remove();
-                    document.querySelectorAll('#renameNamesBody .rename-index-badge').forEach((badge, i) => {
-                        badge.textContent = (i + 1) + '.';
-                    });
-                } else {
-                    const editor = document.getElementById('renameEditor');
-                    if (editor) {
-                        const nameRows = Array.from(editor.querySelectorAll('div')).filter(d => d.querySelector('.re-name'));
-                        if (nameRows[index]) nameRows[index].remove();
-                        _renumberEditor();
-                    }
+                const editor = document.getElementById('renameEditor');
+                if (editor) {
+                    const nameRows = Array.from(editor.querySelectorAll('div')).filter(d => d.querySelector('.re-name'));
+                    if (nameRows[index]) nameRows[index].remove();
+                    _renumberEditor();
                 }
             }
 
@@ -4660,38 +4560,31 @@
         }
 
         let _renameUIActive = false;
-        const _isTouchDevice = () => ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
         function toggleRenameMode() {
             const backTextElement = document.getElementById('backText');
             const renameEditor    = document.getElementById('renameEditor');
-            const renameNamesList = document.getElementById('renameNamesList');
             const renameButton    = document.getElementById('renameButton');
-            const useInputs       = _isTouchDevice();
 
             if (!_renameUIActive) {
                 _renameUIActive = true;
 
+                // Fix header line if needed
                 const lines = backTextElement.value.split('\n');
                 if (lines[0] && lines[0].includes('Card names preview:')) {
                     lines[0] = '📝 Edit names:';
                     backTextElement.value = lines.join('\n');
                 }
 
-                backTextElement.style.display = 'none';
+                _buildRenameEditor(backTextElement.value);
 
-                if (useInputs) {
-                    // ── Touch/iPad: individual input per card ──
-                    _buildRenameInputList(backTextElement.value);
-                    renameNamesList.style.display = 'block';
-                } else {
-                    // ── Desktop: contenteditable with multi-select ──
-                    _buildRenameEditor(backTextElement.value);
-                    renameEditor.style.display = 'block';
-                    renameEditor.focus();
-                    renameEditor.addEventListener('keydown', _renameEditorKeydown);
-                    renameEditor.addEventListener('mousedown', _renameEditorMousedown);
-                }
+                backTextElement.style.display = 'none';
+                renameEditor.style.display = 'block';
+                renameEditor.focus();
+
+                renameEditor.addEventListener('keydown', _renameEditorKeydown);
+                renameEditor.addEventListener('mousedown', _renameEditorMousedown);
+                renameEditor.addEventListener('touchstart', _renameEditorTouchStart, { passive: false });
 
                 renameButton.textContent = '✓ Done Editing';
                 renameButton.classList.remove('btn-warning');
@@ -4700,22 +4593,17 @@
             } else {
                 _renameUIActive = false;
 
-                let editedNames;
+                renameEditor.removeEventListener('keydown', _renameEditorKeydown);
+                renameEditor.removeEventListener('mousedown', _renameEditorMousedown);
+                renameEditor.removeEventListener('touchstart', _renameEditorTouchStart);
 
-                if (useInputs) {
-                    editedNames = _readRenameInputList();
-                    renameNamesList.style.display = 'none';
-                    document.getElementById('renameNamesBody').innerHTML = '';
-                } else {
-                    renameEditor.removeEventListener('keydown', _renameEditorKeydown);
-                    renameEditor.removeEventListener('mousedown', _renameEditorMousedown);
-                    editedNames = _readRenameEditorNames();
-                    renameEditor.style.display = 'none';
-                    renameEditor.innerHTML = '';
-                }
+                const editedNames = _readRenameEditorNames();
 
                 backTextElement.value = '📝 Edit names:\n\n' +
                     editedNames.map((n, i) => (i + 1) + '. ' + n).join('\n');
+
+                renameEditor.style.display = 'none';
+                renameEditor.innerHTML = '';
                 backTextElement.style.display = '';
 
                 if (newCard.multipleFiles && editedNames.length > 0) {
@@ -4746,48 +4634,6 @@
                 renameButton.classList.remove('btn-success');
                 renameButton.classList.add('btn-warning');
             }
-        }
-
-        // ── Touch: build individual input rows ──
-        function _buildRenameInputList(text) {
-            const body = document.getElementById('renameNamesBody');
-            body.innerHTML = '';
-            text.split('\n').forEach(line => {
-                if (line.includes('Edit names') || line.includes('Card names preview')) return;
-                const match = line.match(/^(\d+\.\s*)(.*)/);
-                if (!match) return;
-                const row = document.createElement('div');
-                row.className = 'rename-name-row';
-                const badge = document.createElement('span');
-                badge.className = 'rename-index-badge';
-                badge.textContent = match[1].trim();
-                const input = document.createElement('input');
-                input.className = 'rename-name-input';
-                input.type = 'text';
-                input.value = match[2].trim();
-                // Auto-select all on tap
-                input.addEventListener('focus', function() {
-                    const self = this;
-                    setTimeout(() => self.select(), 0);
-                });
-                // Return moves to next input
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const inputs = Array.from(document.querySelectorAll('#renameNamesBody .rename-name-input'));
-                        const next = inputs[inputs.indexOf(this) + 1];
-                        if (next) next.focus();
-                    }
-                });
-                row.appendChild(badge);
-                row.appendChild(input);
-                body.appendChild(row);
-            });
-        }
-
-        function _readRenameInputList() {
-            return Array.from(document.querySelectorAll('#renameNamesBody .rename-name-input'))
-                .map(inp => inp.value.trim());
         }
 
         function _buildRenameEditor(text) {
@@ -6088,6 +5934,8 @@
             if (navIndex) navIndex.style.color = labelColor;
             // Re-scale text now that card-back is visible and measurable
             if (isFlipped) requestAnimationFrame(() => scaleTextToFit());
+            // Update icon colors for flipped state
+            requestAnimationFrame(() => positionNavOverlay());
         }
 
         function highlightVowels(text) {
@@ -7344,6 +7192,7 @@
 
         // ── Manage Side Panel ──
         async function openManageSidePanel() {
+            closeMoreDropdown();
             const panel = document.getElementById('manageSidePanel');
             const overlay = document.getElementById('manageSidePanelOverlay');
             const list = document.getElementById('mspList');
@@ -7839,6 +7688,21 @@
                     fileData: JSON.stringify(normalizedData), // Store normalized format
                     createdAt: Date.now()
                 };
+
+                // Check for duplicates by name or identical file content
+                const existingUnits = await loadUnitsFromDB();
+                const isDuplicate = existingUnits.some(u => {
+                    // Same name
+                    if (u.name === name) return true;
+                    // Same file content (regardless of name)
+                    if (u.fileData === unit.fileData) return true;
+                    return false;
+                });
+
+                if (isDuplicate) {
+                    showToast('⚠️ This unit is already in your Quick Load list', 3000);
+                    return;
+                }
 
                 await saveUnitToDB(unit);
                 showToast('✅ Unit added successfully', 2000);
@@ -8938,20 +8802,22 @@
             // Touch (phone/tablet): landscape when width > height AND aspect ratio clearly landscape (>1.2)
             const isLandscape = window.innerWidth > window.innerHeight && (!isTouchDevice || (window.innerWidth / window.innerHeight) > 1.2);
 
-            const choicesHTML = q.options.map((opt, idx) => `
+            const choicesHTML = q.options.map((opt, idx) => {
+                const isMultiWord = opt.trim().includes(' ');
+                return `
                 <button id="matchOpt${idx}"
                     onclick="checkMatchAnswer('${opt.replace(/'/g,"\\'")}', ${idx})"
                     style="width:100%;border:none;border-bottom:1.5px solid #ddd;background:transparent;
                            padding:4px 8px;cursor:pointer;display:flex;align-items:center;
                            justify-content:center;gap:10px;transition:all 0.18s;">
                     <span id="matchIcon${idx}L" style="width:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0;"></span>
-                    <span id="matchLabel${idx}" style="font-family:'Fredoka',Arial,sans-serif;font-size:4rem;
-                          font-weight:400;color:#1a1a1a;line-height:1.15;white-space:nowrap;overflow:visible;">
+                    <span id="matchLabel${idx}" style="font-family:'Fredoka',Arial,sans-serif;font-size:6rem;
+                          font-weight:400;color:#1a1a1a;line-height:1.15;
+                          ${isMultiWord ? 'white-space:normal;word-break:break-word;text-align:center;' : 'white-space:nowrap;overflow:visible;'}">
                         ${highlightVowelsFront(opt)}
                     </span>
                     <span id="matchIcon${idx}R" style="width:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0;"></span>
-                </button>
-            `).join('');
+                </button>`; }).join('');
 
             if (isLandscape) {
                 content.innerHTML = `
@@ -9021,16 +8887,25 @@
             for (let i = 0; i < 3; i++) {
                 const el = document.getElementById(`matchLabel${i}`);
                 if (!el) continue;
-                // Measure available width from the parent button minus the two icon slots (48px each) and padding
                 const btn = el.closest('button');
-                const available = btn ? btn.clientWidth - 96 - 16 : 0;
-                if (available <= 0) continue;
-                let size = 4.0;
+                if (!btn) continue;
+                const isWrapping = el.style.whiteSpace === 'normal';
+                let size = 6.0;
                 el.style.fontSize = size + 'rem';
-                // Shrink until the text's natural rendered width fits the available space
-                while (el.scrollWidth > available && size > 0.8) {
-                    size = Math.round((size - 0.05) * 100) / 100;
-                    el.style.fontSize = size + 'rem';
+
+                if (isWrapping) {
+                    const maxH = btn.clientHeight || 80;
+                    while (el.scrollHeight > maxH && size > 0.8) {
+                        size = Math.round((size - 0.1) * 100) / 100;
+                        el.style.fontSize = size + 'rem';
+                    }
+                } else {
+                    const available = btn.clientWidth - 96 - 16;
+                    if (available <= 0) continue;
+                    while (el.scrollWidth > available && size > 0.8) {
+                        size = Math.round((size - 0.05) * 100) / 100;
+                        el.style.fontSize = size + 'rem';
+                    }
                 }
             }
         }
@@ -10315,7 +10190,7 @@
             // TTS button — bottom right, same style as settings button
             const ttsEl = document.getElementById('cardOverlayTTS');
             if (card.backText) {
-                ttsEl.innerHTML = `<button class="audio-btn" onclick="event.stopPropagation(); speakText('${card.backText.replace(/'/g, "\\'")}')">
+                ttsEl.innerHTML = `<button class="audio-btn" style="color:#35654D;" onclick="event.stopPropagation(); speakText('${card.backText.replace(/'/g, "\\'")}')">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                         <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
@@ -11209,26 +11084,6 @@
             <button onclick="applyCrop()" style="background:#35654D; color:white; border:none; border-radius:12px; padding:14px 48px; font-size:17px; font-weight:700; cursor:pointer; letter-spacing:0.3px;">
                 ✓ Done
             </button>
-        </div>
-    </div>
-
-    <!-- Multi-rename name edit popup -->
-    <div id="nameEditPopup" onclick="if(event.target===this)closeNameEditPopup(false);" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
-        <div style="background:white; border-radius:18px; padding:24px 20px 18px; width:88vw; max-width:420px; box-shadow:0 8px 40px rgba(0,0,0,0.25); display:flex; flex-direction:column; gap:14px;">
-            <div style="font-size:0.8rem; font-weight:700; color:#aaa; letter-spacing:0.5px; text-transform:uppercase;">Card Name</div>
-            <input id="nameEditInput" type="text"
-                style="width:100%; box-sizing:border-box; font-size:1.15rem; font-weight:600; color:#1a1a1a;
-                       border:none; border-bottom:2px solid #35654D; outline:none; padding:8px 4px;
-                       background:transparent; -webkit-user-select:text; user-select:text;"
-                placeholder="Enter card name...">
-            <div style="display:flex; gap:10px; margin-top:4px;">
-                <button onclick="closeNameEditPopup(false)"
-                    style="flex:1; padding:11px; border-radius:12px; border:1.5px solid #ddd; background:white;
-                           color:#666; font-size:0.95rem; font-weight:600; cursor:pointer;">Cancel</button>
-                <button onclick="closeNameEditPopup(true)"
-                    style="flex:1; padding:11px; border-radius:12px; border:none; background:#35654D;
-                           color:white; font-size:0.95rem; font-weight:700; cursor:pointer;">✅ Save</button>
-            </div>
         </div>
     </div>
 
