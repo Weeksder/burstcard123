@@ -1362,6 +1362,98 @@
             border-color: #35654D;
         }
 
+        #renameEditor {
+            display: none;
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            line-height: 1.5;
+            min-height: 240px;
+            max-height: 400px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            outline: none;
+            caret-color: #222;
+            -webkit-user-select: text;
+            user-select: text;
+            color: #222;
+            background: #fff;
+        }
+        #renameEditor .re-locked {
+            color: #bbb;
+            font-weight: 700;
+            cursor: default;
+        }
+        #renameEditor .re-name {
+            color: #222;
+        }
+
+        /* Rename mode structured list */
+        #renameNamesList {
+            display: none;
+            width: 100%;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            background: #fff;
+            min-height: 240px;
+            max-height: 400px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+        #renameNamesHeader {
+            padding: 10px 14px 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #aaa;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e8e8e8;
+            border-radius: 10px 10px 0 0;
+            user-select: none;
+            -webkit-user-select: none;
+            letter-spacing: 0.3px;
+            position: sticky;
+            top: 0;
+        }
+        .rename-name-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .rename-name-row:last-child { border-bottom: none; }
+        .rename-index-badge {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #bbb;
+            min-width: 28px;
+            text-align: right;
+            flex-shrink: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .rename-name-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: #222;
+            background: transparent;
+            padding: 5px 4px;
+            border-radius: 6px;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+        .rename-name-input:focus { background: #f0f4ff; }
+
         input[type="file"] {
             display: none;
         }
@@ -2271,7 +2363,7 @@
             <h2 id="modalTitle">Create New Cards</h2>
 
             <div class="form-group">
-                <label id="modalLabel">Front Image(s) (Up to 30 images Max)</label>
+                <label id="modalLabel">Image</label>
                 <div class="upload-area" id="frontUpload" onclick="handleUploadAreaClick(event)">
                     <div id="frontPreview">
                         <div class="upload-icon"><img src="data:image/webp;base64,UklGRqQQAABXRUJQVlA4TJgQAAAv/8F/ENdnIG2b+De+7TcwAQSSNp73z7wVSPjmoEECNUIy0CEkhJaBb46Ctm2YlD/tdpdAREwA8qjLQV3FVt5DZxY6dehAjiRJkiLTLod2CIzxvEk0mIqkOn4R/Ufbtm1U+pBm9EZr27Kn2badOUNcGqwxHAKhOPTCHa42uCahgru7u1sdd4e6u7e4R3F3d8m5b//qx3bsx7bux69E9J8SJEmKJEn9GIa3ITsS65dDeterEKxEv+gX/aJf9It+0S/6Rb/oF/2iX/SLftEv+kW/nJuqMOgX/aJf9It+0S/6Rb/oF/2iXw4RMg/hBeJGVWAIXoIhLg5vgWgL5MFaKNJiMdr368WE9n67mtD+Lie06/lsgM4m2GyEzGa4bIjKpphsjMjmeGyQxiZZbJTERj06bJjCphlsnMDm+QtAXwT2QpAXg7sQ3h7VRWEuDHFxeAtEWyTWQpEWi7NYnpRFYywcYfH4CkhXRLZCkhWTq6BURWUqLFFxeQpMU2SWQpMUm6PgFAX3bCg8QeEJCk9QQ1Q2xWRjRDbHY4M0BX65/sv1X67/clHD/9cAAMaXXP/l+i/Xf7n+y/Vfrv9y/ZdbtJeMv8nG5x8YgOnpH4LhqR+E2WkfhtEpH4jJ6R6KwakejLlpHo6xKR6QqekdkqGpHZSZaR2WkSkdmInpHJqBqRyceWkcnnEpXAHT0rcKhqVuJcxK22oYlbIVMSldq2JQqlbGnDStjjEpWiFT0rNKhqRmpcxIy2oZkZIVMyEdq2ZAKlbOYJXuNn/j91l3lPi5f2b3ir7VAuzjtc6LSdkRH1xWWPJo96IWAcw88Q17z/8o45F1Dw9unpxSMQiKkC6/Kky5uTrJwyTqxSnbDtxTvMk59sm8brWiIKiy6JYClvRX/a3ye67HinSfsi+n13YtKrzobQpdTvT1/nd5Gk3+8qbSIMdXvBwnty7XFcDsTPxvCnTeqtXtbdbi5IISK/qlwpiHI/z+VaXx23OUfjk8r5K0Bt5VMPPrP94oeBotOau0TdrYooLyvK2QJjPub0pMPan0ju/nPvmE5LdCYc2xon8I7/6TckIef5QcLCG0vyt1pkzjdfeUY3J7dWPxDFB441MOy75Ur2hqP1YGnOP9guWS97wy41weHyWV15Ux586CeJEkPFYGncerEgXyoTLr+LYWk0ZFZdx5ODNMFguUged8Z48gvBeUkWdHDTm8qAw9vvVxUliljD13JwTJIEMZfE62l0B4jjL6rI90vnrK8HOyruMNNX0qZ0Yeh1ulzD+7EpztYxdA3evtaL8oV5CPCjhYmjugLiY513nlFjLT41QPXAO1LdihHNvmmvXDxvnDUhskhIUl1E8ZOm/9dxl35XLpp+XzJg7u3jGpdoVi+QIC8hWrUDupY/fBE+ct/+mSZh3iomHKnF3jP93I+jdYeEScGqH092d1qWGxVjCqRpdZ76drU7d1uiJCvh1jLBVeJY76VYpmcN++BW1K+RNb/Eu1WbDPp0VZYgt4vu4bS5ZToMs3zpf2dru8ZEPytns7TYNGyMHY/MRWa9Foh5MdXZYaTTYmOnXZUWVzFvnjcpj1RrVdhlMHpZhaijRIqaknlK35KhKUM139iDXe7mec59aK+toUA3rqr7B1DIv0OESuj7ShxCZo+HVHefp5qma9woJTP3+qbEt2LB6f5yVbUniPg+4Sh8WQhokZdti+5+XRaLzmte0X70aH+K05aZvmv9v2LwtC8ag72ZgROQ7wTUPSOo2+s+uGsAAQl20urHrhhvYv+FYn7VPzU2VLDuaH4aDtIy+VTNO65GtzRXJEKm+zpUlyf14QPtSgh134F/rakECOSeIWZUP2RkHwoR9pkNB9mkpvQI5Kkyw7yhGfAeCgJv1r485pWeo3Og85LIETbCjw2BEmvsvajLpY5a5+PihCDkxxGx6Avu8R3qO6pE3a6PZOT7Qgh6btacWdacLrThpluF6/HGYEk2MTOpe9QqWj6F4jrbJUI4fKkqNTIYP74VEVwX3u1Yv/b9pYHkwOT+ha7lK0Z8V2PS9plmo+Pdx5iQRI13vMQ6QHSG0kaZe1WtifQCKkLHNT6kqhnQnST9w9DSwOIiESslKxZojMuko0weXtZBIkr9xlLYn5v8QO+2n5q9Xu5seDJUmUlElnvexxJQSmacNOZ3v9GEnCJO/vrIUxXnH9RHry7LbT+0EkTkJYm6HHiKsGaZokGy3zkkDxX8vZVFpRWF+TrrxXbDOdZIpnPueDpgBZ9SVts9iuPoQDSawMZ2xMmy0qX6zGVZw2vc6UQoLl1Sd8JXK1JLWD9OW1pZ//3aZkM2U5QXZXpt/n6w8ZKqixpHHesWPsgKYkG2rB95eLBFVWZ/VtuA9MJelQF8WWF8SUTTrzu8BuMMmHRrM5FyWluaR13uI2mxxPr1nfVkiptt7aMVtFMvJsZHuDlWR010/zPjy8PvEXEuX5iq2LpIyySW/PsPothKREYbsUU5qL6AfSPJz9UNPzkpyowBGuL6W/hDbqbg/j/V8ZkhSV52p/6iuhBbrbxucVkhX15OrJFSGgYbqbx1iuKS3ieuOzBJSqu35sQ0eGyCs8m8eDwvJpoLskrv46ZUleVOkh00Rl8knQXW22smeJUV+mF1KeF0+Y7lbzWEsyo81Mz+vBK/yYRUao1CKYxiyujv1v3uApNahAUqNqT1lslk59veW/x/TCp9zoTZ5+SEWQv6GpPF21QyUXwVNXsRB4u1PYdRZtSXKUyjNAeoRs5mttmOLwKcmOeCZdGQr7dSf/sywNc8WlV/oRy1zlXtF8r/W4XYrDBJIezVAcSRZNls6+YPmsA+UXfIKlZ4dsdWcefRXL4dCE5EcteGo7Ras7ramvGYrBFkKAPuLwrmjm6Ptfczwn9yViUImlBLmIZDKdXHK+jTCgT1iGdROt31mirr7kUBmFGhz2iGaMpor6WJqcUKBvFUNK4u13PorlES8ODVk6d+Mdd2IXg+8IB/qNwQG4484UVQwaIdFMMaQ02nGnhjP4nZCgvQwmoh13bjtHpzws2nMM7Qp23MnCPo7vAxYejl4Iz2Edd3YIR70LGDSOwVSs407/ylCNF4NGER9D+y7UcefzM3wXPic06HtlPRWRzjvRkaPcFY+uDEYjnXdmKUMtZjAe4fcYmtmRzjt1jGNMLjxoA8M+ivxwzjtXjKO3CyIvKOuphHPeyR4MM8l6EPGes24gznlnN3E8B0eE5jJU2cGcd9pz2bpSmJS37gLMeeerMQzKTpjQWYZfbiDXnVDoOMO0Qqiss64bxnVnxHGMxpDqeM5teloFcd0pMdmKQTQqRRjubxGuO6dEFssgcyQKhzW3xeJbd1KDq4rD27gsZ+iACm/dWT0eKxbtcOlk3Qxw606L4pplxJcXlxiGlids686rnsG2pS/Chax/5fciW3di4KynfCOdO5+T59m7jWvdmdSSc2L+NsikKMt5FtW6U+vwroa+FDLlrauDad25tT5RrHnsj0xQjmVdAK07OXLAIcWcdEKGjlt/U2jWnR3eetU9G5YUgc3n1gchRrLu9IAqo3+wZwHns7B5zfqbArDu/ID8xSvWbTdhc9oTZVe6YNPH+puSdt8JjuzkqsSL5dddGN7UAfw7I0p6trc8197/3ymXCBu6Zb3kZv9/5/yEzk7Leu3/76Tl6Ky33t1+/39nzUPnLcsm7f/vtInozLT+y27/f+cNQWeM9eXI7P/vxO7o9Lds3f7/zuyIzqvWV9AMaJX0ksRn+1w73+z/79w66DSxbPv+/06ugM7/rFdz7f/v7GLoJFp2av9/p+dHJ96ya/v/Oz8QnUjrvbr2vztBADoR1qtu9787Qz504qz36Nn/7hRF0Slj/T/B3J3Dvb2htP3vTlIbncbWJ/na/+4sL6LTxrJv9787TQd0XrH+uhPp7jwu7XXn9fvfnWgwOqOt76Vh/7szTRCf7ZPtz8fdncqF1Z3y7s7lvurO97872Q/obLes9/53Z7uIzk3LOh3A3emewSaaoezuAO7OVx2b+jr0Oxc/3oeWdcY27kRvHcadkD8HDGfcGYQ2WfYeNp9ZH3gYoYmGM+4cQh3MZtzJrgiVM5xxZxEKeGpZa2SStRh3GkCyzGbceYjetz75AjLp1uedAMH2oVdy8uISzTDvDEYvM6w0FpdUhnmnMKpq3Vu4LGOYdw6jUJ/1JQfhclSPeScR5CTDsy9UCjOcniSBxFBbn4xKZ4Z5p1EaaN0SVNYwzDuPUiLDXpdQYdimfilhOHoBDiUweY6j5FIYjr4BnozJbOu24vQKwwNwDyJ+Z60bhFOssp66iDTlWGYvEBpMjrMMEYYRpW/5AfUGwxq8gvAIu8ex1D6gWirrScGjC8fSg5GKeGLdZ3h8x7HKbrE4dCHGT6PRKOzjaGyDaqqJrDt1Olb1lIGsO7c8Vv6XzGPdyemEFS0wj3VnT0KrnHmsOz0RLdptGuvOP0hw9TeNfSeMwyvvI2PbdwaObDWNfacA1sww9p2DmPe8qe07CUjmmMW+syBLVBxpDHPfaZjRdpYt5wYA2HfecZ5954HWR3FktPym8ew7EbXImyw7Di8svYSHmu47E2f1gVLvSe8rpn2nwhZ1m2chCrLrqOO+c7FkJoujgZILP8u072Tg8vNMjTVRcgu03Hc2mMxl8aCU3Co9Ydp3OnQFeZYluTdQamFZTPvOh0abRXIsktoGrnMnAC+aaZ2MKTLrqeu5M8DJGzxuJ0iswn2mw7Ik+OIeMp0wXZC8wjJ5vp4Pioip//ZMS+W1nu0ghQxAoUeKJ52k1UPxuBJpAmgq1xETloZ07jT9yQgEHcF97jyZ/maAmuA+d6JWZAhoA+pzZ/qBjEHB65jPncpX1RxQL8znzrWWDILnV8TnTnYxv0mg8k8AnztbCzIKNAfvudMtJ8MQcgLtufOdCDcN1BzsuRP66pNxoM1Yz51xARmIyGNIz50yLchEUJWHOM+d80lVMhLUG+e5k04kQ0HrUJ47605/YxGahvHcaW+VJmNBiXcRnjtvTnMyGNQJ4bkTjySjQYvwnTvzOjIcgXvQnTv19kDTQcVuYDt37rMxZDyoVQ6ycye/X40MCPVGdu7sKWREaAyuc6efToaE5qE6d/4PPMaElsO67gTmxLvNZK47A8gEfG0w150CZUK3m8t154CZvIeN5bqT4EzscVO57ixAU+K8oVx3GqQpmqnsyuHhsVreDg6X4rrzQE0+G69ORM5XL4dq9jD45a9yxLjuRFgTbOsWqu6saeKnzYphmqy5I8l1ZwIb72Jla87OKa9Fl9g5Z4W57lRwM97281FY0zneTvGd15yR57pz4U3XJ8r2ZC/qkN+WMfE7LMqW6bqTAU6SFvtn8e1fyH3d2Rbul+u6syFOtUtmcd3pIKfEEajXnc/j2xZM7t5MD7l6F5OIXL2PCpCrd683kau3K4FcvZwZecjVO1mXyNVbH0mu3sn2RG7e3QlBJAOjv+7cbt6OGkRu3vnOHpKEoV93elmY+HXnd/Eer0okcvHuLIgncvEuj48icvGO9wsmcvH2pXqJ3LvbqxsTkWv3+KPkYCLXzvdzn3xE5NqljS1KRK7d4XmViMity1qcXJCIXLrjK17+S0WBO3d6bde/PNJw4XKOfTKvW62/NCu7bg8Pbp6cUjGI/hJXzvEzGhM=" alt="Add Image" style="width: 80px; height: 80px;"></div>
@@ -2284,8 +2376,13 @@
             </div>
 
             <div class="form-group">
-                <label>Back (Text)</label>
-                <textarea id="backText" placeholder="Enter text for the back of the card..." disabled></textarea>
+                <label>Card Name</label>
+                <textarea id="backText" placeholder="Enter text for the back of the card..." disabled style="line-height:1.5;color:#222;"></textarea>
+                <div id="renameEditor" contenteditable="true" spellcheck="false"></div>
+                <div id="renameNamesList">
+                    <div id="renameNamesHeader">📝 Edit names</div>
+                    <div id="renameNamesBody"></div>
+                </div>
             </div>
 
             <div class="form-actions">
@@ -2642,6 +2739,12 @@
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+        }
+        .msp-list::after {
+            content: '';
+            display: block;
+            height: 80px;
+            flex-shrink: 0;
         }
         .msp-unit-row {
             display: flex;
@@ -4079,7 +4182,6 @@
         }
 
         function toggleRenameCase() {
-            // Advance to next mode
             singleRenameCaseIndex = (singleRenameCaseIndex + 1) % CASE_MODES.length;
             const mode = CASE_MODES[singleRenameCaseIndex];
 
@@ -4094,12 +4196,21 @@
 
             const multiModal = document.getElementById('multiRenameModal');
             if (multiModal && multiModal.classList.contains('active')) {
-                // Apply to all multi-rename inputs
-                document.querySelectorAll('#multiRenameGrid input[data-index]').forEach(function(input) {
-                    input.value = applyCase(input.value);
-                });
+                // If a card is expanded, apply to its input only
+                if (_activeMultiCard !== null) {
+                    const input = document.getElementById('mc-input-' + _activeMultiCard);
+                    if (input) input.value = applyCase(input.value);
+                } else {
+                    // Apply to all cards
+                    cards.forEach((card, i) => {
+                        card.backText = applyCase(card.backText || '');
+                        delete cachedBackTextSizes[i];
+                    });
+                    // Re-render collapsed cards in the grid
+                    const grid = document.getElementById('multiRenameGrid');
+                    grid.innerHTML = cards.map((card, i) => _buildMultiCard(card, i, false)).join('');
+                }
             } else {
-                // Single rename — only apply if not manually edited
                 const input = document.getElementById('singleRenameInput');
                 if (input && !singleRenameUserEdited && input.value) {
                     input.value = applyCase(input.value);
@@ -4126,25 +4237,110 @@
 
         function openMultiRenameModal() {
             if (cards.length === 0) return;
+            _activeMultiCard = null;
             const grid = document.getElementById('multiRenameGrid');
-            grid.innerHTML = cards.map((card, i) => `
-                <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                    <img src="${card.frontImage}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:10px; border:1px solid #eee;">
-                    <input
-                        type="text"
-                        value="${(card.backText || '').replace(/"/g, '&quot;')}"
-                        data-index="${i}"
-                        readonly
-                        onkeydown="this.dataset.edited='1';"
-                        onclick="this.removeAttribute('readonly'); this.select();"
-                        ontouchend="event.preventDefault(); this.removeAttribute('readonly'); this.focus(); this.select();"
-                        style="width:100%; box-sizing:border-box; text-align:center; font-size:1rem; font-weight:600;
-                               border:none; border-bottom:2px solid #35654D; background:transparent; outline:none;
-                               padding:6px 2px; cursor:pointer; color:#1a1a1a;">
-                </div>
-            `).join('');
+            grid.innerHTML = cards.map((card, i) => _buildMultiCard(card, i, false)).join('');
             document.body.style.overflow = 'hidden';
             document.getElementById('multiRenameModal').classList.add('active');
+        }
+
+        let _activeMultiCard = null;
+
+        function _buildMultiCard(card, i, expanded) {
+            const name = (card.backText || '').replace(/"/g, '&quot;');
+            const nameDisplay = (card.backText || '').replace(/</g,'&lt;') || '';
+            if (expanded) {
+                return `<div id="mc-${i}" style="display:flex;flex-direction:column;align-items:center;gap:8px;
+                            grid-column:span 2;background:#f0f9f4;border-radius:14px;padding:10px;
+                            box-shadow:0 4px 16px rgba(53,101,77,0.15);transition:all 0.25s;">
+                    <img src="${card.frontImage}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:2px solid #35654D;">
+                    <input id="mc-input-${i}" type="text" value="${name}"
+                        style="width:100%;box-sizing:border-box;text-align:center;font-size:1.05rem;font-weight:600;
+                               color:#1a1a1a;border:none;border-bottom:2px solid #35654D;background:transparent;
+                               outline:none;padding:8px 4px;-webkit-user-select:text;user-select:text;"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();collapseMultiCard(${i});}"
+                        onblur="collapseMultiCard(${i});">
+                </div>`;
+            } else {
+                return `<div id="mc-${i}" style="display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.25s;">
+                    <img src="${card.frontImage}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:1px solid #eee;">
+                    <div onclick="expandMultiCard(${i})"
+                         ontouchend="event.preventDefault();expandMultiCard(${i});"
+                         style="width:100%;box-sizing:border-box;text-align:center;font-size:1rem;font-weight:600;
+                                border-bottom:2px solid #35654D;padding:6px 2px;cursor:pointer;color:${nameDisplay ? '#1a1a1a' : '#bbb'};
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.8em;font-weight:${nameDisplay ? '600' : '400'};">
+                        ${nameDisplay || 'tap to name'}
+                    </div>
+                </div>`;
+            }
+        }
+
+        function expandMultiCard(i) {
+            // Collapse any currently active card first
+            if (_activeMultiCard !== null && _activeMultiCard !== i) {
+                collapseMultiCard(_activeMultiCard);
+            }
+            _activeMultiCard = i;
+            const cell = document.getElementById('mc-' + i);
+            if (!cell) return;
+            cell.outerHTML = _buildMultiCard(cards[i], i, true);
+            const input = document.getElementById('mc-input-' + i);
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }
+
+        function collapseMultiCard(i) {
+            if (_activeMultiCard === i) _activeMultiCard = null;
+            const input = document.getElementById('mc-input-' + i);
+            if (input) {
+                // Save the value
+                const newName = input.value.trim();
+                cards[i].backText = newName;
+                delete cachedBackTextSizes[i];
+            }
+            const cell = document.getElementById('mc-' + i);
+            if (!cell) return;
+            cell.outerHTML = _buildMultiCard(cards[i], i, false);
+        }
+
+        let _balloonIndex = null;
+        function openBalloon() {}
+        function closeBalloon() {}
+
+        let _nameEditTarget = null;
+
+        function openNameEditPopup(el) {
+            _nameEditTarget = el;
+            const input = document.getElementById('nameEditInput');
+            input.value = el.dataset.name || '';
+            const popup = document.getElementById('nameEditPopup');
+            popup.style.display = 'flex';
+            setTimeout(() => { input.focus(); input.select(); }, 50);
+            // Save on Enter
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); closeNameEditPopup(true); }
+                if (e.key === 'Escape') { closeNameEditPopup(false); }
+            };
+        }
+
+        function closeNameEditPopup(save) {
+            const popup = document.getElementById('nameEditPopup');
+            if (save && _nameEditTarget) {
+                const input = document.getElementById('nameEditInput');
+                const newName = input.value.trim();
+                const i = parseInt(_nameEditTarget.dataset.index);
+                // Update the display div
+                _nameEditTarget.dataset.name = newName;
+                _nameEditTarget.innerHTML = newName
+                    ? newName.replace(/</g, '&lt;')
+                    : '<span style="color:#bbb;font-weight:400;">tap to name</span>';
+                // Update the card data live
+                if (cards[i]) { cards[i].backText = newName; delete cachedBackTextSizes[i]; }
+            }
+            popup.style.display = 'none';
+            _nameEditTarget = null;
         }
 
         function closeMultiRenameModal() {
@@ -4153,11 +4349,8 @@
         }
 
         function saveMultiRename() {
-            const inputs = document.querySelectorAll('#multiRenameGrid input[data-index]');
-            inputs.forEach(input => {
-                const i = parseInt(input.dataset.index);
-                if (cards[i]) { cards[i].backText = input.value.trim(); delete cachedBackTextSizes[i]; }
-            });
+            // Collapse any expanded card to capture its value
+            if (_activeMultiCard !== null) collapseMultiCard(_activeMultiCard);
             saveCards();
             closeMultiRenameModal();
             renderDisplay();
@@ -4176,10 +4369,23 @@
             // Reset rename mode flags
             isRenameMode = false;
             isMultiRenameMode = false;
+            _renameUIActive = false;
+
+            // Hide both rename UIs
+            const rnl = document.getElementById('renameNamesList');
+            if (rnl) rnl.style.display = 'none';
+            const rnb = document.getElementById('renameNamesBody');
+            if (rnb) rnb.innerHTML = '';
+            const bt = document.getElementById('backText');
+            if (bt) { bt.style.display = ''; bt.style.color = ''; }
+            const ov = document.getElementById('backTextOverlay');
+            if (ov) ov.style.display = 'none';
+            const re = document.getElementById('renameEditor');
+            if (re) { re.style.display = 'none'; re.innerHTML = ''; }
 
             // Reset modal title and label to default
             document.getElementById('modalTitle').textContent = 'Create New Cards';
-            document.getElementById('modalLabel').textContent = 'Front Image(s) (Up to 30 images Max)';
+            document.getElementById('modalLabel').textContent = 'Image';
 
             // Keep file input hidden (it's triggered by clicking upload area)
             document.getElementById('frontImage').style.display = 'none';
@@ -4410,6 +4616,29 @@
             // Re-render previews
             renderImagePreviews();
 
+            // If rename editor is open, remove that row and renumber
+            if (_renameUIActive) {
+                if (_isTouchDevice()) {
+                    const rows = Array.from(document.querySelectorAll('#renameNamesBody .rename-name-row'));
+                    if (rows[index]) rows[index].remove();
+                    document.querySelectorAll('#renameNamesBody .rename-index-badge').forEach((badge, i) => {
+                        badge.textContent = (i + 1) + '.';
+                    });
+                } else {
+                    const editor = document.getElementById('renameEditor');
+                    if (editor) {
+                        const nameRows = Array.from(editor.querySelectorAll('div')).filter(d => d.querySelector('.re-name'));
+                        if (nameRows[index]) nameRows[index].remove();
+                        _renumberEditor();
+                    }
+                }
+            }
+
+            // Also trim editedNames if present
+            if (newCard.editedNames && newCard.editedNames.length > index) {
+                newCard.editedNames.splice(index, 1);
+            }
+
             // Restore scroll positions after a short delay to allow rendering
             setTimeout(function() {
                 const newPreviewArea = document.getElementById('imagePreviewGrid');
@@ -4430,89 +4659,83 @@
             }
         }
 
+        let _renameUIActive = false;
+        const _isTouchDevice = () => ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
         function toggleRenameMode() {
             const backTextElement = document.getElementById('backText');
-            const renameButton = document.getElementById('renameButton');
+            const renameEditor    = document.getElementById('renameEditor');
+            const renameNamesList = document.getElementById('renameNamesList');
+            const renameButton    = document.getElementById('renameButton');
+            const useInputs       = _isTouchDevice();
 
-            if (backTextElement.disabled) {
-                // Enable editing
-                backTextElement.disabled = false;
-                backTextElement.style.background = '#fff';
-                backTextElement.style.border = '2px solid #667eea';
-                renameButton.textContent = '✓ Done Editing';
-                renameButton.classList.remove('btn-warning');
-                renameButton.classList.add('btn-success');
+            if (!_renameUIActive) {
+                _renameUIActive = true;
 
-                // Add instruction
                 const lines = backTextElement.value.split('\n');
                 if (lines[0] && lines[0].includes('Card names preview:')) {
                     lines[0] = '📝 Edit names:';
                     backTextElement.value = lines.join('\n');
                 }
 
-                // Add event listeners for protection
-                backTextElement.addEventListener('keydown', protectNumberedList);
-                backTextElement.addEventListener('dblclick', handleDoubleClick);
-                backTextElement.addEventListener('click', handleTripleClick);
-                backTextElement.addEventListener('mouseup', handleSelectionEnd);
-            } else {
-                // Disable editing - process edited names
-                backTextElement.removeEventListener('keydown', protectNumberedList);
-                backTextElement.removeEventListener('dblclick', handleDoubleClick);
-                backTextElement.removeEventListener('click', handleTripleClick);
-                backTextElement.removeEventListener('mouseup', handleSelectionEnd);
+                backTextElement.style.display = 'none';
 
-                const lines = backTextElement.value.split('\n').filter(line => line.trim());
-                const editedNames = [];
-
-                for (let line of lines) {
-                    if (line.includes('Edit names') || line.includes('Card names preview')) continue;
-                    if (!line.trim()) continue;
-
-                    // Check if line has number format
-                    const match = line.match(/^(\d+)\.\s*(.*)$/);
-                    if (match) {
-                        const name = match[2].trim();
-                        editedNames.push(name);
-                    }
+                if (useInputs) {
+                    // ── Touch/iPad: individual input per card ──
+                    _buildRenameInputList(backTextElement.value);
+                    renameNamesList.style.display = 'block';
+                } else {
+                    // ── Desktop: contenteditable with multi-select ──
+                    _buildRenameEditor(backTextElement.value);
+                    renameEditor.style.display = 'block';
+                    renameEditor.focus();
+                    renameEditor.addEventListener('keydown', _renameEditorKeydown);
+                    renameEditor.addEventListener('mousedown', _renameEditorMousedown);
                 }
 
-                // Store edited names temporarily
+                renameButton.textContent = '✓ Done Editing';
+                renameButton.classList.remove('btn-warning');
+                renameButton.classList.add('btn-success');
+
+            } else {
+                _renameUIActive = false;
+
+                let editedNames;
+
+                if (useInputs) {
+                    editedNames = _readRenameInputList();
+                    renameNamesList.style.display = 'none';
+                    document.getElementById('renameNamesBody').innerHTML = '';
+                } else {
+                    renameEditor.removeEventListener('keydown', _renameEditorKeydown);
+                    renameEditor.removeEventListener('mousedown', _renameEditorMousedown);
+                    editedNames = _readRenameEditorNames();
+                    renameEditor.style.display = 'none';
+                    renameEditor.innerHTML = '';
+                }
+
+                backTextElement.value = '📝 Edit names:\n\n' +
+                    editedNames.map((n, i) => (i + 1) + '. ' + n).join('\n');
+                backTextElement.style.display = '';
+
                 if (newCard.multipleFiles && editedNames.length > 0) {
-                    // Create new files with edited names
                     const allFiles = Array.from(newCard.multipleFiles);
-                    const newFiles = [];
-
+                    const newFiles = [], keptNames = [];
                     for (let i = 0; i < Math.min(allFiles.length, editedNames.length); i++) {
-                        if (editedNames[i]) { // Only include if name is not empty
-                            newFiles.push(allFiles[i]);
-                        }
+                        if (editedNames[i]) { newFiles.push(allFiles[i]); keptNames.push(editedNames[i]); }
                     }
-
-                    // Update the file list
                     if (newFiles.length > 0) {
                         try {
-                            const dataTransfer = new DataTransfer();
-                            newFiles.forEach(file => dataTransfer.items.add(file));
-                            newCard.multipleFiles = dataTransfer.files;
-                        } catch (e) {
-                            newCard.multipleFiles = newFiles;
-                        }
-
-                        // Store the edited names to use when rendering
-                        newCard.editedNames = editedNames.filter(name => name); // Remove empty names
-
-                        // Re-render preview with edited names
+                            const dt = new DataTransfer();
+                            newFiles.forEach(f => dt.items.add(f));
+                            newCard.multipleFiles = dt.files;
+                        } catch(e) { newCard.multipleFiles = newFiles; }
+                        newCard.editedNames = keptNames;
                         renderImagePreviews();
-
-                        // Update button count
                         const addButton = document.querySelector('.form-actions .btn-success');
-                        if (addButton) {
-                            addButton.textContent = '✨ Create';
-                        }
+                        if (addButton) addButton.textContent = '✨ Create';
                     } else {
-                        // No files left
-                        resetForm();
+                        resetForm(); return;
                     }
                 }
 
@@ -4524,6 +4747,234 @@
                 renameButton.classList.add('btn-warning');
             }
         }
+
+        // ── Touch: build individual input rows ──
+        function _buildRenameInputList(text) {
+            const body = document.getElementById('renameNamesBody');
+            body.innerHTML = '';
+            text.split('\n').forEach(line => {
+                if (line.includes('Edit names') || line.includes('Card names preview')) return;
+                const match = line.match(/^(\d+\.\s*)(.*)/);
+                if (!match) return;
+                const row = document.createElement('div');
+                row.className = 'rename-name-row';
+                const badge = document.createElement('span');
+                badge.className = 'rename-index-badge';
+                badge.textContent = match[1].trim();
+                const input = document.createElement('input');
+                input.className = 'rename-name-input';
+                input.type = 'text';
+                input.value = match[2].trim();
+                // Auto-select all on tap
+                input.addEventListener('focus', function() {
+                    const self = this;
+                    setTimeout(() => self.select(), 0);
+                });
+                // Return moves to next input
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const inputs = Array.from(document.querySelectorAll('#renameNamesBody .rename-name-input'));
+                        const next = inputs[inputs.indexOf(this) + 1];
+                        if (next) next.focus();
+                    }
+                });
+                row.appendChild(badge);
+                row.appendChild(input);
+                body.appendChild(row);
+            });
+        }
+
+        function _readRenameInputList() {
+            return Array.from(document.querySelectorAll('#renameNamesBody .rename-name-input'))
+                .map(inp => inp.value.trim());
+        }
+
+        function _buildRenameEditor(text) {
+            const editor = document.getElementById('renameEditor');
+            const lines = text.split('\n');
+            editor.innerHTML = lines.map(line => {
+                if (line.includes('Edit names') || line.includes('Card names preview')) {
+                    return '<div><span class="re-locked" contenteditable="false">' + _esc(line) + '</span></div>';
+                }
+                const match = line.match(/^(\d+\.\s)/);
+                if (match) {
+                    const name = line.slice(match[1].length);
+                    // Use zero-width space as placeholder so empty spans have a text node for caret placement
+                    const nameContent = name || '​';
+                    return '<div><span class="re-locked" contenteditable="false">' + _esc(match[1]) + '</span>' +
+                           '<span class="re-name">' + _esc(nameContent) + '</span></div>';
+                }
+                return '<div>' + (line === '' ? '<br>' : _esc(line)) + '</div>';
+            }).join('');
+        }
+
+        function _readRenameEditorNames() {
+            const editor = document.getElementById('renameEditor');
+            const names = [];
+            editor.querySelectorAll('div').forEach(row => {
+                const nameSpan = row.querySelector('.re-name');
+                if (nameSpan) names.push(nameSpan.textContent.replace(/\u200b/g, '').trim());
+            });
+            return names;
+        }
+
+        function _renameEditorKeydown(e) {
+            const editor = document.getElementById('renameEditor');
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+
+            const range = sel.getRangeAt(0);
+            const isCollapsed = range.collapsed;
+
+            // Tab — move to next/previous re-name span
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const editor = document.getElementById('renameEditor');
+                const nameSpans = Array.from(editor.querySelectorAll('.re-name'));
+                const sel = window.getSelection();
+                if (!sel || sel.rangeCount === 0) return;
+                const currentNode = sel.getRangeAt(0).startContainer;
+                const currentSpan = (currentNode.nodeType === 3 ? currentNode.parentElement : currentNode).closest('.re-name');
+                const currentIndex = nameSpans.indexOf(currentSpan);
+                const nextSpan = e.shiftKey
+                    ? nameSpans[currentIndex - 1]
+                    : nameSpans[currentIndex + 1];
+                if (nextSpan) {
+                    const r = document.createRange();
+                    r.setStart(nextSpan.firstChild || nextSpan, 0);
+                    r.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(r);
+                    nextSpan.scrollIntoView({ block: 'nearest' });
+                }
+                return;
+            }
+
+            // Enter — move to next re-name span (same as Tab)
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const editor = document.getElementById('renameEditor');
+                const nameSpans = Array.from(editor.querySelectorAll('.re-name'));
+                const sel = window.getSelection();
+                if (!sel || sel.rangeCount === 0) return;
+                const currentNode = sel.getRangeAt(0).startContainer;
+                const currentSpan = (currentNode.nodeType === 3 ? currentNode.parentElement : currentNode).closest('.re-name');
+                const nextSpan = nameSpans[nameSpans.indexOf(currentSpan) + 1];
+                if (nextSpan) {
+                    _focusNameSpan(nextSpan);
+                    nextSpan.scrollIntoView({ block: 'nearest' });
+                }
+                return;
+            }
+
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                const startNode = range.startContainer;
+                const endNode   = range.endContainer;
+
+                // --- Multi-line selection: delete entire affected rows ---
+                if (!isCollapsed) {
+                    const startRow = (startNode.nodeType === 3 ? startNode.parentElement : startNode).closest('div');
+                    const endRow   = (endNode.nodeType === 3   ? endNode.parentElement   : endNode).closest('div');
+
+                    if (startRow && endRow && startRow !== endRow) {
+                        e.preventDefault();
+                        // Collect all rows between start and end (inclusive)
+                        const allRows = Array.from(editor.querySelectorAll('div'));
+                        const si = allRows.indexOf(startRow);
+                        const ei = allRows.indexOf(endRow);
+                        allRows.slice(Math.min(si, ei), Math.max(si, ei) + 1).forEach(row => {
+                            const nameSpan = row.querySelector('.re-name');
+                            if (nameSpan) nameSpan.textContent = '';
+                        });
+                        return;
+                    }
+
+                    // Single-row selection: if it touches a locked span, just clear the name of that row
+                    const startLocked = (startNode.nodeType === 3 ? startNode.parentElement : startNode).closest('[contenteditable="false"]');
+                    const endLocked   = (endNode.nodeType === 3   ? endNode.parentElement   : endNode).closest('[contenteditable="false"]');
+                    if (startLocked || endLocked) {
+                        e.preventDefault();
+                        const row = (startLocked || endLocked).closest('div');
+                        const nameSpan = row?.querySelector('.re-name');
+                        if (nameSpan) nameSpan.textContent = '';
+                        return;
+                    }
+                }
+
+                // --- Collapsed caret: block if inside a locked span ---
+                if (isCollapsed) {
+                    const node = range.startContainer;
+                    const inLocked = (node.nodeType === 3 ? node.parentElement : node).closest('[contenteditable="false"]');
+                    if (inLocked) { e.preventDefault(); return; }
+
+                    // Block Backspace at position 0 of a re-name span (would merge into locked prefix)
+                    if (e.key === 'Backspace') {
+                        const inName = (node.nodeType === 3 ? node.parentElement : node).closest('.re-name');
+                        if (inName && range.startOffset === 0 &&
+                            (range.startContainer === inName || range.startContainer === inName.firstChild)) {
+                            e.preventDefault(); return;
+                        }
+                    }
+                }
+            }
+        }
+
+        function _renameEditorMousedown(e) {
+            // Mouse only — redirect clicks on locked spans to the re-name span
+            const locked = e.target.closest('[contenteditable="false"]');
+            if (locked) {
+                e.preventDefault();
+                const nameSpan = locked.closest('div')?.querySelector('.re-name');
+                if (nameSpan) _focusNameSpan(nameSpan);
+            }
+        }
+
+        function _renameEditorTouchStart(e) {
+            // Touch only — redirect taps on locked spans to the re-name span
+            const touch = e.changedTouches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (!target) return;
+            const locked = target.closest('[contenteditable="false"]');
+            if (locked) {
+                e.preventDefault();
+                const nameSpan = locked.closest('div')?.querySelector('.re-name');
+                if (nameSpan) _focusNameSpan(nameSpan);
+            }
+        }
+
+        function _focusNameSpan(nameSpan) {
+            if (!nameSpan.firstChild || nameSpan.firstChild.nodeType !== 3) {
+                nameSpan.appendChild(document.createTextNode(''));
+            }
+            const r = document.createRange();
+            const textNode = nameSpan.firstChild;
+            r.setStart(textNode, textNode.length);
+            r.collapse(true);
+            const s = window.getSelection();
+            s.removeAllRanges();
+            s.addRange(r);
+        }
+
+        function _renumberEditor() {
+            const editor = document.getElementById('renameEditor');
+            let count = 1;
+            editor.querySelectorAll('div').forEach(row => {
+                const locked = row.querySelector('.re-locked');
+                if (locked && row.querySelector('.re-name')) {
+                    locked.textContent = count++ + '. ';
+                }
+            });
+        }
+
+        function _esc(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function _commitRenameEdits() {}
+        function _buildRenameOverlay() {}
+        function _onRenameTextareaInput() {}
+        function _syncRenameOverlay() {}
 
         let clickCount = 0;
         let clickTimer = null;
@@ -10707,6 +11158,8 @@
                 if (cards.length > 0) {
                     renderDisplay();
                     cachedFrontTextSize = null;
+                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+                    scaleFrontText();
                     if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
                         hideCardOverlays();
                     }
@@ -10756,6 +11209,26 @@
             <button onclick="applyCrop()" style="background:#35654D; color:white; border:none; border-radius:12px; padding:14px 48px; font-size:17px; font-weight:700; cursor:pointer; letter-spacing:0.3px;">
                 ✓ Done
             </button>
+        </div>
+    </div>
+
+    <!-- Multi-rename name edit popup -->
+    <div id="nameEditPopup" onclick="if(event.target===this)closeNameEditPopup(false);" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:18px; padding:24px 20px 18px; width:88vw; max-width:420px; box-shadow:0 8px 40px rgba(0,0,0,0.25); display:flex; flex-direction:column; gap:14px;">
+            <div style="font-size:0.8rem; font-weight:700; color:#aaa; letter-spacing:0.5px; text-transform:uppercase;">Card Name</div>
+            <input id="nameEditInput" type="text"
+                style="width:100%; box-sizing:border-box; font-size:1.15rem; font-weight:600; color:#1a1a1a;
+                       border:none; border-bottom:2px solid #35654D; outline:none; padding:8px 4px;
+                       background:transparent; -webkit-user-select:text; user-select:text;"
+                placeholder="Enter card name...">
+            <div style="display:flex; gap:10px; margin-top:4px;">
+                <button onclick="closeNameEditPopup(false)"
+                    style="flex:1; padding:11px; border-radius:12px; border:1.5px solid #ddd; background:white;
+                           color:#666; font-size:0.95rem; font-weight:600; cursor:pointer;">Cancel</button>
+                <button onclick="closeNameEditPopup(true)"
+                    style="flex:1; padding:11px; border-radius:12px; border:none; background:#35654D;
+                           color:white; font-size:0.95rem; font-weight:700; cursor:pointer;">✅ Save</button>
+            </div>
         </div>
     </div>
 
