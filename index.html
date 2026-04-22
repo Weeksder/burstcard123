@@ -9641,81 +9641,76 @@
                         </div>
 
                         <!-- Right: vertical button column -->
-                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-                                    padding-left:8px;flex-shrink:0;width:52px;height:100%;">
+                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                                    gap:6px;padding-left:8px;flex-shrink:0;width:52px;">
 
-                            <!-- Back — red, no text, at top with space below -->
+                            <!-- Back — red, no text, extra bottom margin for separation -->
                             <button onclick="closeSpellingGame()"
                                 style="background:none;border:none;cursor:pointer;padding:6px;
                                        color:#e53935;display:flex;align-items:center;justify-content:center;
-                                       touch-action:manipulation;margin-top:4px;margin-bottom:14px;" title="Back">
+                                       touch-action:manipulation;margin-bottom:10px;" title="Back">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                                 </svg>
                             </button>
 
-                            <!-- Remaining buttons centered in leftover space -->
-                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;justify-content:center;">
+                            <!-- Shuffle — teal -->
+                            <button onclick="startNewSpellingGame()"
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#35654D;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Shuffle / New Game">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                                    <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                                </svg>
+                            </button>
 
-                                <!-- Shuffle — teal -->
-                                <button onclick="startNewSpellingGame()"
-                                    style="background:none;border:none;cursor:pointer;padding:6px;
-                                           color:#35654D;display:flex;align-items:center;justify-content:center;
-                                           touch-action:manipulation;" title="Shuffle / New Game">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
-                                        <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
-                                    </svg>
-                                </button>
+                            <!-- Undo — grey -->
+                            <button onclick="undoSpelling()"
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#888;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Undo">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 14 4 9 9 4"/>
+                                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                                </svg>
+                            </button>
 
-                                <!-- Undo — grey -->
-                                <button onclick="undoSpelling()"
-                                    style="background:none;border:none;cursor:pointer;padding:6px;
-                                           color:#888;display:flex;align-items:center;justify-content:center;
-                                           touch-action:manipulation;" title="Undo">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="9 14 4 9 9 4"/>
-                                        <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
-                                    </svg>
-                                </button>
+                            <!-- Skip — skip-to-next icon, blue-grey -->
+                            <button onclick="skipSpellingCard()"
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#607d8b;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Skip">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none"/>
+                                    <line x1="19" y1="5" x2="19" y2="19"/>
+                                </svg>
+                            </button>
 
-                                <!-- Skip — skip-to-next icon, blue-grey -->
-                                <button onclick="skipSpellingCard()"
-                                    style="background:none;border:none;cursor:pointer;padding:6px;
-                                           color:#607d8b;display:flex;align-items:center;justify-content:center;
-                                           touch-action:manipulation;" title="Skip">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none"/>
-                                        <line x1="19" y1="5" x2="19" y2="19"/>
-                                    </svg>
-                                </button>
+                            <!-- Say It — orange -->
+                            <button onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')"
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#ff9500;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Say It">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                </svg>
+                            </button>
 
-                                <!-- Say It — orange -->
-                                <button onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')"
-                                    style="background:none;border:none;cursor:pointer;padding:6px;
-                                           color:#ff9500;display:flex;align-items:center;justify-content:center;
-                                           touch-action:manipulation;" title="Say It">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                                    </svg>
-                                </button>
-
-                                <!-- Peek — purple, hold to reveal -->
-                                <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
-                                        ontouchstart="event.stopPropagation();peekSpelling(true)"
-                                        ontouchend="event.stopPropagation();peekSpelling(false)"
-                                    style="background:none;border:none;cursor:pointer;padding:6px;
-                                           color:#9c27b0;display:flex;align-items:center;justify-content:center;
-                                           touch-action:manipulation;" title="Peek">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                        <circle cx="12" cy="12" r="3"/>
-                                    </svg>
-                                </button>
-
-                            </div>
+                            <!-- Peek — purple, hold to reveal -->
+                            <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
+                                    ontouchstart="event.stopPropagation();peekSpelling(true)"
+                                    ontouchend="event.stopPropagation();peekSpelling(false)"
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#9c27b0;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Peek">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
 
                         </div>
 
