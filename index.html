@@ -9554,14 +9554,22 @@
                         }
                         slotIndex++; // skip separator
                     }
-                    return `<div style="display:flex;gap:4px;align-items:flex-end;justify-content:center;">${groupSlots.join('')}</div>`;
+                    return `<div style="display:flex;gap:4px;align-items:flex-end;justify-content:center;flex-wrap:nowrap;flex-shrink:0;">${groupSlots.join('')}</div>`;
                 });
-                const stackVertically = words.length >= 3;
-                answerRowsHTML = `<div style="display:flex;gap:8px;justify-content:center;align-items:center;
-                                              flex-wrap:${stackVertically ? 'nowrap' : 'wrap'};
-                                              flex-direction:${stackVertically ? 'column' : 'row'};">
-                                      ${wordGroups.join('')}
-                                  </div>`;
+                if (words.length >= 3) {
+                    // Split at midpoint — preserve original word order
+                    const splitAt = Math.ceil(wordGroups.length / 2);
+                    const row1Groups = wordGroups.slice(0, splitAt);
+                    const row2Groups = wordGroups.slice(splitAt);
+                    answerRowsHTML = `<div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;">
+                                          <div style="display:flex;gap:28px;justify-content:center;align-items:flex-end;flex-wrap:wrap;">${row1Groups.join('')}</div>
+                                          <div style="display:flex;gap:28px;justify-content:center;align-items:flex-end;">${row2Groups.join('')}</div>
+                                      </div>`;
+                } else {
+                    answerRowsHTML = `<div style="display:flex;gap:28px;justify-content:center;align-items:center;flex-wrap:wrap;">
+                                          ${wordGroups.join('')}
+                                      </div>`;
+                }
             } else {
                 const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
                 answerRowsHTML = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;max-width:100%;">${slots}</div>`;
@@ -9590,13 +9598,13 @@
             content.innerHTML = `
                 <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;">
 
-                    <!-- White card: row layout — content left, buttons right -->
+                    <!-- White card -->
                     <div style="width:100%;height:100%;background:white;border-radius:20px;
                                 box-shadow:0 10px 40px rgba(0,0,0,0.2);
-                                display:flex;flex-direction:row;
+                                display:flex;flex-direction:column;
                                 padding:10px;box-sizing:border-box;overflow:hidden;position:relative;">
 
-                        <!-- Left: main content column -->
+                        <!-- Main content column -->
                         <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;min-height:0;">
 
                             <!-- Index badge top-left -->
@@ -9606,10 +9614,91 @@
                                 ${currentCardIndex + 1} / ${gameCards.length}
                             </span>
 
-                            <!-- Image — takes remaining space -->
-                            <div style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:24px;">
-                                <img src="${currentCard.frontImage}"
-                                     style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                            <!-- Image area — position:relative so button panel anchors to image edge -->
+                            <div id="spellingImgWrap" style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:24px;position:relative;">
+
+                                <img id="spellingImg" src="${currentCard.frontImage}"
+                                     style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;display:block;">
+
+                                <!-- Filleted button panel — JS positions this flush to image right edge -->
+                                <div id="spellingBtnPanel" style="position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+                                            background:rgba(0,0,0,0.07);
+                                            border-radius:18px;
+                                            padding:8px 4px;
+                                            top:50%;left:0;transform:translateY(-50%);">
+
+                                    <!-- Back — red -->
+                                    <button onclick="closeSpellingGame()"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#e53935;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Back">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- divider -->
+                                    <div style="width:28px;height:1px;background:rgba(0,0,0,0.12);margin:2px 0;"></div>
+
+                                    <!-- Shuffle — teal -->
+                                    <button onclick="startNewSpellingGame()"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#35654D;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Shuffle / New Game">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                                            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Undo — grey -->
+                                    <button onclick="undoSpelling()"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#888;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Undo">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="9 14 4 9 9 4"/>
+                                            <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Skip — blue-grey -->
+                                    <button onclick="skipSpellingCard()"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#607d8b;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Skip">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none"/>
+                                            <line x1="19" y1="5" x2="19" y2="19"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Say It — orange -->
+                                    <button onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#ff9500;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Say It">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Peek — purple -->
+                                    <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
+                                            ontouchstart="event.stopPropagation();peekSpelling(true)"
+                                            ontouchend="event.stopPropagation();peekSpelling(false)"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#9c27b0;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Peek">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+
+                                </div>
                             </div>
 
                             <!-- Answer slots -->
@@ -9719,6 +9808,29 @@
 
             // Populate initial slot values
             renderSpellingGameState();
+
+            // Position button panel flush to the right edge of the rendered image, vertically centered
+            function positionSpellingBtnPanel() {
+                const wrap = document.getElementById('spellingImgWrap');
+                const img  = document.getElementById('spellingImg');
+                const panel = document.getElementById('spellingBtnPanel');
+                if (!wrap || !img || !panel) return;
+                const wRect = wrap.getBoundingClientRect();
+                const iRect = img.getBoundingClientRect();
+                // Right edge of image relative to wrap, center of image relative to wrap
+                const rightEdge = iRect.right - wRect.left;
+                const imgCenterY = (iRect.top + iRect.height / 2) - wRect.top;
+                panel.style.left = (rightEdge + 16) + 'px';
+                panel.style.top  = imgCenterY + 'px';
+                panel.style.transform = 'translateY(-50%)';
+            }
+
+            const _spellingImg = document.getElementById('spellingImg');
+            if (_spellingImg && _spellingImg.complete) {
+                positionSpellingBtnPanel();
+            } else if (_spellingImg) {
+                _spellingImg.addEventListener('load', positionSpellingBtnPanel);
+            }
         }
 
         function spellingSnapshot() {
@@ -10879,6 +10991,34 @@
             // Prevent zoom shortcuts
             if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0' || e.key === '=')) {
                 e.preventDefault();
+            }
+
+            // ---- Spelling game keyboard input ----
+            const spellingOpen = document.getElementById('spellingGameModal')?.style.display === 'flex';
+            if (spellingOpen && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    undoSpelling();
+                    return;
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    checkSpelling();
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeSpellingGame();
+                    return;
+                }
+                // Letter key — find matching tile and place it
+                if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                    e.preventDefault();
+                    const typed = e.key.toUpperCase();
+                    const idx = spellingGameState.scrambledLetters.findIndex(l => l !== null && l.toUpperCase() === typed);
+                    if (idx !== -1) selectLetter(idx);
+                    return;
+                }
             }
 
             // Keyboard navigation for main flashcard view only
