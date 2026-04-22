@@ -625,6 +625,27 @@
             box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
             letter-spacing: -0.02em;
         }
+
+        /* Portrait phones only — shrink char label so it doesn't dominate the card */
+        @media (max-width: 480px) and (orientation: portrait) {
+            .card-char-label {
+                font-size: 4rem !important;
+                top: 28px;
+                padding: 2px 8px 10px 8px;
+            }
+            .card-front-text {
+                font-size: 3.5rem;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) and (orientation: portrait) {
+            .card-char-label {
+                font-size: 6rem !important;
+            }
+            .card-front-text {
+                font-size: 5rem;
+            }
+        }
         .card-front.show-char-active .card-image {
             width: 80%;
             height: 80%;
@@ -3177,7 +3198,7 @@
             // Position settings (bottom-left) and TTS (bottom-right) anchored to card
             const settings = document.getElementById('cardOverlaySettings');
             const tts = document.getElementById('cardOverlayTTS');
-            const offset = 14;
+            const offset = -2;
             if (settings) {
                 settings.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
                 settings.style.left   = (rect.left + offset) + 'px';
@@ -3191,19 +3212,24 @@
             const iconColor = isFlipped ? 'white' : '#35654D';
             if (settings) {
                 const btn = settings.querySelector('button.fullscreen-btn');
-                if (btn) btn.style.color = iconColor;
-                settings.querySelectorAll('svg').forEach(svg => {
-                    svg.setAttribute('stroke', iconColor);
-                    svg.style.color = iconColor;
-                });
+                if (btn) {
+                    // Only color the gear SVG itself, not the button (which would cascade into menu text)
+                    const gearSvg = btn.querySelector('svg');
+                    if (gearSvg) {
+                        gearSvg.setAttribute('stroke', iconColor);
+                        gearSvg.style.color = iconColor;
+                        gearSvg.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
+                    }
+                }
             }
             if (tts) {
-                tts.querySelectorAll('svg').forEach(svg => {
-                    svg.setAttribute('stroke', iconColor);
-                    svg.style.color = iconColor;
-                });
                 const ttsBtn = tts.querySelector('button');
-                if (ttsBtn) ttsBtn.style.color = iconColor;
+                const ttsSvg = ttsBtn?.querySelector('svg');
+                if (ttsSvg) {
+                    ttsSvg.setAttribute('stroke', iconColor);
+                    ttsSvg.style.color = iconColor;
+                    ttsSvg.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
+                }
             }
         }
         // Remember which side each card was last on
@@ -4197,10 +4223,17 @@
 
             const multiModal = document.getElementById('multiRenameModal');
             if (multiModal && multiModal.classList.contains('active')) {
-                // Apply to all multi-rename inputs
-                document.querySelectorAll('#multiRenameGrid input[data-index]').forEach(function(input) {
-                    input.value = applyCase(input.value);
-                });
+                if (_activeMultiCard !== null) {
+                    const input = document.getElementById('mc-input-' + _activeMultiCard);
+                    if (input) input.value = applyCase(input.value);
+                } else {
+                    cards.forEach((card, i) => {
+                        card.backText = applyCase(card.backText || '');
+                        delete cachedBackTextSizes[i];
+                    });
+                    const grid = document.getElementById('multiRenameGrid');
+                    grid.innerHTML = cards.map((card, i) => _buildMultiCard(card, i, false)).join('');
+                }
             } else {
                 // Single rename — only apply if not manually edited
                 const input = document.getElementById('singleRenameInput');
@@ -4229,25 +4262,80 @@
 
         function openMultiRenameModal() {
             if (cards.length === 0) return;
+            _activeMultiCard = null;
             const grid = document.getElementById('multiRenameGrid');
-            grid.innerHTML = cards.map((card, i) => `
-                <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                    <img src="${card.frontImage}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:10px; border:1px solid #eee;">
-                    <input
-                        type="text"
-                        value="${(card.backText || '').replace(/"/g, '&quot;')}"
-                        data-index="${i}"
-                        readonly
-                        onkeydown="this.dataset.edited='1';"
-                        onclick="this.removeAttribute('readonly'); this.select();"
-                        ontouchend="event.preventDefault(); this.removeAttribute('readonly'); this.focus(); this.select();"
-                        style="width:100%; box-sizing:border-box; text-align:center; font-size:1rem; font-weight:600;
-                               border:none; border-bottom:2px solid #35654D; background:transparent; outline:none;
-                               padding:6px 2px; cursor:pointer; color:#1a1a1a;">
-                </div>
-            `).join('');
+            grid.innerHTML = cards.map((card, i) => _buildMultiCard(card, i, false)).join('');
             document.body.style.overflow = 'hidden';
             document.getElementById('multiRenameModal').classList.add('active');
+        }
+
+        let _activeMultiCard = null;
+
+        function _buildMultiCard(card, i, expanded) {
+            const name = (card.backText || '').replace(/"/g, '&quot;');
+            const nameDisplay = (card.backText || '').replace(/</g, '&lt;');
+            if (expanded) {
+                return `<div id="mc-${i}" style="display:flex;flex-direction:column;align-items:center;gap:8px;
+                            grid-column:span 2;background:#f0f9f4;border-radius:14px;padding:10px;
+                            box-shadow:0 4px 16px rgba(53,101,77,0.15);transition:all 0.25s;">
+                    <img src="${card.frontImage}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:2px solid #35654D;">
+                    <input id="mc-input-${i}" type="text" value="${name}"
+                        style="width:100%;box-sizing:border-box;text-align:center;font-size:1.05rem;font-weight:600;
+                               color:#1a1a1a;border:none;border-bottom:2px solid #35654D;background:transparent;
+                               outline:none;padding:8px 4px;-webkit-user-select:text;user-select:text;"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault();collapseMultiCard(${i});}"
+                        onblur="collapseMultiCard(${i});">
+                </div>`;
+            } else {
+                return `<div id="mc-${i}" style="display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.25s;">
+                    <img src="${card.frontImage}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;border:1px solid #eee;">
+                    <div onclick="expandMultiCard(${i})"
+                         ontouchend="event.preventDefault();expandMultiCard(${i});"
+                         style="width:100%;box-sizing:border-box;text-align:center;font-size:1rem;font-weight:600;
+                                border-bottom:2px solid #35654D;padding:6px 2px;cursor:pointer;
+                                color:${nameDisplay ? '#1a1a1a' : '#bbb'};
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.8em;">
+                        ${nameDisplay || 'tap to name'}
+                    </div>
+                </div>`;
+            }
+        }
+
+        function expandMultiCard(i) {
+            if (_activeMultiCard !== null && _activeMultiCard !== i) {
+                collapseMultiCard(_activeMultiCard);
+            }
+            _activeMultiCard = i;
+            const cell = document.getElementById('mc-' + i);
+            if (!cell) return;
+            cell.outerHTML = _buildMultiCard(cards[i], i, true);
+            const input = document.getElementById('mc-input-' + i);
+            if (input) {
+                input.focus();
+                input.select();
+            }
+            const scrollToCenter = () => {
+                const expandedCell = document.getElementById('mc-' + i);
+                if (expandedCell) expandedCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+            setTimeout(scrollToCenter, 50);
+            setTimeout(scrollToCenter, 350);
+        }
+
+        function collapseMultiCard(i) {
+            if (_activeMultiCard === i) _activeMultiCard = null;
+            const input = document.getElementById('mc-input-' + i);
+            if (input) {
+                cards[i].backText = input.value.trim();
+                delete cachedBackTextSizes[i];
+            }
+            const cell = document.getElementById('mc-' + i);
+            if (!cell) return;
+            cell.outerHTML = _buildMultiCard(cards[i], i, false);
+            setTimeout(() => {
+                const collapsedCell = document.getElementById('mc-' + i);
+                if (collapsedCell) collapsedCell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 50);
         }
 
         function closeMultiRenameModal() {
@@ -4256,11 +4344,7 @@
         }
 
         function saveMultiRename() {
-            const inputs = document.querySelectorAll('#multiRenameGrid input[data-index]');
-            inputs.forEach(input => {
-                const i = parseInt(input.dataset.index);
-                if (cards[i]) { cards[i].backText = input.value.trim(); delete cachedBackTextSizes[i]; }
-            });
+            if (_activeMultiCard !== null) collapseMultiCard(_activeMultiCard);
             saveCards();
             closeMultiRenameModal();
             renderDisplay();
@@ -5934,7 +6018,7 @@
             if (navIndex) navIndex.style.color = labelColor;
             // Re-scale text now that card-back is visible and measurable
             if (isFlipped) requestAnimationFrame(() => scaleTextToFit());
-            // Update icon colors for flipped state
+            // Update icon colors immediately on flip
             requestAnimationFrame(() => positionNavOverlay());
         }
 
@@ -9381,12 +9465,15 @@
             const word = currentCard.backText.trim();
             spellingGameState.correctWord = word;
 
-            const words = word.split(' ');
+            // Split on spaces AND hyphens for word grouping
+            const words = word.split(/[\s-]/);
+            const separators = []; // track what separator follows each word: ' ' or '-'
+            word.split('').forEach(ch => { if (ch === ' ' || ch === '-') separators.push(ch); });
             const isMultiWord = words.length > 1;
-            const totalChars = word.replace(/\s/g, '').length;
+            const totalChars = word.replace(/[\s-]/g, '').length;
 
-            // Scramble letters
-            const lettersWithoutSpaces = word.split('').filter(l => l !== ' ');
+            // Scramble only actual letters (no spaces or hyphens)
+            const lettersWithoutSpaces = word.split('').filter(l => l !== ' ' && l !== '-');
             let scrambled;
             do { scrambled = fisherYatesShuffle([...lettersWithoutSpaces]); }
             while (scrambled.join('') === lettersWithoutSpaces.join('') && totalChars > 1);
@@ -9395,7 +9482,8 @@
             const scrambledArray = [];
             let si = 0;
             word.split('').forEach(char => {
-                if (char === ' ') { answerSlotsArray.push('SPACE'); }
+                if (char === ' ')  { answerSlotsArray.push('SPACE'); }
+                else if (char === '-') { answerSlotsArray.push('HYPHEN'); }
                 else { answerSlotsArray.push(null); scrambledArray.push(scrambled[si++]); }
             });
 
@@ -9404,12 +9492,19 @@
             spellingGameState.selectedLetter = null;
             spellingGameState.moveHistory = [];
 
-            // Answer row: underlines — slots sized for easy touch tapping
-            // Use px sizes directly — clamp with vw can render small on mobile
-            const lineH = totalChars <= 12 ? '72px' : '60px';
-            const lineFS = totalChars <= 8 ? '2.8rem' : totalChars <= 12 ? '2.2rem' : totalChars <= 16 ? '1.8rem' : '1.4rem';
+            // Answer row: always use large size — wrap/stack handles overflow
+            const longestWord = isMultiWord ? Math.max(...words.map(w => w.length)) : totalChars;
+            const lineH = '90px';
+            const lineFS = '3.5rem';
 
-            const makeSlot = (idx) => `<div onclick="selectAnswerSlot(${idx})" class="answer-slot" data-index="${idx}"
+            const makeSlot = (idx) => {
+                if (answerSlotsArray[idx] === 'HYPHEN') {
+                    return `<div style="min-width:24px;height:${lineH};display:inline-flex;align-items:center;
+                                        justify-content:center;font-size:${lineFS};font-weight:400;
+                                        font-family:'Fredoka',Arial,sans-serif;color:#35654D;
+                                        user-select:none;padding:0 2px;">-</div>`;
+                }
+                return `<div onclick="selectAnswerSlot(${idx})" class="answer-slot" data-index="${idx}"
                 ondragover="event.preventDefault()" ondrop="spellingDragDrop(event,${idx})"
                 ontouchstart="spellingTouchStart(event,${idx},'slot')"
                 ontouchmove="spellingTouchMove(event)"
@@ -9419,24 +9514,40 @@
                        font-size:${lineFS};font-weight:400;font-family:'Fredoka',Arial,sans-serif;
                        color:#1a1a1a;cursor:pointer;
                        padding:0 4px;user-select:none;"></div>`;
+            };
 
             let answerRowsHTML = '';
             if (isMultiWord) {
-                // All words in one wrapping flex row — if they fit on one line they stay, else wrap
                 let slotIndex = 0;
                 const wordGroups = words.map((w, wi) => {
-                    const slots = w.split('').map(() => makeSlot(slotIndex++)).join('');
-                    if (wi < words.length - 1) slotIndex++; // skip SPACE
-                    return `<div style="display:flex;gap:4px;align-items:flex-end;">${slots}</div>`;
+                    // Build slots for this word including any HYPHEN slots
+                    const groupSlots = [];
+                    for (let ci = 0; ci < w.length; ci++) {
+                        groupSlots.push(makeSlot(slotIndex++));
+                    }
+                    // Skip the separator slot (SPACE or HYPHEN between words)
+                    if (wi < words.length - 1) {
+                        const sep = answerSlotsArray[slotIndex];
+                        if (sep === 'HYPHEN') {
+                            groupSlots.push(makeSlot(slotIndex)); // show the hyphen attached to word
+                        }
+                        slotIndex++; // skip separator
+                    }
+                    return `<div style="display:flex;gap:4px;align-items:flex-end;justify-content:center;">${groupSlots.join('')}</div>`;
                 });
-                answerRowsHTML = `<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">${wordGroups.join('')}</div>`;
+                const stackVertically = words.length >= 3;
+                answerRowsHTML = `<div style="display:flex;gap:8px;justify-content:center;align-items:center;
+                                              flex-wrap:${stackVertically ? 'nowrap' : 'wrap'};
+                                              flex-direction:${stackVertically ? 'column' : 'row'};">
+                                      ${wordGroups.join('')}
+                                  </div>`;
             } else {
                 const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
-                answerRowsHTML = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">${slots}</div>`;
+                answerRowsHTML = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;max-width:100%;">${slots}</div>`;
             }
 
-            // Letter row — explicit px sizes, consistent across all devices
-            const letterRowFS = totalChars <= 8 ? '2.8rem' : totalChars <= 12 ? '2.2rem' : totalChars <= 16 ? '1.8rem' : '1.4rem';
+            // Letter row — same large size for all words
+            const letterRowFS = '3.5rem';
             const letterSpans = scrambledArray.map((letter, idx) => {
                 const isVowel = ['A','E','I','O','U','a','e','i','o','u'].includes(letter);
                 return `<span class="letter-tile" data-index="${idx}"
@@ -9447,10 +9558,10 @@
                     ontouchmove="spellingTouchMove(event)"
                     ontouchend="spellingTouchEnd(event)"
                     style="display:inline-flex;align-items:center;justify-content:center;
-                           font-size:${letterRowFS};font-weight:400;padding:2px 8px;
+                           font-size:${letterRowFS};font-weight:400;padding:2px 10px;
                            font-family:'Fredoka',Arial,sans-serif;
                            color:${isVowel ? '#ff9500' : '#35654D'};
-                           cursor:grab;user-select:none;flex-shrink:0;">
+                           cursor:grab;user-select:none;flex-shrink:0;min-width:0;">
                     ${letter}
                 </span>`;
             }).join('');
@@ -9458,75 +9569,107 @@
             content.innerHTML = `
                 <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;">
 
-                    <!-- White card: everything inside -->
+                    <!-- White card: row layout — content left, buttons right -->
                     <div style="width:100%;height:100%;background:white;border-radius:20px;
                                 box-shadow:0 10px 40px rgba(0,0,0,0.2);
-                                display:flex;flex-direction:column;align-items:center;
+                                display:flex;flex-direction:row;
                                 padding:10px;box-sizing:border-box;overflow:hidden;position:relative;">
 
-                        <!-- Index badge top-left -->
-                        <span style="position:absolute;top:10px;left:12px;background:rgba(0,0,0,0.12);
-                                     color:#555;font-size:0.72rem;font-weight:700;border-radius:5px;
-                                     padding:2px 7px;line-height:1.6;z-index:2;">
-                            ${currentCardIndex + 1} / ${gameCards.length}
-                        </span>
+                        <!-- Left: main content column -->
+                        <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;min-height:0;">
 
-                        <!-- Peek button top-right -->
-                        <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
-                                ontouchstart="event.stopPropagation();peekSpelling(true)"
-                                ontouchend="event.stopPropagation();peekSpelling(false)"
-                                style="position:absolute;top:8px;right:10px;z-index:2;
-                                       background:none;border:none;cursor:pointer;padding:4px;
-                                       font-size:1.3rem;line-height:1;user-select:none;">
-                            👁
-                        </button>
+                            <!-- Index badge top-left -->
+                            <span style="position:absolute;top:10px;left:12px;background:rgba(0,0,0,0.12);
+                                         color:#555;font-size:0.72rem;font-weight:700;border-radius:5px;
+                                         padding:2px 7px;line-height:1.6;z-index:2;">
+                                ${currentCardIndex + 1} / ${gameCards.length}
+                            </span>
 
-                        <!-- Image — takes remaining space, pushes content to bottom -->
-                        <div style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:4px;">
-                            <img src="${currentCard.frontImage}"
-                                 style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                            <!-- Image — takes remaining space -->
+                            <div style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:24px;">
+                                <img src="${currentCard.frontImage}"
+                                     style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                            </div>
+
+                            <!-- Answer slots -->
+                            <div style="width:100%;flex-shrink:0;padding:6px 4px 4px;box-sizing:border-box;">
+                                <div id="answerRow">${answerRowsHTML}</div>
+                            </div>
+
+                            <!-- Letter row — check button appears here when all slots filled -->
+                            <div id="letterRow"
+                                 ondragover="event.preventDefault()"
+                                 ondrop="spellingDragDropToTile(event)"
+                                 style="width:100%;flex-shrink:0;
+                                        display:flex;justify-content:center;align-items:center;
+                                        flex-wrap:wrap;
+                                        border:1.5px solid #ddd;border-radius:8px;
+                                        padding:6px 8px;box-sizing:border-box;
+                                        min-height:48px;gap:6px;">
+                                ${letterSpans}
+                                <button id="checkBtn" onclick="checkSpelling()"
+                                    style="background:none;border:none;cursor:pointer;padding:6px;
+                                           color:#35654D;display:none;align-items:center;justify-content:center;
+                                           touch-action:manipulation;" title="Check">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+
                         </div>
 
-                        <!-- Answer slots — directly below image, no divider -->
-                        <div style="width:100%;flex-shrink:0;padding:6px 4px 4px;box-sizing:border-box;">
-                            <div id="answerRow">${answerRowsHTML}</div>
-                        </div>
+                        <!-- Right: vertical button column, centered between top border and bottom of image -->
+                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                                    gap:6px;padding-left:8px;flex-shrink:0;width:52px;">
 
-                        <!-- Letter row — no dividers above or below, just the boxed line -->
-                        <div id="letterRow"
-                             ondragover="event.preventDefault()"
-                             ondrop="spellingDragDropToTile(event)"
-                             style="width:100%;flex-shrink:0;
-                                    display:flex;justify-content:center;align-items:center;
-                                    flex-wrap:wrap;
-                                    border:1.5px solid #ddd;border-radius:8px;
-                                    padding:4px 8px;box-sizing:border-box;
-                                    min-height:48px;gap:0;">
-                            ${letterSpans}
-                        </div>
-
-                        <!-- Buttons row — static width, centred -->
-                        <div style="flex-shrink:0;display:flex;gap:8px;justify-content:center;padding-top:8px;padding-bottom:2px;">
-                            <button onclick="checkSpelling()"
-                                style="width:100px;padding:10px 0;background:#35654D;border:none;border-radius:10px;
-                                       font-size:0.9rem;font-weight:700;color:white;cursor:pointer;">
-                                ✓ Check
-                            </button>
+                            <!-- Undo — grey -->
                             <button onclick="undoSpelling()"
-                                style="width:80px;padding:10px 0;background:#f0f0f0;border:none;border-radius:10px;
-                                       font-size:0.9rem;font-weight:700;color:#888;cursor:pointer;">
-                                ↩ Undo
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#888;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Undo">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 14 4 9 9 4"/>
+                                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                                </svg>
                             </button>
+
+                            <!-- Skip — blue-grey -->
                             <button onclick="skipSpellingCard()"
-                                style="width:80px;padding:10px 0;background:#eee;border:none;border-radius:10px;
-                                       font-size:0.9rem;font-weight:700;color:#555;cursor:pointer;">
-                                ➡ Skip
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#607d8b;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Skip">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="5 12 19 12"/>
+                                    <polyline points="13 6 19 12 13 18"/>
+                                </svg>
                             </button>
+
+                            <!-- Say It — orange -->
                             <button onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')"
-                                style="width:80px;padding:10px 0;background:#fff3e0;border:1.5px solid #ff9500;border-radius:10px;
-                                       font-size:0.9rem;font-weight:700;color:#ff9500;cursor:pointer;">
-                                🔊 Say It
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#ff9500;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Say It">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                </svg>
                             </button>
+
+                            <!-- Peek — purple, hold to reveal -->
+                            <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
+                                    ontouchstart="event.stopPropagation();peekSpelling(true)"
+                                    ontouchend="event.stopPropagation();peekSpelling(false)"
+                                style="background:none;border:none;cursor:pointer;padding:6px;
+                                       color:#9c27b0;display:flex;align-items:center;justify-content:center;
+                                       touch-action:manipulation;" title="Peek">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+
                         </div>
 
                     </div>
@@ -9555,7 +9698,7 @@
         }
 
         function selectAnswerSlot(slotIndex) {
-            if (spellingGameState.answerSlots[slotIndex] === 'SPACE') return;
+            if (spellingGameState.answerSlots[slotIndex] === 'SPACE' || spellingGameState.answerSlots[slotIndex] === 'HYPHEN') return;
             if (spellingGameState.answerSlots[slotIndex] === null) return;
             const letter = spellingGameState.answerSlots[slotIndex];
             // Find first null slot in scrambled array
@@ -9608,7 +9751,7 @@
                 spellingGameState.scrambledLetters[index] = null;
             } else if (type === 'slot') {
                 const fromLetter = spellingGameState.answerSlots[index];
-                if (!fromLetter || fromLetter === 'SPACE') return;
+                if (!fromLetter || fromLetter === 'SPACE' || spellingGameState.answerSlots[slotIndex] === 'HYPHEN') return;
                 spellingGameState.moveHistory.push(spellingSnapshot());
                 const toExisting = spellingGameState.answerSlots[destSlotIdx];
                 spellingGameState.answerSlots[destSlotIdx] = fromLetter;
@@ -9631,14 +9774,14 @@
 
         function spellingTouchStart(e, index, type) {
             if (type === 'tile' && spellingGameState.scrambledLetters[index] === null) return;
-            if (type === 'slot' && (spellingGameState.answerSlots[index] === null || spellingGameState.answerSlots[index] === 'SPACE')) return;
+            if (type === 'slot' && (spellingGameState.answerSlots[index] === null || spellingGameState.answerSlots[index] === 'SPACE' || spellingGameState.answerSlots[index] === 'HYPHEN')) return;
             const t = e.touches[0];
             const el = e.currentTarget;
             const rect = el.getBoundingClientRect();
             const letter = type === 'tile'
                 ? spellingGameState.scrambledLetters[index]
                 : spellingGameState.answerSlots[index];
-            if (!letter || letter === 'SPACE') return;
+            if (!letter || letter === 'SPACE' || spellingGameState.answerSlots[slotIndex] === 'HYPHEN') return;
 
             const ghostSize = Math.max(44, Math.min(rect.width, rect.height));
             const ghost = document.createElement('div');
@@ -9711,7 +9854,7 @@
 
             if (type === 'tile' && slotEl) {
                 const destIdx = parseInt(slotEl.dataset.index);
-                if (spellingGameState.answerSlots[destIdx] === 'SPACE') return;
+                if (spellingGameState.answerSlots[destIdx] === 'SPACE' || spellingGameState.answerSlots[slotIndex] === 'HYPHEN') return;
                 spellingGameState.moveHistory.push(spellingSnapshot());
                 const existing = spellingGameState.answerSlots[destIdx];
                 if (existing && existing !== 'SPACE') {
@@ -9742,7 +9885,7 @@
             answerSlots.forEach((slot) => {
                 const index = parseInt(slot.getAttribute('data-index'));
                 const value = spellingGameState.answerSlots[index];
-                slot.textContent = (value === 'SPACE' || value === null) ? '' : value;
+                slot.textContent = (value === 'SPACE' || value === 'HYPHEN' || value === null) ? '' : value;
             });
 
             const letterTiles = document.querySelectorAll('.letter-tile');
@@ -9754,6 +9897,15 @@
                     tile.textContent = spellingGameState.scrambledLetters[index];
                 }
             });
+
+            // Show check button only when every letter slot is filled
+            const checkBtn = document.getElementById('checkBtn');
+            if (checkBtn) {
+                const allFilled = spellingGameState.answerSlots.every(
+                    s => s !== null && s !== undefined
+                );
+                checkBtn.style.display = allFilled ? 'flex' : 'none';
+            }
         }
 
         function peekSpelling(show) {
@@ -9766,7 +9918,7 @@
                 answerSlots.forEach(slot => {
                     const idx = parseInt(slot.getAttribute('data-index'));
                     const slotVal = spellingGameState.answerSlots[idx];
-                    if (slotVal === 'SPACE') { slot.textContent = ''; return; }
+                    if (slotVal === 'SPACE' || slotVal === 'HYPHEN') { slot.textContent = ''; return; }
                     slot.textContent = chars[charIdx] || '';
                     slot.style.color = '#35654D';
                     slot.style.opacity = '0.6';
@@ -9777,7 +9929,7 @@
                 answerSlots.forEach(slot => {
                     const idx = parseInt(slot.getAttribute('data-index'));
                     const value = spellingGameState.answerSlots[idx];
-                    slot.textContent = (value === 'SPACE' || value === null) ? '' : value;
+                    slot.textContent = (value === 'SPACE' || value === 'HYPHEN' || value === null) ? '' : value;
                     slot.style.color = '#1a1a1a';
                     slot.style.opacity = '1';
                 });
@@ -9785,7 +9937,7 @@
         }
 
         function checkSpelling() {
-            const answer = spellingGameState.answerSlots.map(slot => slot === 'SPACE' ? ' ' : slot).join('');
+            const answer = spellingGameState.answerSlots.map(slot => slot === 'SPACE' ? ' ' : slot === 'HYPHEN' ? '-' : slot).join('');
             const correct = spellingGameState.correctWord;
 
             if (answer === correct) {
@@ -9795,16 +9947,14 @@
             } else {
                 playSound('errorSound');
 
-                // Turn Check button red with ✕ Wrong
-                const checkBtn = document.querySelector('[onclick="checkSpelling()"]');
+                // Flash Check button red with ✕ then restore
+                const checkBtn = document.getElementById('checkBtn');
                 if (checkBtn) {
-                    checkBtn.textContent = '✕ Wrong';
-                    checkBtn.style.background = '#e53935';
-                    checkBtn.style.color = 'white';
+                    checkBtn.style.color = '#e53935';
+                    checkBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
                     setTimeout(() => {
-                        checkBtn.textContent = '✓ Check';
-                        checkBtn.style.background = '#35654D';
-                        checkBtn.style.color = 'white';
+                        checkBtn.style.color = '#35654D';
+                        checkBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
                     }, 1000);
                 }
 
