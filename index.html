@@ -449,6 +449,12 @@
                 margin-left: auto;
                 margin-right: auto;
             }
+            #spellingGameContent {
+                width: 85%;
+                max-width: 85%;
+                margin-left: auto;
+                margin-right: auto;
+            }
             #multiRenameGrid {
                 grid-template-columns: repeat(4, 1fr) !important;
             }
@@ -2420,34 +2426,57 @@
     </div>
 
     <div class="modal" id="gameMenuModal">
-        <div class="modal-content" style="max-width: 340px; position:relative;">
-            <button onclick="closeGameMenu()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
-            <h2>🎮 Game Menu</h2>
+        <div class="modal-content" style="max-width:280px;position:relative;padding:18px 16px 16px;">
+            <button onclick="closeGameMenu()" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:#aaa;padding:4px;display:flex;align-items:center;justify-content:center;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div style="display:flex;align-items:center;gap:8px;margin:0 0 14px 0;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/>
+                    <line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/>
+                    <rect x="2" y="6" width="20" height="12" rx="2"/>
+                </svg>
+                <h2 style="font-size:1rem;font-weight:700;color:#35654D;margin:0;">Game Menu</h2>
+            </div>
 
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-                <button id="guessGameBtn" class="btn btn-success" onclick="startGame('guess')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
-                    🎯 Guess the Word
+            <div style="display:flex;flex-direction:column;gap:8px;">
+
+                <button id="guessGameBtn" onclick="startGame('guess')"
+                    style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #35654D;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
+                    <svg width="36" height="36" viewBox="0 0 38 38" fill="none" stroke="#35654D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="0.9" y="12" width="10" height="14" rx="1.2"/><path d="M4.5 17a1.4 1.4 0 012.5 1c0 1.1-1.2 1.3-1.2 2.2"/><circle cx="5.8" cy="23.5" r="0.55" fill="#35654D" stroke="none"/><rect x="14" y="12" width="10" height="14" rx="1.2"/><rect x="27" y="12" width="10" height="14" rx="1.2"/></svg>
+                    <span style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word</span>
                 </button>
 
-                <button class="btn btn-success" onclick="startGame('bomb')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
-                    💣 Bomb
+                <button onclick="startGame('bomb')"
+                    style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #e53935;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
+                    <svg width="26" height="26" viewBox="0 0 28 28" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="17" r="8"/><path d="M17 11.5c1.2-1.2 2.5-3 4-3"/><path d="M19.5 8c.6-1 1.5-1.2 2.2-.6"/><line x1="22" y1="5.5" x2="22" y2="4"/><line x1="24" y1="7.5" x2="25.5" y2="7.5"/><line x1="23.5" y1="5" x2="25" y2="3.5"/></svg>
+                    <span style="font-size:1.15rem;font-weight:600;color:#e53935;font-family:inherit;">Bomb</span>
                 </button>
 
-                <button class="btn btn-success" onclick="startGame('spelling')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
-                    🔤 Spell the Word
+                <button onclick="startGame('spelling')"
+                    style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #1565c0;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1565c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/><line x1="3" y1="21" x2="7" y2="17"/></svg>
+                    <span style="font-size:1.15rem;font-weight:600;color:#1565c0;font-family:inherit;">Spell Me</span>
                 </button>
 
-                <button class="btn btn-success" onclick="startGame('match')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
-                    🖼️ Match the Picture
+                <button onclick="startGame('match')"
+                    style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #6a1b9a;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6a1b9a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span style="font-size:1.15rem;font-weight:600;color:#6a1b9a;font-family:inherit;">Match the Picture</span>
                 </button>
 
-                <button class="btn btn-success" onclick="startGame('saytheword')" style="padding: 20px; font-size: 1.2rem; justify-content: center;">
-                    🗣️ Say the Word
+                <button onclick="startGame('saytheword')"
+                    style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #e65100;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e65100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    <span style="font-size:1.15rem;font-weight:600;color:#e65100;font-family:inherit;">Say the Word</span>
                 </button>
 
-                <button class="btn btn-secondary" onclick="closeGameMenu()" style="padding: 15px; justify-content: center;">
-                    ← Back
+                <button onclick="closeGameMenu()"
+                    style="display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 14px;background:none;border:2px solid #ddd;border-radius:10px;cursor:pointer;margin-top:2px;color:#999;font-size:0.85rem;font-weight:500;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Back
                 </button>
+
             </div>
         </div>
     </div>
@@ -2535,12 +2564,13 @@
     </div>
 
     <div id="spellingGameModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#35654D;z-index:20000;flex-direction:column;">
-        <!-- Top bar -->
-        <div style="display:flex;align-items:center;justify-content:center;padding:10px 16px;flex-shrink:0;">
-            <span style="font-size:1rem;font-weight:700;color:white;">🔤 Spell the Word</span>
-        </div>
         <!-- Game content -->
-        <div id="spellingGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 16px;box-sizing:border-box;overflow-y:auto;"></div>
+        <div id="spellingGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 0;box-sizing:border-box;overflow-y:auto;"></div>
+        <!-- Bottom bar — title + dots -->
+        <div id="spellingBottomBar" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 16px 12px;">
+            <span style="font-size:0.9rem;font-weight:700;color:rgba(255,255,255,0.7);">🔤 Spell the Word</span>
+            <div id="spellingDots" style="display:flex;justify-content:center;align-items:center;gap:6px;"></div>
+        </div>
     </div>
 
     <!-- Match the Picture Game Modal -->
@@ -3279,11 +3309,12 @@
         let spellingGameState = {
             currentCardIndex: 0,
             gameCards: [],
+            spelledCards: new Set(),  // indices of correctly spelled cards
             scrambledLetters: [],
             answerSlots: [],
             selectedLetter: null,
             correctWord: '',
-            moveHistory: []  // stack of {scrambledLetters, answerSlots} snapshots for undo
+            moveHistory: []
         };
 
         let matchGameState = {
@@ -8297,11 +8328,9 @@
             const guessBtn = document.getElementById('guessGameBtn');
 
             if (hasActiveSession) {
-                // Active session exists with progress
-                guessBtn.innerHTML = '🎯 Guess the Word (Continue)';
+                guessBtn.innerHTML = `<svg width="36" height="36" viewBox="0 0 38 38" fill="none" stroke="#35654D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="0.9" y="12" width="10" height="14" rx="1.2"/><path d="M4.5 17a1.4 1.4 0 012.5 1c0 1.1-1.2 1.3-1.2 2.2"/><circle cx="5.8" cy="23.5" r="0.55" fill="#35654D" stroke="none"/><rect x="14" y="12" width="10" height="14" rx="1.2"/><rect x="27" y="12" width="10" height="14" rx="1.2"/></svg><span style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word (Continue)</span>`;
             } else {
-                // No active session or no progress yet
-                guessBtn.innerHTML = '🎯 Guess the Word';
+                guessBtn.innerHTML = `<svg width="36" height="36" viewBox="0 0 38 38" fill="none" stroke="#35654D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="0.9" y="12" width="10" height="14" rx="1.2"/><path d="M4.5 17a1.4 1.4 0 012.5 1c0 1.1-1.2 1.3-1.2 2.2"/><circle cx="5.8" cy="23.5" r="0.55" fill="#35654D" stroke="none"/><rect x="14" y="12" width="10" height="14" rx="1.2"/><rect x="27" y="12" width="10" height="14" rx="1.2"/></svg><span style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word</span>`;
             }
         }
 
@@ -8393,6 +8422,7 @@
                 // Shuffle cards
                 spellingGameState.gameCards = fisherYatesShuffle(cardsWithText);
                 spellingGameState.currentCardIndex = 0;
+                spellingGameState.spelledCards = new Set();
 
                 document.body.style.overflow = 'hidden';
                 document.getElementById('spellingGameModal').style.display = 'flex';
@@ -9462,25 +9492,59 @@
 
         function startNewSpellingGame() {
             spellingGameState.currentCardIndex = 0;
-            fisherYatesShuffle(spellingGameState.gameCards); // re-shuffle in place
+            spellingGameState.spelledCards = new Set();
             spellingGameState.gameCards = fisherYatesShuffle(spellingGameState.gameCards);
             renderSpellingGame();
         }
 
-        function renderSpellingGame() {
-            const content = document.getElementById('spellingGameContent');
-            const { currentCardIndex, gameCards } = spellingGameState;
-
-            if (currentCardIndex >= gameCards.length) {
-                content.innerHTML = `
-                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
-                        <div style="font-size:4rem;">🎉</div>
-                        <h2 style="font-size:2rem;color:white;margin:0;">All words spelled!</h2>
-                        <p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">Great job!</p>
-                        <button class="btn btn-success" onclick="startNewSpellingGame()" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔀 Play Again</button>
-                    </div>`;
+        function spellingNextCard() {
+            const { gameCards, spelledCards } = spellingGameState;
+            const total = gameCards.length;
+            // Check if all cards are now spelled
+            if (spelledCards.size >= total) {
+                showSpellingComplete();
                 return;
             }
+            // Find next unspelled card, wrapping around
+            for (let i = 1; i <= total; i++) {
+                const idx = (spellingGameState.currentCardIndex + i) % total;
+                if (!spelledCards.has(idx)) {
+                    spellingGameState.currentCardIndex = idx;
+                    renderSpellingGame();
+                    return;
+                }
+            }
+            // Fallback — all spelled
+            showSpellingComplete();
+        }
+
+        function showSpellingComplete() {
+            const content = document.getElementById('spellingGameContent');
+            content.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
+                    <div style="font-size:4rem;">🎉</div>
+                    <h2 style="font-size:2rem;color:white;margin:0;">All words spelled!</h2>
+                    <p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">Great job!</p>
+                    <button class="btn btn-success" onclick="startNewSpellingGame()" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔀 Play Again</button>
+                </div>`;
+        }
+
+        function spellingPrevCard() {
+            const { gameCards, spelledCards } = spellingGameState;
+            const total = gameCards.length;
+            for (let i = 1; i <= total; i++) {
+                const idx = (spellingGameState.currentCardIndex - i + total) % total;
+                if (!spelledCards.has(idx)) {
+                    spellingGameState.currentCardIndex = idx;
+                    renderSpellingGame();
+                    return;
+                }
+            }
+        }
+
+        function renderSpellingGame() {
+            const content = document.getElementById('spellingGameContent');
+            const { currentCardIndex, gameCards, spelledCards } = spellingGameState;
 
             const currentCard = gameCards[currentCardIndex];
             const word = currentCard.backText.trim();
@@ -9513,10 +9577,12 @@
             spellingGameState.selectedLetter = null;
             spellingGameState.moveHistory = [];
 
-            // Answer row: always use large size — wrap/stack handles overflow
-            const longestWord = isMultiWord ? Math.max(...words.map(w => w.length)) : totalChars;
-            const lineH = '90px';
-            const lineFS = '3.5rem';
+            // Fixed word size — image adjusts to remaining space
+            // Responsive sizing — scales with screen width
+            const _vw = window.innerWidth;
+            const _fsPx = Math.round(Math.min(Math.max(_vw * 0.075, 36), 72));
+            const lineH = _fsPx + 'px';
+            const lineFS = _fsPx + 'px';
 
             const makeSlot = (idx) => {
                 if (answerSlotsArray[idx] === 'HYPHEN') {
@@ -9530,10 +9596,10 @@
                 ontouchstart="spellingTouchStart(event,${idx},'slot')"
                 ontouchmove="spellingTouchMove(event)"
                 ontouchend="spellingTouchEnd(event)"
-                style="min-width:42px;height:${lineH};border-bottom:3px solid #35654D;
-                       display:inline-flex;align-items:center;justify-content:center;
-                       font-size:${lineFS};font-weight:400;font-family:'Fredoka',Arial,sans-serif;
-                       color:#1a1a1a;cursor:pointer;
+                style="min-width:${Math.round(_fsPx * 0.85)}px;height:${lineH};border-bottom:3px solid #a8d5b5;
+                       display:inline-flex;align-items:flex-end;justify-content:center;
+                       font-size:${lineFS};line-height:0.8;font-weight:400;font-family:'Fredoka',Arial,sans-serif;
+                       color:#1a1a1a;cursor:pointer;overflow:visible;
                        padding:0 4px;user-select:none;"></div>`;
             };
 
@@ -9554,21 +9620,29 @@
                         }
                         slotIndex++; // skip separator
                     }
-                    return `<div style="display:flex;gap:4px;align-items:flex-end;justify-content:center;">${groupSlots.join('')}</div>`;
+                    return `<div style="display:flex;gap:4px;align-items:flex-end;justify-content:center;flex-wrap:nowrap;flex-shrink:0;">${groupSlots.join('')}</div>`;
                 });
-                const stackVertically = words.length >= 3;
-                answerRowsHTML = `<div style="display:flex;gap:8px;justify-content:center;align-items:center;
-                                              flex-wrap:${stackVertically ? 'nowrap' : 'wrap'};
-                                              flex-direction:${stackVertically ? 'column' : 'row'};">
-                                      ${wordGroups.join('')}
-                                  </div>`;
+                if (words.length >= 3) {
+                    // Split at midpoint — preserve original word order
+                    const splitAt = Math.ceil(wordGroups.length / 2);
+                    const row1Groups = wordGroups.slice(0, splitAt);
+                    const row2Groups = wordGroups.slice(splitAt);
+                    answerRowsHTML = `<div style="display:flex;flex-direction:column;gap:0;align-items:center;justify-content:center;overflow:visible;">
+                                          <div style="display:flex;gap:28px;justify-content:center;align-items:center;flex-wrap:wrap;padding-bottom:0;">${row1Groups.join('')}</div>
+                                          <div style="display:flex;gap:28px;justify-content:center;align-items:center;padding-top:0;">${row2Groups.join('')}</div>
+                                      </div>`;
+                } else {
+                    answerRowsHTML = `<div style="display:flex;gap:28px;justify-content:center;align-items:center;flex-wrap:wrap;overflow:visible;">
+                                          ${wordGroups.join('')}
+                                      </div>`;
+                }
             } else {
                 const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
-                answerRowsHTML = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;max-width:100%;">${slots}</div>`;
+                answerRowsHTML = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;max-width:100%;overflow:visible;">${slots}</div>`;
             }
 
-            // Letter row — same large size for all words
-            const letterRowFS = '3.5rem';
+            // Letter row — match answer slot font size
+            const letterRowFS = lineFS;
             const letterSpans = scrambledArray.map((letter, idx) => {
                 const isVowel = ['A','E','I','O','U','a','e','i','o','u'].includes(letter);
                 return `<span class="letter-tile" data-index="${idx}"
@@ -9579,7 +9653,7 @@
                     ontouchmove="spellingTouchMove(event)"
                     ontouchend="spellingTouchEnd(event)"
                     style="display:inline-flex;align-items:center;justify-content:center;
-                           font-size:${letterRowFS};font-weight:400;padding:2px 10px;
+                           font-size:${letterRowFS};font-weight:400;padding:1px ${Math.round(_fsPx * 0.15)}px;
                            font-family:'Fredoka',Arial,sans-serif;
                            color:${isVowel ? '#ff9500' : '#35654D'};
                            cursor:grab;user-select:none;flex-shrink:0;min-width:0;">
@@ -9590,8 +9664,8 @@
             content.innerHTML = `
                 <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;">
 
-                    <!-- White card: row layout — content left, buttons right -->
-                    <div style="width:100%;height:100%;background:white;border-radius:20px;
+                    <!-- White card -->
+                    <div id="spellingCard" style="width:100%;height:100%;background:white;border-radius:20px;
                                 box-shadow:0 10px 40px rgba(0,0,0,0.2);
                                 display:flex;flex-direction:row;
                                 padding:10px;box-sizing:border-box;overflow:hidden;position:relative;">
@@ -9606,18 +9680,105 @@
                                 ${currentCardIndex + 1} / ${gameCards.length}
                             </span>
 
-                            <!-- Image — takes remaining space -->
-                            <div style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:24px;">
-                                <img src="${currentCard.frontImage}"
-                                     style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                            <!-- Image area with buttons overlaid at fixed right inset -->
+                            <div id="spellingImgWrap" style="flex:1;width:100%;min-height:0;position:relative;padding-top:4px;">
+
+                                <img id="spellingImg" src="${currentCard.frontImage}"
+                                     style="width:100%;height:100%;object-fit:contain;border-radius:10px;display:block;">
+
+                                <!-- Check button — appears over image below midpoint when all slots filled -->
+                                <button id="checkBtn" onclick="checkSpelling()"
+                                    style="position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+                                           width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;
+                                           background:#00c853;color:white;
+                                           display:none;align-items:center;justify-content:center;
+                                           box-shadow:0 6px 24px rgba(0,0,0,0.35);
+                                           touch-action:manipulation;
+                                           transition:transform 0.15s;" title="Check">
+                                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                </button>
+
+                                <!-- Button panel — fixed inset from right edge of image area, vertically centered -->
+                                <div id="spellingBtnPanel" style="position:absolute;right:12px;top:40%;
+                                            display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+                                            background:rgba(255,255,255,0.75);
+                                            backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+                                            border-radius:18px;
+                                            padding:8px 4px;">
+
+                                    <!-- Back — red -->
+                                    <button onclick="closeSpellingGame()"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#e53935;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Back">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- divider -->
+                                    <div style="width:28px;height:1px;background:rgba(0,0,0,0.12);margin:2px 0;"></div>
+
+                                    <!-- Shuffle — teal -->
+                                    <button onclick="startNewSpellingGame()"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#35654D;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Shuffle / New Game">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                                            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Undo — grey -->
+                                    <button onclick="undoSpelling()"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#888;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Undo">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="9 14 4 9 9 4"/>
+                                            <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                                        </svg>
+                                    </button>
+
+
+
+                                    <!-- Say It — orange -->
+                                    <button onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\'")}' )"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#ff9500;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Say It">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Peek — purple -->
+                                    <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
+                                            ontouchstart="event.stopPropagation();peekSpelling(true)"
+                                            ontouchend="event.stopPropagation();peekSpelling(false)"
+                                        style="background:none;border:none;cursor:pointer;padding:6px;
+                                               color:#9c27b0;display:flex;align-items:center;justify-content:center;
+                                               touch-action:manipulation;" title="Peek">
+                                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+
+                                </div>
                             </div>
 
-                            <!-- Answer slots -->
-                            <div style="width:100%;flex-shrink:0;padding:6px 4px 4px;box-sizing:border-box;">
+                            <!-- Answer slots — blank lines -->
+                            <div style="width:100%;flex-shrink:0;padding:2px 4px 0;box-sizing:border-box;overflow:visible;">
                                 <div id="answerRow">${answerRowsHTML}</div>
                             </div>
 
-                            <!-- Letter row — check button appears here when all slots filled -->
+                            <!-- Letter tiles — pulled tight against blank lines -->
                             <div id="letterRow"
                                  ondragover="event.preventDefault()"
                                  ondrop="spellingDragDropToTile(event)"
@@ -9625,92 +9786,12 @@
                                         display:flex;justify-content:center;align-items:center;
                                         flex-wrap:wrap;
                                         border:1.5px solid #ddd;border-radius:8px;
-                                        padding:6px 8px;box-sizing:border-box;
-                                        min-height:48px;gap:6px;">
+                                        padding:3px 8px;box-sizing:border-box;
+                                        margin-top:1px;
+                                        min-height:${Math.round(_fsPx * 0.9)}px;gap:4px;">
                                 ${letterSpans}
-                                <button id="checkBtn" onclick="checkSpelling()"
-                                    style="background:none;border:none;cursor:pointer;padding:6px;
-                                           color:#35654D;display:none;align-items:center;justify-content:center;
-                                           touch-action:manipulation;" title="Check">
-                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"/>
-                                    </svg>
-                                </button>
+
                             </div>
-
-                        </div>
-
-                        <!-- Right: vertical button column -->
-                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                                    gap:6px;padding-left:8px;flex-shrink:0;width:52px;">
-
-                            <!-- Back — red, no text, extra bottom margin for separation -->
-                            <button onclick="closeSpellingGame()"
-                                style="background:none;border:none;cursor:pointer;padding:6px;
-                                       color:#e53935;display:flex;align-items:center;justify-content:center;
-                                       touch-action:manipulation;margin-bottom:10px;" title="Back">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                                </svg>
-                            </button>
-
-                            <!-- Shuffle — teal -->
-                            <button onclick="startNewSpellingGame()"
-                                style="background:none;border:none;cursor:pointer;padding:6px;
-                                       color:#35654D;display:flex;align-items:center;justify-content:center;
-                                       touch-action:manipulation;" title="Shuffle / New Game">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
-                                    <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
-                                </svg>
-                            </button>
-
-                            <!-- Undo — grey -->
-                            <button onclick="undoSpelling()"
-                                style="background:none;border:none;cursor:pointer;padding:6px;
-                                       color:#888;display:flex;align-items:center;justify-content:center;
-                                       touch-action:manipulation;" title="Undo">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="9 14 4 9 9 4"/>
-                                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
-                                </svg>
-                            </button>
-
-                            <!-- Skip — skip-to-next icon, blue-grey -->
-                            <button onclick="skipSpellingCard()"
-                                style="background:none;border:none;cursor:pointer;padding:6px;
-                                       color:#607d8b;display:flex;align-items:center;justify-content:center;
-                                       touch-action:manipulation;" title="Skip">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polygon points="5 4 15 12 5 20 5 4" fill="currentColor" stroke="none"/>
-                                    <line x1="19" y1="5" x2="19" y2="19"/>
-                                </svg>
-                            </button>
-
-                            <!-- Say It — orange -->
-                            <button onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')"
-                                style="background:none;border:none;cursor:pointer;padding:6px;
-                                       color:#ff9500;display:flex;align-items:center;justify-content:center;
-                                       touch-action:manipulation;" title="Say It">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                                </svg>
-                            </button>
-
-                            <!-- Peek — purple, hold to reveal -->
-                            <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)"
-                                    ontouchstart="event.stopPropagation();peekSpelling(true)"
-                                    ontouchend="event.stopPropagation();peekSpelling(false)"
-                                style="background:none;border:none;cursor:pointer;padding:6px;
-                                       color:#9c27b0;display:flex;align-items:center;justify-content:center;
-                                       touch-action:manipulation;" title="Peek">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                    <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                            </button>
 
                         </div>
 
@@ -9719,6 +9800,69 @@
 
             // Populate initial slot values
             renderSpellingGameState();
+
+            // Render progress dots in bottom bar
+            const _dots = document.getElementById('spellingDots');
+            if (_dots) {
+                _dots.innerHTML = gameCards.map((_, i) =>
+                    `<div style="width:8px;height:8px;border-radius:50%;transition:background 0.3s;background:${
+                        spelledCards.has(i) ? 'rgba(255,255,255,0.9)' : (i === currentCardIndex ? 'white' : 'rgba(255,255,255,0.35)')
+                    }"></div>`
+                ).join('');
+            }
+
+            // Landscape: nudge button panel to sit close to actual image edge
+            function adjustBtnPanelForLandscape() {
+                const panel = document.getElementById('spellingBtnPanel');
+                if (!panel) return;
+                // Landscape: fixed comfortable inset — close to image but not at border
+                panel.style.right = window.matchMedia('(orientation: landscape)').matches ? '24px' : '12px';
+            }
+
+            const _spellingImgL = document.getElementById('spellingImg');
+            if (_spellingImgL) {
+                if (_spellingImgL.complete) adjustBtnPanelForLandscape();
+                else _spellingImgL.addEventListener('load', adjustBtnPanelForLandscape);
+            }
+            window.addEventListener('resize', adjustBtnPanelForLandscape);
+            window.addEventListener('orientationchange', () => setTimeout(adjustBtnPanelForLandscape, 300));
+
+            // Swipe on white card to navigate prev/next unspelled word
+            const _card = document.getElementById('spellingCard');
+            if (_card) {
+                let _swipeStartX = 0, _swipeStartY = 0, _swipeActive = false;
+                _card.addEventListener('touchstart', (e) => {
+                    // Only track if not starting on a tile/slot
+                    if (e.target.closest('.letter-tile') || e.target.closest('.answer-slot')) return;
+                    _swipeStartX = e.touches[0].clientX;
+                    _swipeStartY = e.touches[0].clientY;
+                    _swipeActive = true;
+                }, { passive: true });
+                _card.addEventListener('touchend', (e) => {
+                    if (!_swipeActive) return;
+                    _swipeActive = false;
+                    const dx = e.changedTouches[0].clientX - _swipeStartX;
+                    const dy = e.changedTouches[0].clientY - _swipeStartY;
+                    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                        if (dx < 0) spellingNextCard();
+                        else spellingPrevCard();
+                    }
+                }, { passive: true });
+                // Mouse drag for PC
+                let _mStartX = 0, _mDown = false;
+                _card.addEventListener('mousedown', (e) => {
+                    if (e.target.closest('.letter-tile') || e.target.closest('.answer-slot')) return;
+                    _mStartX = e.clientX; _mDown = true;
+                });
+                _card.addEventListener('mouseup', (e) => {
+                    if (!_mDown) return; _mDown = false;
+                    const dx = e.clientX - _mStartX;
+                    if (Math.abs(dx) > 60) {
+                        if (dx < 0) spellingNextCard();
+                        else spellingPrevCard();
+                    }
+                });
+            }
         }
 
         function spellingSnapshot() {
@@ -9984,19 +10128,19 @@
 
             if (answer === correct) {
                 playSound('correctSound');
-                spellingGameState.currentCardIndex++;
-                setTimeout(() => renderSpellingGame(), 400);
+                spellingGameState.spelledCards.add(spellingGameState.currentCardIndex);
+                setTimeout(() => spellingNextCard(), 400);
             } else {
                 playSound('errorSound');
 
                 // Flash Check button red with ✕ then restore
                 const checkBtn = document.getElementById('checkBtn');
                 if (checkBtn) {
-                    checkBtn.style.color = '#e53935';
-                    checkBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+                    checkBtn.style.background = '#ff1744';
+                    checkBtn.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
                     setTimeout(() => {
-                        checkBtn.style.color = '#35654D';
-                        checkBtn.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+                        checkBtn.style.background = '#00c853';
+                        checkBtn.innerHTML = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
                     }, 1000);
                 }
 
@@ -10005,10 +10149,7 @@
             }
         }
 
-        function skipSpellingCard() {
-            spellingGameState.currentCardIndex++;
-            renderSpellingGame();
-        }
+
 
         function flipOptionCard(cardIndex) {
             // Only allow flipping the current card in order
@@ -10824,7 +10965,7 @@
                 guessGameState = { selectedCard: null, currentCardOrder: 0, correctCards: {}, gameCards: [] };
             }
             if (typeof spellingGameState !== 'undefined') {
-                spellingGameState = { currentCardIndex: 0, gameCards: [], scrambledLetters: [], answerSlots: [], selectedLetter: null, correctWord: '' };
+                spellingGameState = { currentCardIndex: 0, gameCards: [], spelledCards: new Set(), scrambledLetters: [], answerSlots: [], selectedLetter: null, correctWord: '', moveHistory: [] };
             }
 
             // Save to sessionStorage using the correct function
@@ -10879,6 +11020,23 @@
             // Prevent zoom shortcuts
             if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0' || e.key === '=')) {
                 e.preventDefault();
+            }
+
+            // ---- Spelling game keyboard input ----
+            const spellingOpen = document.getElementById('spellingGameModal')?.style.display === 'flex';
+            if (spellingOpen && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (e.key === 'ArrowRight') { e.preventDefault(); spellingNextCard(); return; }
+                if (e.key === 'ArrowLeft')  { e.preventDefault(); spellingPrevCard(); return; }
+                if (e.key === 'Enter')      { e.preventDefault(); checkSpelling();    return; }
+                if (e.key === 'Backspace')  { e.preventDefault(); undoSpelling();     return; }
+                if (e.key === 'Escape')     { e.preventDefault(); closeSpellingGame(); return; }
+                if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                    e.preventDefault();
+                    const typed = e.key.toUpperCase();
+                    const idx = spellingGameState.scrambledLetters.findIndex(l => l !== null && l.toUpperCase() === typed);
+                    if (idx !== -1) selectLetter(idx);
+                    return;
+                }
             }
 
             // Keyboard navigation for main flashcard view only
