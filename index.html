@@ -2322,6 +2322,13 @@
                     </svg>
                     Lock Side (Back Only)
                 </button>
+                <button id="swipeDirBtn" disabled
+                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#bbb; cursor:not-allowed; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0; opacity:0.5;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 21 12 15 6"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="9 6 3 12 9 18"/>
+                    </svg>
+                    Swipe Forward: ON
+                </button>
                 <button id="muteBtn" onclick="event.stopPropagation(); toggleMute()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleMute()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
                     <svg id="muteIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2348,18 +2355,33 @@
 
     <!-- Manage Side Panel -->
     <div id="manageSidePanel">
+        <div id="mspResizeHandle"></div>
         <div class="msp-header">
             <span class="msp-title">📚 Quick Load Units</span>
-            <button class="msp-close" onclick="closeManageSidePanel()">×</button>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <button id="mspUndoBtn" onclick="mspUndoDelete()"
+                    title="Undo last delete"
+                    style="display:none;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.6);
+                           color:white;border-radius:7px;padding:4px 10px;font-size:0.78rem;font-weight:700;
+                           cursor:pointer;white-space:nowrap;">
+                    ↩ Undo
+                </button>
+                <button class="msp-close" onclick="closeManageSidePanel()">×</button>
+            </div>
         </div>
-        <div style="padding:10px 12px;border-bottom:1px solid #eee;flex-shrink:0;display:flex;gap:8px;">
-            <button class="btn btn-success" style="flex:1;padding:10px;font-size:0.9rem;"
+        <div style="padding:6px 10px;border-bottom:1px solid #eee;flex-shrink:0;display:flex;gap:6px;flex-wrap:nowrap;">
+            <button class="btn btn-success" style="flex:1;padding:6px 4px;font-size:0.78rem;justify-content:center;min-width:0;"
                 onclick="closeManageSidePanel(); openUnitConfigModal();">
-                ⚙️ Quick Load Units
+                ⚙️ Manage
+            </button>
+            <button onclick="mspCloseAll()"
+                style="flex:1;padding:6px 4px;background:white;border:1.5px solid #e53935;min-width:0;
+                       border-radius:8px;color:#e53935;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                Unload All
             </button>
             <button id="mspSortBtn" type="button"
-                style="padding:10px 12px;background:white;border:1.5px solid #35654D;border-radius:8px;
-                       color:#35654D;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;"
+                style="flex:1;padding:6px 4px;background:white;border:1.5px solid #35654D;border-radius:8px;min-width:0;
+                       color:#35654D;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;"
                 onclick="mspToggleSort()">
                 Sort: Date
             </button>
@@ -2567,9 +2589,8 @@
         <!-- Game content -->
         <div id="spellingGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 0;box-sizing:border-box;overflow-y:auto;"></div>
         <!-- Bottom bar — title + dots -->
-        <div id="spellingBottomBar" style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 16px 12px;">
-            <span style="font-size:0.9rem;font-weight:700;color:rgba(255,255,255,0.7);">🔤 Spell the Word</span>
-            <div id="spellingDots" style="display:flex;justify-content:center;align-items:center;gap:6px;"></div>
+        <div id="spellingBottomBar" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 16px 10px;">
+            <span style="font-size:0.9rem;font-weight:700;color:rgba(255,255,255,0.7);">✏️ Spell Me</span>
         </div>
     </div>
 
@@ -2740,17 +2761,39 @@
         #manageSidePanel {
             position: fixed;
             top: 0; left: -320px;
-            width: 300px; max-width: 82vw;
+            width: 300px; max-width: 90vw;
             height: 100%;
             background: white;
             z-index: 30000;
-            transition: left 0.3s ease-out;
+            transition: left 0.3s linear;
             box-shadow: 4px 0 20px rgba(0,0,0,0.25);
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
         #manageSidePanel.open { left: 0; }
+        #mspResizeHandle {
+            position: absolute;
+            top: 0; right: -10px;
+            width: 20px; height: 100%;
+            cursor: ew-resize;
+            z-index: 30001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #mspResizeHandle::after {
+            content: '';
+            width: 8px;
+            height: 64px;
+            background: rgba(53,101,77,0.4);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        #mspResizeHandle:hover::after,
+        #mspResizeHandle.dragging::after {
+            background: #35654D;
+        }
         #manageSidePanelOverlay {
             position: fixed;
             inset: 0;
@@ -2806,23 +2849,22 @@
             padding: 12px 14px;
             border-bottom: 1px solid #f0f0f0;
         }
-        .msp-unit-row.loaded { background: #f0f9f4; border-left: 4px solid #35654D; }
+        .msp-unit-row.loaded { background: #f5f0e8; border-left: 5px solid #1e4d35; }
         .msp-unit-info { flex: 1; min-width: 0; }
         .msp-unit-name {
             font-size: 0.95rem;
             font-weight: 600;
             color: #222;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-break: break-word;
         }
-        .msp-unit-row.loaded .msp-unit-name { color: #35654D; }
+        .msp-unit-row.loaded .msp-unit-name { color: #1e4d35; font-weight: 700; }
         .msp-unit-count {
             font-size: 0.75rem;
             color: #999;
             margin-top: 2px;
         }
-        .msp-unit-row.loaded .msp-unit-count { color: #35654D; opacity: 0.7; }
+        .msp-unit-row.loaded .msp-unit-count { color: #1e4d35; opacity: 0.85; }
         .msp-btn {
             width: 36px; height: 36px;
             border: 2px solid #35654D;
@@ -2865,14 +2907,14 @@
         }
         .msp-group-header {
             display:flex;align-items:center;gap:8px;
-            padding:10px 14px;background:#f0f4f0;
+            padding:10px 14px;background:#c8dfc8;
             border-bottom:1px solid #e0e0e0;cursor:pointer;
             user-select:none;-webkit-user-select:none;
         }
-        .msp-group-header:hover { background:#e8f0e8; }
+        .msp-group-header:hover { background:#b8d4b8; }
         .msp-group-arrow { font-size:11px;color:#888;transition:transform 0.2s;flex-shrink:0; }
         .msp-group-arrow.collapsed { transform:rotate(-90deg); }
-        .msp-group-name { font-size:0.88rem;font-weight:700;color:#35654D;flex:1; }
+        .msp-group-name { font-size:0.88rem;font-weight:700;color:#1a3d2b;flex:1; }
         .msp-group-count { font-size:0.75rem;color:#aaa; }
         .msp-group-body.collapsed { display:none; }
         .msp-group-empty { padding:10px 20px 10px 36px;font-size:0.82rem;color:#bbb;font-style:italic; }
@@ -3712,9 +3754,9 @@
                     setTimeout(() => {
                         document.body.style.overflow = 'hidden';
                         if (absX >= absY) {
-                            if (dragX > 0) prevCard(); else nextCard();
+                            if (dragX > 0) { swipeForwardOnly ? nextCard() : prevCard(); } else { nextCard(); }
                         } else {
-                            if (dragY > 0) prevCard(); else nextCard();
+                            if (dragY > 0) { swipeForwardOnly ? nextCard() : prevCard(); } else { nextCard(); }
                         }
                     }, 290);
                 } else {
@@ -6031,6 +6073,17 @@
             }, 1300);
         }
 
+        let swipeForwardOnly = true;
+        function toggleSwipeDirection() {
+            swipeForwardOnly = !swipeForwardOnly;
+            const btn = document.getElementById('swipeDirBtn');
+            if (btn) {
+                const svgEl = btn.querySelector('svg');
+                const svgHTML = svgEl ? svgEl.outerHTML : '';
+                btn.innerHTML = svgHTML + (swipeForwardOnly ? ' Swipe: Forward Only' : ' Swipe: Both Ways');
+            }
+        }
+
         function nextCard() {
             if (isShuffling) return;
             closeQuickLoadDropdown();
@@ -7286,6 +7339,12 @@
         function saveGroups(groups) {
             localStorage.setItem('msp_groups', JSON.stringify(groups));
         }
+        function loadUncatOrder() {
+            try { return JSON.parse(localStorage.getItem('msp_uncat_order') || '[]').map(Number); } catch(e) { return []; }
+        }
+        function saveUncatOrder(order) {
+            localStorage.setItem('msp_uncat_order', JSON.stringify(order));
+        }
         function addGroup() {
             const input = document.getElementById('newGroupName');
             if (!input) return;
@@ -7357,7 +7416,7 @@
 
             // Sort units by selected mode
             const sorted = [...units].sort((a, b) => {
-                if (_mspSortMode === 'name') return a.name.localeCompare(b.name);
+                if (_mspSortMode === 'name') return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
                 return (b.createdAt || 0) - (a.createdAt || 0); // date: newest first
             });
             const svgAdd    = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
@@ -7375,22 +7434,28 @@
                 try { var fd = JSON.parse(unit.fileData); cardCount = fd.cards ? fd.cards.length : 0; } catch(e) {}
                 const lc = isLoaded ? ' loaded' : '';
                 const ab = isLoaded
-                    ? '<button class="msp-btn" title="Remove from deck" style="border-color:#FF9800;color:#FF9800;" onclick="mspAction(' + unit.id + ',\'remove-added\')">' + svgRemove + '</button>' +
-                      '<button class="msp-btn" title="Reload" onclick="mspAction(' + unit.id + ',\'load\')">' + svgLoad + '</button>'
-                    : (hasCards ? '<button class="msp-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>' : '') +
-                      '<button class="msp-btn" title="Load" onclick="mspAction(' + unit.id + ',\'load\')">' + svgLoad + '</button>';
-                return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '" ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)" ondragover="mspRowDragOver(event,this)" ondragleave="mspRowDragLeave(this)" ondrop="mspRowDrop(event,this,' + unit.id + ')">' +
-                    '<span class="msp-drag-handle" title="Drag to group">' + svgHandle + '</span>' +
+                    ? '<button class="msp-btn" title="Remove from deck" style="border-color:#FF9800;color:#FF9800;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'remove-added\')">' + svgRemove + '</button>'
+                    : '<button class="msp-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>';
+                return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '" style="cursor:pointer;"' +
+                    ' onclick="mspAction(' + unit.id + ',\'load\')"' +
+                    ' ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)" ondragover="mspRowDragOver(event,this)" ondragleave="mspRowDragLeave(this)" ondrop="mspRowDrop(event,this,' + unit.id + ')">' +
+                    '<span class="msp-drag-handle" title="Drag to group" onclick="event.stopPropagation()">' + svgHandle + '</span>' +
                     '<div class="msp-unit-info"><div class="msp-unit-name">' + unit.name + '</div>' +
-                    '<div class="msp-unit-count">' + cardCount + ' card' + (cardCount !== 1 ? 's' : '') + '</div></div>' +
+                    '<div class="msp-unit-count">' + cardCount + ' card' + (cardCount !== 1 ? 's' : '') + (unit.createdAt ? ' (' + new Date(unit.createdAt).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' }) + ')' : '') + '</div></div>' +
                     ab +
-                    '<button class="msp-del-btn" id="msp-del-' + unit.id + '" onclick="mspDelete(' + unit.id + ', this)" ontouchend="event.stopPropagation();event.preventDefault();mspDelete(' + unit.id + ',this)" title="Delete unit">' + svgTrash + '</button>' +
+                    '<button class="msp-del-btn" id="msp-del-' + unit.id + '" onclick="event.stopPropagation();mspDelete(' + unit.id + ', this)" ontouchend="event.stopPropagation();event.preventDefault();mspDelete(' + unit.id + ',this)" title="Delete unit">' + svgTrash + '</button>' +
                     '</div>';
             }
 
             var html = '';
             groups.forEach(function(g) {
                 var gu = g.unitIds.map(function(uid){ return sorted.find(function(u){ return u.id === Number(uid); }); }).filter(Boolean);
+                // Only sort by name when explicitly in name mode — date mode preserves manual drag order
+                if (_mspSortMode === 'name') {
+                    gu.sort(function(a, b) {
+                        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+                    });
+                }
                 var ac = g.collapsed ? ' collapsed' : '';
                 html += '<div class="msp-group-header" onclick="mspToggleGroup(\'' + g.id + '\',this)" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
                     '<span class="msp-group-arrow' + ac + '">&#9660;</span>' +
@@ -7402,6 +7467,18 @@
             });
 
             var uncat = sorted.filter(function(u){ return !assignedIds.has(u.id); });
+            if (_mspSortMode !== 'name') {
+                // Respect manual drag order for uncategorized units
+                var uncatOrder = loadUncatOrder();
+                uncat.sort(function(a, b) {
+                    var ai = uncatOrder.indexOf(a.id);
+                    var bi = uncatOrder.indexOf(b.id);
+                    if (ai === -1 && bi === -1) return (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0);
+                    if (ai === -1) return 1;
+                    if (bi === -1) return -1;
+                    return ai - bi;
+                });
+            }
             if (uncat.length > 0) {
                 if (groups.length > 0) {
                     html += '<div class="msp-group-header" style="background:#fafafa;">' +
@@ -7448,23 +7525,31 @@
             var groups = loadGroups();
             var targetGroup = null;
             groups.forEach(function(g){ if (g.unitIds.map(Number).indexOf(targetUnitId) !== -1) targetGroup = g; });
-            if (!targetGroup) return;
-            // Work on a clean numeric copy BEFORE any removal
-            var ids = targetGroup.unitIds.map(Number);
-            var fromIdx = ids.indexOf(draggedId);
-            var toIdx   = ids.indexOf(targetUnitId);
-            if (toIdx === -1) return;
-            // Remove dragged item
-            ids.splice(fromIdx, 1);
-            // Recalculate target index after removal
-            var newToIdx = ids.indexOf(targetUnitId);
-            ids.splice(insertBefore ? newToIdx : newToIdx + 1, 0, draggedId);
-            targetGroup.unitIds = ids;
-            // If dragged came from a different group, remove it there too
-            groups.forEach(function(g){
-                if (g !== targetGroup) g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== draggedId; });
-            });
-            saveGroups(groups);
+
+            if (targetGroup) {
+                // Both in a group — reorder within group
+                var ids = targetGroup.unitIds.map(Number);
+                var fromIdx = ids.indexOf(draggedId);
+                var toIdx   = ids.indexOf(targetUnitId);
+                if (toIdx === -1) return;
+                ids.splice(fromIdx, 1);
+                var newToIdx = ids.indexOf(targetUnitId);
+                ids.splice(insertBefore ? newToIdx : newToIdx + 1, 0, draggedId);
+                targetGroup.unitIds = ids;
+                groups.forEach(function(g){
+                    if (g !== targetGroup) g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== draggedId; });
+                });
+                saveGroups(groups);
+            } else {
+                // Uncategorized — use a separate order store in localStorage
+                var order = loadUncatOrder();
+                var fromIdx2 = order.indexOf(draggedId);
+                if (fromIdx2 !== -1) order.splice(fromIdx2, 1);
+                var toIdx2 = order.indexOf(targetUnitId);
+                if (toIdx2 === -1) order.push(draggedId);
+                else order.splice(insertBefore ? toIdx2 : toIdx2 + 1, 0, draggedId);
+                saveUncatOrder(order);
+            }
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
         }
         function mspDropOnGroup(event, groupId, el) {
@@ -7624,22 +7709,78 @@
             _mspTouch.id = null;
         }
 
+        function mspCloseAll() {
+            cards = [];
+            currentIndex = 0;
+            isFlipped = false;
+            loadedUnitIds.clear();
+            currentLoadedUnitId = null;
+            setLoadedFileName('');
+            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+            saveCards();
+            renderDisplay();
+            loadUnitsFromDB().then(function(units){ renderMspList(units); });
+            showToast('✅ All units unloaded', 2000);
+        }
+
+        var _mspLastDeleted = null; // { unit, groupIds }
+
+        function mspUndoDelete() {
+            if (!_mspLastDeleted) return;
+            var d = _mspLastDeleted;
+            _mspLastDeleted = null;
+            document.getElementById('mspUndoBtn').style.display = 'none';
+            saveUnitToDB(d.unit).then(function(newId) {
+                // Restore group memberships
+                if (d.groupIds.length) {
+                    var groups = loadGroups();
+                    d.groupIds.forEach(function(gid) {
+                        var g = groups.find(function(x){ return x.id === gid; });
+                        if (g && g.unitIds.indexOf(newId) === -1) g.unitIds.push(newId);
+                    });
+                    saveGroups(groups);
+                }
+                loadUnitsFromDB().then(function(units){ renderMspList(units); });
+                showToast('↩ Unit restored', 2000);
+            });
+        }
+
         function mspDelete(unitId, btn) {
             if (btn.dataset.confirming === 'true') {
                 btn.dataset.confirming = 'false';
-                deleteUnitFromDB(unitId).then(function() {
-                    showToast('✅ Unit deleted', 2000);
+                // Save unit data before deleting for undo
+                loadUnitsFromDB().then(function(units) {
+                    var unit = units.find(function(u){ return u.id === unitId; });
                     var groups = loadGroups();
-                    groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
-                    saveGroups(groups);
-                    var row = document.getElementById('msp-row-' + unitId);
-                    if (row) row.remove();
-                    var list = document.getElementById('mspList');
-                    if (list && list.querySelectorAll('.msp-unit-row').length === 0) {
-                        list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>&#9881;&#65039; Quick Load Units</strong> above to add your first JSON file.</div>';
+                    var groupIds = groups.filter(function(g){ return g.unitIds.map(Number).indexOf(unitId) !== -1; }).map(function(g){ return g.id; });
+                    if (unit) {
+                        var unitCopy = Object.assign({}, unit);
+                        delete unitCopy.id; // let DB assign new id on restore
+                        _mspLastDeleted = { unit: unitCopy, groupIds: groupIds };
+                        var undoBtn = document.getElementById('mspUndoBtn');
+                        if (undoBtn) {
+                            undoBtn.style.display = '';
+                            // Auto-hide undo after 10s
+                            clearTimeout(_mspLastDeleted._timer);
+                            _mspLastDeleted._timer = setTimeout(function(){
+                                _mspLastDeleted = null;
+                                if (undoBtn) undoBtn.style.display = 'none';
+                            }, 10000);
+                        }
                     }
-                    syncUnitsEverywhere();
-                }).catch(function(){ showToast('⚠️ Error deleting unit', 2000); });
+                    deleteUnitFromDB(unitId).then(function() {
+                        showToast('✅ Unit deleted — tap Undo to restore', 3000);
+                        groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
+                        saveGroups(groups);
+                        var row = document.getElementById('msp-row-' + unitId);
+                        if (row) row.remove();
+                        var list = document.getElementById('mspList');
+                        if (list && list.querySelectorAll('.msp-unit-row').length === 0) {
+                            list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>&#9881;&#65039; Quick Load Units</strong> above to add your first JSON file.</div>';
+                        }
+                        syncUnitsEverywhere();
+                    }).catch(function(){ showToast('⚠️ Error deleting unit', 2000); });
+                });
             } else {
                 btn.dataset.confirming = 'true';
                 btn.innerHTML = '<span style="font-size:10px;font-weight:700;line-height:1.2;text-align:center;pointer-events:none;">Sure?</span>';
@@ -7660,15 +7801,65 @@
 
 
         function closeManageSidePanel() {
-            document.getElementById('manageSidePanel').classList.remove('open');
+            const panel = document.getElementById('manageSidePanel');
+            panel.classList.remove('open');
             document.getElementById('manageSidePanelOverlay').classList.remove('open');
             document.body.style.overflow = '';
+            // Reset to default width after slide-out completes
+            setTimeout(() => { panel.style.width = ''; }, 310);
         }
 
+        // Drag-to-resize side panel
+        (function() {
+            const MIN_W = 300, MAX_W_VW = 0.9;
+            let resizing = false, startX = 0, startW = 0;
+            const handle = document.getElementById('mspResizeHandle');
+            const panel  = document.getElementById('manageSidePanel');
+            if (!handle || !panel) return;
+
+            function startResize(x) {
+                resizing = true;
+                startX = x;
+                startW = panel.offsetWidth;
+                handle.classList.add('dragging');
+                panel.style.transition = 'none'; // disable slide transition during resize
+                document.body.style.userSelect = 'none';
+            }
+            function doResize(x) {
+                if (!resizing) return;
+                const maxW = Math.floor(window.innerWidth * MAX_W_VW);
+                const newW = Math.min(maxW, Math.max(MIN_W, startW + (x - startX)));
+                panel.style.width = newW + 'px';
+            }
+            function endResize() {
+                if (!resizing) return;
+                resizing = false;
+                handle.classList.remove('dragging');
+                panel.style.transition = '';
+                document.body.style.userSelect = '';
+            }
+
+            // Mouse
+            handle.addEventListener('mousedown', e => { e.preventDefault(); startResize(e.clientX); });
+            window.addEventListener('mousemove', e => doResize(e.clientX));
+            window.addEventListener('mouseup', endResize);
+
+            // Touch
+            handle.addEventListener('touchstart', e => { e.preventDefault(); startResize(e.touches[0].clientX); }, { passive: false });
+            window.addEventListener('touchmove', e => { if (resizing) { e.preventDefault(); doResize(e.touches[0].clientX); } }, { passive: false });
+            window.addEventListener('touchend', endResize);
+        })();
+
+
+
         async function mspAction(unitId, action) {
-            closeManageSidePanel();
+            if (action === 'load') closeManageSidePanel();
             const id = isNaN(unitId) ? unitId : Number(unitId);
             await quickLoadUnit(id, action);
+            // Refresh the panel list after add/remove so buttons update
+            if (action !== 'load') {
+                loadUnitsFromDB().then(function(units){ renderMspList(units); });
+            }
         }
 
         // Open Unit Configuration Modal
@@ -7884,7 +8075,7 @@
                 console.log('Loading units from DB...');
                 const rawUnits = await loadUnitsFromDB();
                 const units = [...rawUnits].sort((a, b) => {
-                    if (_mspSortMode === 'name') return a.name.localeCompare(b.name);
+                    if (_mspSortMode === 'name') return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
                     return (b.createdAt || 0) - (a.createdAt || 0);
                 });
                 console.log('Units loaded:', units.length);
@@ -8980,7 +9171,7 @@
                         <!-- Right: image centered vertically -->
                         <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;">
                             <img src="${q.card.frontImage}"
-                                 style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                                 style="width:100%;height:100%;object-fit:contain;border-radius:10px;">
                         </div>
 
                     </div>`;
@@ -9001,7 +9192,7 @@
                         <!-- Image — constrained so choices stay close -->
                         <div style="flex:1;width:100%;min-height:0;display:flex;align-items:center;justify-content:center;padding-top:4px;">
                             <img src="${q.card.frontImage}"
-                                 style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
+                                 style="width:100%;height:100%;object-fit:contain;border-radius:10px;">
                         </div>
 
                         <!-- Divider -->
@@ -9592,6 +9783,8 @@
                                         user-select:none;padding:0 2px;">-</div>`;
                 }
                 return `<div onclick="selectAnswerSlot(${idx})" class="answer-slot" data-index="${idx}"
+                draggable="true"
+                ondragstart="spellingDragStart(event,${idx},'slot')"
                 ondragover="event.preventDefault()" ondrop="spellingDragDrop(event,${idx})"
                 ontouchstart="spellingTouchStart(event,${idx},'slot')"
                 ontouchmove="spellingTouchMove(event)"
@@ -9599,7 +9792,7 @@
                 style="min-width:${Math.round(_fsPx * 0.85)}px;height:${lineH};border-bottom:3px solid #a8d5b5;
                        display:inline-flex;align-items:flex-end;justify-content:center;
                        font-size:${lineFS};line-height:0.8;font-weight:400;font-family:'Fredoka',Arial,sans-serif;
-                       color:#1a1a1a;cursor:pointer;overflow:visible;
+                       color:#1a1a1a;cursor:pointer;overflow:visible;touch-action:none;
                        padding:0 4px;user-select:none;"></div>`;
             };
 
@@ -9656,7 +9849,8 @@
                            font-size:${letterRowFS};font-weight:400;padding:1px ${Math.round(_fsPx * 0.15)}px;
                            font-family:'Fredoka',Arial,sans-serif;
                            color:${isVowel ? '#ff9500' : '#35654D'};
-                           cursor:grab;user-select:none;flex-shrink:0;min-width:0;">
+                           cursor:grab;user-select:none;-webkit-user-select:none;
+                           -webkit-user-drag:element;touch-action:none;flex-shrink:0;min-width:0;">
                     ${letter}
                 </span>`;
             }).join('');
@@ -9673,12 +9867,15 @@
                         <!-- Left: main content column -->
                         <div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;min-height:0;">
 
-                            <!-- Index badge top-left -->
-                            <span style="position:absolute;top:10px;left:12px;background:rgba(0,0,0,0.12);
-                                         color:#555;font-size:0.72rem;font-weight:700;border-radius:5px;
-                                         padding:2px 7px;line-height:1.6;z-index:2;">
-                                ${currentCardIndex + 1} / ${gameCards.length}
-                            </span>
+                            <!-- Index + dots row top of card -->
+                            <div style="position:absolute;top:8px;left:10px;right:10px;display:flex;align-items:center;justify-content:space-between;z-index:2;">
+                                <span style="background:rgba(0,0,0,0.12);color:#555;font-size:0.72rem;font-weight:700;border-radius:5px;padding:2px 7px;line-height:1.6;white-space:nowrap;">
+                                    ${currentCardIndex + 1} / ${gameCards.length}
+                                </span>
+                                <div id="spellingDotsInCard" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;">
+                                    ${gameCards.map((_, i) => `<div style="width:7px;height:7px;border-radius:50%;transition:background 0.3s;background:${spelledCards.has(i) ? '#35654D' : (i === currentCardIndex ? '#888' : '#ccc')}"></div>`).join('')}
+                                </div>
+                            </div>
 
                             <!-- Image area with buttons overlaid at fixed right inset -->
                             <div id="spellingImgWrap" style="flex:1;width:100%;min-height:0;position:relative;padding-top:4px;">
@@ -9802,14 +9999,7 @@
             renderSpellingGameState();
 
             // Render progress dots in bottom bar
-            const _dots = document.getElementById('spellingDots');
-            if (_dots) {
-                _dots.innerHTML = gameCards.map((_, i) =>
-                    `<div style="width:8px;height:8px;border-radius:50%;transition:background 0.3s;background:${
-                        spelledCards.has(i) ? 'rgba(255,255,255,0.9)' : (i === currentCardIndex ? 'white' : 'rgba(255,255,255,0.35)')
-                    }"></div>`
-                ).join('');
-            }
+            // Dots now rendered inline in card template above
 
             // Landscape: nudge button panel to sit close to actual image edge
             function adjustBtnPanelForLandscape() {
