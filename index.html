@@ -3050,9 +3050,8 @@
                     </button>
                 </div>
             </div>
-            <div id="sampleDeckGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px; overflow-y:auto; flex:1; min-height:120px;">
-                <div id="sampleDeckStatus" style="grid-column:1/-1; text-align:center; padding:20px; color:#666;">Loading sample cards...</div>
-            </div>
+            <!-- Card preview grid -->
+            <div id="sampleDeckGrid" style="display:none; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px; overflow-y:auto; flex:1; min-height:120px;"></div>
             <div style="padding:12px 16px; border-top:1px solid #eee; flex-shrink:0; display:flex; gap:10px; justify-content:flex-end;">
                 <button onclick="closeSampleDeck()" class="btn btn-secondary" style="padding:10px 24px;">Close</button>
                 <button id="sampleDeckCreateBtn" onclick="createFromSampleDeck()" class="btn btn-success" style="padding:10px 24px;" disabled>Create</button>
@@ -6645,7 +6644,7 @@
         let _sampleTab = 'fruits';
         const SAMPLE_DECK_URLS = {
             fruits:  'https://raw.githubusercontent.com/Weeksder/burstcard/main/Fruits_Sample_Set.json',
-            animals: null // coming soon
+            animals: 'https://raw.githubusercontent.com/Weeksder/burstcard/main/Animals_Sample_Set.json'
         };
 
         function switchSampleTab(tab) {
@@ -6671,17 +6670,6 @@
             createBtn.disabled = true;
 
             const url = SAMPLE_DECK_URLS[tab];
-            if (!url) {
-                grid.innerHTML = `
-                    <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;
-                                justify-content:center;padding:40px 20px;gap:12px;">
-                        <div style="font-size:3rem;">🐾</div>
-                        <div style="font-weight:700;font-size:1rem;color:#bbb;">Animals — Coming Soon</div>
-                        <div style="font-size:0.82rem;color:#ccc;">This sample set is being prepared.</div>
-                    </div>`;
-                return;
-            }
-
             grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#666;">Loading sample cards...</div>';
             try {
                 const response = await fetch(url);
@@ -6725,18 +6713,15 @@
                 showToast('⚠️ Sample data not ready', 2000);
                 return;
             }
-
             const cardCount = sampleDeckData.cards.length;
             cards = sampleDeckData.cards;
             currentIndex = 0;
             isFlipped = false;
-
             guessGameState.gameCards = [];
             guessGameState.currentRoundCards = null;
             guessGameState.correctCards = {};
             guessGameState.selectedCard = null;
             guessGameState.currentCardOrder = 0;
-
             saveCards();
             closeSampleDeck();
             renderDisplay();
