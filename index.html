@@ -6668,6 +6668,7 @@
             const createBtn = document.getElementById('sampleDeckCreateBtn');
             sampleDeckData = null;
             createBtn.disabled = true;
+            grid.style.display = 'grid';
 
             const url = SAMPLE_DECK_URLS[tab];
             grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#666;">Loading sample cards...</div>';
