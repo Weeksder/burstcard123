@@ -3037,6 +3037,18 @@
         <div style="background:white; border-radius:16px; width:100%; max-width:560px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
             <div style="background:#35654D; padding:14px 18px; border-radius:16px 16px 0 0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
                 <span style="color:white; font-weight:700; font-size:17px;">Sample Deck</span>
+                <div style="display:flex; gap:6px;">
+                    <button id="sampleTabFruits" onclick="switchSampleTab('fruits')"
+                        style="padding:5px 14px; border-radius:20px; border:2px solid white; background:white;
+                               color:#35654D; font-weight:700; font-size:13px; cursor:pointer;">
+                        🍎 Fruits
+                    </button>
+                    <button id="sampleTabAnimals" onclick="switchSampleTab('animals')"
+                        style="padding:5px 14px; border-radius:20px; border:2px solid rgba(255,255,255,0.5); background:transparent;
+                               color:rgba(255,255,255,0.8); font-weight:700; font-size:13px; cursor:pointer;">
+                        🐾 Animals
+                    </button>
+                </div>
             </div>
             <div id="sampleDeckGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:16px; overflow-y:auto; flex:1; min-height:120px;">
                 <div id="sampleDeckStatus" style="grid-column:1/-1; text-align:center; padding:20px; color:#666;">Loading sample cards...</div>
@@ -6630,54 +6642,77 @@
         // ==================== SAMPLE DECK ====================
 
         let sampleDeckData = null;
-        const SAMPLE_DECK_URL = 'https://raw.githubusercontent.com/Weeksder/burstcard/main/Fruits_Sample_Set.json';
+        let _sampleTab = 'fruits';
+        const SAMPLE_DECK_URLS = {
+            fruits:  'https://raw.githubusercontent.com/Weeksder/burstcard/main/Fruits_Sample_Set.json',
+            animals: null // coming soon
+        };
 
-        async function openSampleDeck() {
-            const modal = document.getElementById('sampleDeckModal');
+        function switchSampleTab(tab) {
+            _sampleTab = tab;
+            const btnFruits  = document.getElementById('sampleTabFruits');
+            const btnAnimals = document.getElementById('sampleTabAnimals');
+            if (btnFruits && btnAnimals) {
+                [['fruits', btnFruits], ['animals', btnAnimals]].forEach(([key, btn]) => {
+                    if (key === tab) {
+                        btn.style.background = 'white'; btn.style.color = '#35654D'; btn.style.borderColor = 'white';
+                    } else {
+                        btn.style.background = 'transparent'; btn.style.color = 'rgba(255,255,255,0.8)'; btn.style.borderColor = 'rgba(255,255,255,0.5)';
+                    }
+                });
+            }
+            loadSampleTab(tab);
+        }
+
+        async function loadSampleTab(tab) {
             const grid = document.getElementById('sampleDeckGrid');
             const createBtn = document.getElementById('sampleDeckCreateBtn');
-            const statusEl = document.getElementById('sampleDeckStatus');
-
-            // Show modal with loading state
-            modal.style.display = 'flex';
-            grid.innerHTML = '<div id="sampleDeckStatus" style="grid-column:1/-1; text-align:center; padding:20px; color:#666;">Loading sample cards...</div>';
-            createBtn.disabled = true;
             sampleDeckData = null;
+            createBtn.disabled = true;
 
+            const url = SAMPLE_DECK_URLS[tab];
+            if (!url) {
+                grid.innerHTML = `
+                    <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;
+                                justify-content:center;padding:40px 20px;gap:12px;">
+                        <div style="font-size:3rem;">🐾</div>
+                        <div style="font-weight:700;font-size:1rem;color:#bbb;">Animals — Coming Soon</div>
+                        <div style="font-size:0.82rem;color:#ccc;">This sample set is being prepared.</div>
+                    </div>`;
+                return;
+            }
+
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#666;">Loading sample cards...</div>';
             try {
-                const response = await fetch(SAMPLE_DECK_URL);
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to fetch sample deck');
                 const data = await response.json();
-
-                if (!data.cards || !Array.isArray(data.cards)) {
-                    throw new Error('Invalid sample deck format');
-                }
-
+                if (!data.cards || !Array.isArray(data.cards)) throw new Error('Invalid sample deck format');
                 sampleDeckData = data;
                 createBtn.disabled = false;
-
-                // Build preview grid
                 grid.innerHTML = data.cards.map((card, i) => {
-                    const rawLabel = (card.backText || '')
-                        .replace(/<[^>]*>/g, '')
-                        .replace(/[\r\n]+/g, ' ')
-                        .trim();
+                    const rawLabel = (card.backText || '').replace(/<[^>]*>/g, '').replace(/[\r\n]+/g, ' ').trim();
                     const label = rawLabel !== '' ? rawLabel : `Card ${i + 1}`;
                     const escapedLabel = label.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                     return `
-                    <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; align-items:center;">
+                    <div style="background:#f9f9f9;border:1px solid #ddd;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;align-items:center;">
                         ${card.frontImage
-                            ? `<img src="${card.frontImage}" style="width:100%; aspect-ratio:1; object-fit:cover;">`
-                            : `<div style="width:100%; aspect-ratio:1; background:#e0e0e0; display:flex; align-items:center; justify-content:center; font-size:24px;">🖼️</div>`}
-                        <div style="padding:5px 6px; font-size:12px; font-weight:600; color:#333; text-align:center; width:100%; box-sizing:border-box; background:white; border-top:1px solid #eee; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escapedLabel}">
+                            ? `<img src="${card.frontImage}" style="width:100%;aspect-ratio:1;object-fit:cover;">`
+                            : `<div style="width:100%;aspect-ratio:1;background:#e0e0e0;display:flex;align-items:center;justify-content:center;font-size:24px;">🖼️</div>`}
+                        <div style="padding:5px 6px;font-size:12px;font-weight:600;color:#333;text-align:center;width:100%;box-sizing:border-box;background:white;border-top:1px solid #eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapedLabel}">
                             ${label}
                         </div>
                     </div>`;
                 }).join('');
-
             } catch (err) {
-                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:#c62828;">⚠️ Could not load sample deck.<br><small>${err.message}</small></div>`;
+                grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;color:#c62828;">⚠️ Could not load sample deck.<br><small>${err.message}</small></div>`;
             }
+        }
+
+        async function openSampleDeck() {
+            document.getElementById('sampleDeckModal').style.display = 'flex';
+            _sampleTab = 'fruits';
+            setTimeout(() => switchSampleTab('fruits'), 0);
         }
 
         function closeSampleDeck() {
@@ -8007,6 +8042,33 @@
                     showToast('⚠️ JSON file contains no cards', 3000);
                     return;
                 }
+
+                // Flatten transparent PNG backgrounds to white at import time
+                function flattenImageToWhite(dataUrl) {
+                    return new Promise(resolve => {
+                        if (!dataUrl || !dataUrl.startsWith('data:image/png')) { resolve(dataUrl); return; }
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0);
+                            resolve(canvas.toDataURL('image/jpeg', 0.92));
+                        };
+                        img.onerror = () => resolve(dataUrl);
+                        img.src = dataUrl;
+                    });
+                }
+
+                showToast('⏳ Processing images…', 1500);
+                normalizedData.cards = await Promise.all(normalizedData.cards.map(async card => {
+                    if (card.frontImage) card.frontImage = await flattenImageToWhite(card.frontImage);
+                    if (card.backImage)  card.backImage  = await flattenImageToWhite(card.backImage);
+                    return card;
+                }));
 
                 // Store in IndexedDB with normalized format
                 const unit = {
