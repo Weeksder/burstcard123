@@ -2358,32 +2358,30 @@
         <div id="mspResizeHandle"></div>
         <div class="msp-header">
             <span class="msp-title">📚 Quick Load Units</span>
-            <div style="display:flex;align-items:center;gap:6px;">
-                <button id="mspUndoBtn" onclick="mspUndoDelete()"
-                    title="Undo last delete"
-                    style="display:none;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.6);
-                           color:white;border-radius:7px;padding:4px 10px;font-size:0.78rem;font-weight:700;
-                           cursor:pointer;white-space:nowrap;">
-                    ↩ Undo
-                </button>
-                <button class="msp-close" onclick="closeManageSidePanel()">×</button>
-            </div>
+            <button class="msp-close" onclick="closeManageSidePanel()">×</button>
         </div>
-        <div style="padding:6px 10px;border-bottom:1px solid #eee;flex-shrink:0;display:flex;gap:6px;flex-wrap:nowrap;">
-            <button class="btn btn-success" style="flex:1;padding:6px 4px;font-size:0.78rem;justify-content:center;min-width:0;"
+        <div style="padding:6px 10px;border-bottom:1px solid #eee;flex-shrink:0;display:flex;gap:5px;flex-wrap:nowrap;overflow:visible;">
+            <button class="btn btn-success" style="flex-shrink:0;width:72px;padding:6px 4px;font-size:0.75rem;justify-content:center;flex-direction:row;"
                 onclick="closeManageSidePanel(); openUnitConfigModal();">
                 ⚙️ Manage
             </button>
             <button onclick="mspCloseAll()"
-                style="flex:1;padding:6px 4px;background:white;border:1.5px solid #e53935;min-width:0;
-                       border-radius:8px;color:#e53935;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                style="flex-shrink:0;width:72px;padding:6px 4px;background:white;border:1.5px solid #e53935;
+                       border-radius:8px;color:#e53935;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">
                 Unload All
             </button>
             <button id="mspSortBtn" type="button"
-                style="flex:1;padding:6px 4px;background:white;border:1.5px solid #35654D;border-radius:8px;min-width:0;
-                       color:#35654D;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;"
+                style="flex-shrink:0;width:76px;padding:6px 4px;background:white;border:1.5px solid #35654D;border-radius:8px;
+                       color:#35654D;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;"
                 onclick="mspToggleSort()">
                 Sort: Date
+            </button>
+            <button id="mspUndoBtn" onclick="mspUndoDelete()"
+                title="Undo last delete"
+                style="display:none;flex-shrink:0;width:52px;padding:6px 4px;background:white;
+                       border:1.5px solid #888;border-radius:8px;color:#555;
+                       font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;position:relative;z-index:30002;">
+                Undo
             </button>
         </div>
         <div class="msp-list" id="mspList">
@@ -2769,7 +2767,7 @@
             box-shadow: 4px 0 20px rgba(0,0,0,0.25);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: visible;
         }
         #manageSidePanel.open { left: 0; }
         #mspResizeHandle {
@@ -2813,6 +2811,7 @@
             flex-shrink: 0;
             background: #35654D;
             color: white;
+            overflow: hidden;
         }
         .msp-title {
             font-size: 1rem;
@@ -7457,8 +7456,7 @@
                 const ab = isLoaded
                     ? '<button class="msp-btn" title="Remove from deck" style="border-color:#FF9800;color:#FF9800;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'remove-added\')">' + svgRemove + '</button>'
                     : '<button class="msp-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>';
-                return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '" style="cursor:pointer;"' +
-                    ' onclick="mspAction(' + unit.id + ',\'load\')"' +
+                return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '"' +
                     ' ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)" ondragover="mspRowDragOver(event,this)" ondragleave="mspRowDragLeave(this)" ondrop="mspRowDrop(event,this,' + unit.id + ')">' +
                     '<span class="msp-drag-handle" title="Drag to group" onclick="event.stopPropagation()">' + svgHandle + '</span>' +
                     '<div class="msp-unit-info"><div class="msp-unit-name">' + unit.name + '</div>' +
