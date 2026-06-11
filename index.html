@@ -3463,7 +3463,14 @@
         // ==================== DEVICE DETECTION ====================
         function isIPad() {
             const ua = navigator.userAgent.toLowerCase();
-            return /ipad|iphone|ipod/.test(ua) && /applewebkit/.test(ua);
+            // Classic detection: UA still says ipad/iphone/ipod (Edge on iPad,
+            // older Safari, in-app webviews).
+            if (/ipad|iphone|ipod/.test(ua) && /applewebkit/.test(ua)) return true;
+            // iPadOS 13+ Safari defaults to "Desktop site" and reports itself
+            // as a Mac. Real Macs don't have touchscreens, so a Mac UA + touch
+            // support is an iPad. (maxTouchPoints > 1 is Apple's own recipe.)
+            if (/macintosh/.test(ua) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1) return true;
+            return false;
         }
 
         // ==================== STATE ====================
