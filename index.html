@@ -6625,7 +6625,15 @@
             if (navHint) { navHint.textContent = 'Tap to flip'; navHint.style.color = labelColor; }
             if (navIndex) navIndex.style.color = labelColor;
             // Re-scale text now that card-back is visible and measurable
-            if (isFlipped) requestAnimationFrame(() => scaleTextToFit());
+            if (isFlipped) {
+                const _ft = document.querySelector('.card > .card-back .card-text-auto-scale');
+                if (_ft) _ft.style.visibility = 'hidden';
+                requestAnimationFrame(() => {
+                    scaleTextToFit();
+                    const _ft2 = document.querySelector('.card > .card-back .card-text-auto-scale');
+                    if (_ft2) _ft2.style.visibility = '';
+                });
+            }
             // Update icon colors immediately on flip
             requestAnimationFrame(() => positionNavOverlay());
         }
@@ -11415,15 +11423,141 @@
                 ttsEl.style.display = 'none';
             }
 
+            // Hide ALL back-text (main + prev/next peeks) until after the scaler
+            // sets the final size. Without this, the text paints at its 7.5rem
+            // CSS default for one frame, then jumps to the bigger fitted size —
+            // visible as a "small → big" pop on each swipe in Lock Back Side mode.
+            const _pendingTexts = display.querySelectorAll(
+                '.card > .card-back .card-text-auto-scale, ' +
+                '.card-prev .card-text-auto-scale, ' +
+                '.card-next .card-text-auto-scale'
+            );
+            _pendingTexts.forEach(t => { t.style.visibility = 'hidden'; });
+
             // Auto-scale text to fit on one line if needed - use requestAnimationFrame for proper timing
-            requestAnimationFrame(() => { scaleTextToFit(); applyCardTextScale(); scaleFrontText(); });
+            requestAnimationFrame(() => {
+                scaleTextToFit();
+                applyCardTextScale();
+                scaleFrontText();
+                // Reveal the now-sized back text everywhere
+                document.querySelectorAll(
+                    '.card > .card-back .card-text-auto-scale, ' +
+                    '.card-prev .card-text-auto-scale, ' +
+                    '.card-next .card-text-auto-scale'
+                ).forEach(t => { t.style.visibility = ''; });
+            });
         }
 
         // cachedBackTextSizes[i] = { size: finalRem, max: maxFontSize used when computed }
         // This lets us rescale proportionally when cardTextScaleIndex changes
 
+        // Internal: fit a single text element to a given card container.
+        // Same logic as scaleTextToFit but operates on any provided element so we
+        // can also size the prev/next peek text (which is identical in dimensions
+        // to the main card and slides into view during swipes — without sizing
+        // it, the peek shows tiny CSS-default text and the user perceives a
+        // "small → big" pop on every swipe in Lock Back Side mode).
+        function _fitOneBackText(textElement, container, cacheKey) {
+            if (!textElement || !container) return;
+            const needsFix = container.offsetWidth === 0;
+            if (needsFix) {
+                container.style.transform = 'none';
+                container.style.backfaceVisibility = 'visible';
+                container.style.webkitBackfaceVisibility = 'visible';
+            }
+            const cardW = container.offsetWidth;
+            const cardH = container.offsetHeight;
+            if (needsFix) {
+                container.style.transform = '';
+                container.style.backfaceVisibility = '';
+                container.style.webkitBackfaceVisibility = '';
+            }
+            if (cardW <= 0 || cardH <= 0) return;
+
+            const cardMin = Math.min(cardW, cardH);
+            const lockBackBoost = (lockSide === 'back') ? 1.35 : 1.0;
+            const basePx = cardMin * 0.22 * lockBackBoost;
+            const baseRem = basePx / 16;
+            const maxFontSize = Math.min(Math.max(baseRem, 1.5), 9 * lockBackBoost);
+            const minFontSize = maxFontSize * 0.2;
+            const containerPadding = cardMin * ((lockSide === 'back') ? 0.06 : 0.08);
+
+            const userScale = TEXT_SCALES[cardTextScaleIndex];
+            const scaledMax = maxFontSize * userScale;
+            const scaledMin = minFontSize * userScale;
+
+            const text = textElement.textContent || textElement.innerText;
+            const wordCount = text.trim().split(/\s+/).length;
+            const hasHyphen = text.includes('-');
+            const isSingleWord = wordCount === 1 && !hasHyphen;
+
+            const effectiveMax = scaledMax;
+            const startMax = effectiveMax;
+            const maxWidth  = cardW - containerPadding;
+            const maxHeight = cardH - containerPadding;
+
+            if (isSingleWord) {
+                textElement.style.whiteSpace = 'nowrap';
+                textElement.style.wordBreak = 'normal';
+                textElement.style.overflowWrap = 'normal';
+            } else {
+                textElement.style.whiteSpace = 'normal';
+                textElement.style.wordBreak = 'normal';
+                textElement.style.overflowWrap = 'break-word';
+            }
+
+            textElement.style.fontSize = startMax + 'rem';
+            const fitsAtMax = isSingleWord
+                ? textElement.scrollWidth <= maxWidth
+                : textElement.scrollHeight <= maxHeight;
+            if (fitsAtMax) {
+                if (cacheKey !== undefined && cacheKey !== null)
+                    cachedBackTextSizes[cacheKey] = { size: startMax, max: effectiveMax };
+                return;
+            }
+
+            let minSize = isSingleWord ? 0.5 : scaledMin;
+            let maxSize = startMax;
+            let optimalSize = maxSize;
+            while (maxSize - minSize > 0.05) {
+                const testSize = (minSize + maxSize) / 2;
+                textElement.style.fontSize = testSize + 'rem';
+                const fits = isSingleWord
+                    ? textElement.scrollWidth <= maxWidth * 0.95
+                    : textElement.scrollHeight <= maxHeight * 0.95;
+                if (fits) { optimalSize = testSize; minSize = testSize; }
+                else       { maxSize = testSize; }
+            }
+
+            const finalSize = optimalSize * 0.97;
+            textElement.style.fontSize = finalSize + 'rem';
+            if (cacheKey !== undefined && cacheKey !== null)
+                cachedBackTextSizes[cacheKey] = { size: finalSize, max: effectiveMax };
+        }
+
         function scaleTextToFit() {
-            const textElement = document.querySelector('.card-text-auto-scale');
+            // Main card
+            const mainText = document.querySelector('.card > .card-back .card-text-auto-scale');
+            if (mainText) {
+                const mainContainer = mainText.closest('.card-back');
+                _fitOneBackText(mainText, mainContainer, currentIndex);
+            }
+
+            // Prev / next peek text (only present when Lock Back Side is on).
+            // These are physically the same size as the main card but live in
+            // a different DOM structure (.card-prev/.card-next wrap a bare
+            // .card-face, not .card-back). Without sizing these too, the peek
+            // shows tiny default-CSS text during swipe transitions.
+            const peekTexts = document.querySelectorAll('.card-prev .card-text-auto-scale, .card-next .card-text-auto-scale');
+            peekTexts.forEach(t => {
+                const c = t.closest('.card-face');
+                _fitOneBackText(t, c, null); // no cache for peeks
+            });
+        }
+
+        function _legacyScaleTextToFitUnused() {
+            const textElement = document.querySelector('.card > .card-back .card-text-auto-scale')
+                             || document.querySelector('.card-text-auto-scale');
             if (!textElement) return;
             const container = textElement.closest('.card-back');
             if (!container) return;
@@ -11458,18 +11592,16 @@
 
             const text = textElement.textContent || textElement.innerText;
             const wordCount = text.trim().split(/\s+/).length;
-            // Hyphenated words (e.g. "self-control") should wrap at the hyphen, not be treated as single nowrap words
+            // Hyphenated words (e.g. "self-control") wrap at the hyphen
             const hasHyphen = text.includes('-');
             const isSingleWord = wordCount === 1 && !hasHyphen;
-            const effectiveMax = wordCount >= 4 ? scaledMax * 0.75 : scaledMax;
 
-            // If cached, use the stored ratio to derive a starting max — but still validate fit below
-            let startMax = effectiveMax;
-            if (cachedBackTextSizes[currentIndex] !== undefined) {
-                const cached = cachedBackTextSizes[currentIndex];
-                const ratio = cached.size / cached.max;
-                startMax = Math.min(effectiveMax, effectiveMax * ratio);
-            }
+            // Always START at the user's selected max — no pre-shrink for
+            // word count, and don't lower it based on the per-card cache.
+            // We only shrink below this if (a) a single word can't fit on one
+            // line, or (b) wrapped multi-word text overflows the card height.
+            const effectiveMax = scaledMax;
+            const startMax = effectiveMax;
 
             const maxWidth  = cardW - containerPadding;
             const maxHeight = cardH - containerPadding;
@@ -11479,20 +11611,25 @@
                 textElement.style.wordBreak = 'normal';
                 textElement.style.overflowWrap = 'normal';
             } else {
+                // Multi-word: allow normal wrapping to the next line
                 textElement.style.whiteSpace = 'normal';
-                textElement.style.wordBreak = 'break-word';
+                textElement.style.wordBreak = 'normal';
                 textElement.style.overflowWrap = 'break-word';
             }
 
             textElement.style.fontSize = startMax + 'rem';
+            // Single word: fits only if it sits on one line within card width.
+            // Multi-word: fits if wrapped text doesn't overflow card height
+            // (width is handled by wrapping, so we don't require width fit).
             const fitsAtMax = isSingleWord
                 ? textElement.scrollWidth <= maxWidth
-                : textElement.scrollWidth <= maxWidth && textElement.scrollHeight <= maxHeight;
+                : textElement.scrollHeight <= maxHeight;
             if (fitsAtMax) {
                 cachedBackTextSizes[currentIndex] = { size: startMax, max: effectiveMax };
                 return;
             }
 
+            // Binary-search for the largest size that fits.
             let minSize = isSingleWord ? 0.5 : scaledMin;
             let maxSize = startMax;
             let optimalSize = maxSize;
@@ -11500,13 +11637,14 @@
                 const testSize = (minSize + maxSize) / 2;
                 textElement.style.fontSize = testSize + 'rem';
                 const fits = isSingleWord
-                    ? textElement.scrollWidth <= maxWidth * 0.9
-                    : textElement.scrollWidth <= maxWidth * 0.9 && textElement.scrollHeight <= maxHeight * 0.9;
+                    ? textElement.scrollWidth <= maxWidth * 0.95
+                    : textElement.scrollHeight <= maxHeight * 0.95;
                 if (fits) { optimalSize = testSize; minSize = testSize; }
                 else       { maxSize = testSize; }
             }
 
-            const finalSize = optimalSize * 0.95;
+            // Tiny safety nudge so the text doesn't kiss the card edges.
+            const finalSize = optimalSize * 0.97;
             textElement.style.fontSize = finalSize + 'rem';
             cachedBackTextSizes[currentIndex] = { size: finalSize, max: effectiveMax };
         }
@@ -11670,6 +11808,9 @@
 
         function toggleLockSide() {
             lockSide = (lockSide === 'back') ? false : 'back';
+            // Clear the per-card size cache so cards immediately re-fit at the
+            // new max (bigger when locking to back, smaller when unlocking).
+            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
 
             const btn = document.getElementById('lockSideBtn');
             if (btn) {
