@@ -2361,6 +2361,20 @@
 
         <div id="cardDisplay"></div>
 
+        <!-- Lock indicator — appears above the gear only when Lock Side is
+             active. Tap it to unlock (toggleLockSide). Hidden when unlocked. -->
+        <div id="cardOverlayLock" style="display:none; position:fixed; z-index:10000;">
+            <button class="fullscreen-btn"
+                    style="position:relative; bottom:auto; left:auto; color:#35654D;"
+                    onclick="event.stopPropagation(); toggleLockSide()"
+                    ontouchend="event.stopPropagation(); event.preventDefault(); toggleLockSide()"
+                    title="Tap to unlock">
+                <svg id="lockFloatIcon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </button>
+        </div>
         <!-- Fixed card overlays: always in DOM, unaffected by card-container size or overflow -->
         <div id="cardOverlaySettings" style="display:none; position:fixed; z-index:10000;">
             <button class="fullscreen-btn" style="position:relative; bottom:auto; left:auto; color:#35654D;"
@@ -3504,13 +3518,16 @@
         const cachedBackTextSizes = {}; // per-card font size cache keyed by card index
 
         function hideCardOverlays() {
-            ['cardOverlaySettings','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
+            ['cardOverlaySettings','cardOverlayLock','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
                 .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
         }
 
         function showCardOverlays() {
             if (cards.length === 0) return;
             document.getElementById('cardOverlaySettings').style.display = 'block';
+            // Lock indicator only visible when Lock Side is active
+            document.getElementById('cardOverlayLock').style.display =
+                (lockSide === 'back') ? 'block' : 'none';
             const card = cards[currentIndex];
             if (card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
             requestAnimationFrame(() => positionNavOverlay());
@@ -3529,6 +3546,13 @@
                 settings.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
                 settings.style.left   = (rect.left + offset) + 'px';
             }
+            // Lock floating button sits directly above the gear, same left edge.
+            // 58 = approx button height (50) + small gap (8).
+            const lockOverlay = document.getElementById('cardOverlayLock');
+            if (lockOverlay) {
+                lockOverlay.style.bottom = (window.innerHeight - rect.bottom + offset + 58) + 'px';
+                lockOverlay.style.left   = (rect.left + offset) + 'px';
+            }
             if (tts) {
                 tts.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
                 tts.style.right  = (window.innerWidth - rect.right + offset) + 'px';
@@ -3546,6 +3570,16 @@
                         gearSvg.style.color = iconColor;
                         gearSvg.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
                     }
+                }
+            }
+            // Lock floating button: match the gear's color/shadow scheme
+            const lockOv = document.getElementById('cardOverlayLock');
+            if (lockOv) {
+                const lockIcon = lockOv.querySelector('svg');
+                if (lockIcon) {
+                    lockIcon.setAttribute('stroke', iconColor);
+                    lockIcon.style.color = iconColor;
+                    lockIcon.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
                 }
             }
             if (tts) {
@@ -6449,7 +6483,7 @@
             if (!realCard || !container || cards.length < 2) {
                 cards = fisherYatesShuffle(cards);
                 currentIndex = 0;
-                isFlipped = false;
+                isFlipped = (lockSide === 'back');
                 saveCards();
                 isShuffling = false;
                 renderDisplay();
@@ -6481,28 +6515,52 @@
             overlay.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:500;`;
             container.appendChild(overlay);
 
+            const showBackInGhosts = (lockSide === 'back');
             const ghosts = [];
             randomIndices.forEach((cardIdx, i) => {
+                const card = cards[cardIdx];
                 const g = document.createElement('div');
+                // Back-side ghosts use the green card-back gradient + white border;
+                // front-side ghosts keep the white card-front look.
+                const ghostBg = showBackInGhosts
+                    ? 'linear-gradient(135deg, #35654D 0%, #2d5542 100%)'
+                    : 'white';
+                const ghostBorder = showBackInGhosts ? '3px solid white' : '3px solid #35654D';
                 g.style.cssText = `
                     position:absolute;
                     width:${gW}px; height:${gH}px;
                     left:${cx - gW/2}px; top:${cy - gH/2}px;
                     border-radius:14px;
-                    background:white;
-                    border:3px solid #35654D;
+                    background:${ghostBg};
+                    border:${ghostBorder};
                     box-shadow:0 6px 20px rgba(0,0,0,0.35);
                     z-index:${N - i};
                     transform:translate(0,0) rotate(0deg);
                     opacity:${i === 0 ? 1 : 0};
                     will-change:transform,opacity;
                     overflow:hidden;
+                    display:flex; align-items:center; justify-content:center;
                 `;
-                // Show actual card image inside ghost — same style as real flashcard
-                const img = document.createElement('img');
-                img.src = cards[cardIdx].frontImage || '';
-                img.style.cssText = `width:90%;height:88%;object-fit:contain;border-radius:8px;pointer-events:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);`;
-                g.appendChild(img);
+                if (showBackInGhosts) {
+                    // Back side: prefer backImage if present, else show backText
+                    if (card.backImage) {
+                        const img = document.createElement('img');
+                        img.src = card.backImage;
+                        img.style.cssText = 'width:90%;height:88%;object-fit:contain;border-radius:8px;pointer-events:none;';
+                        g.appendChild(img);
+                    } else if (card.backText) {
+                        const t = document.createElement('div');
+                        t.textContent = card.backText;
+                        t.style.cssText = 'color:white;font-weight:700;font-size:' + Math.max(14, gW * 0.13) + 'px;text-align:center;padding:0 8px;line-height:1.1;word-break:break-word;';
+                        g.appendChild(t);
+                    }
+                } else {
+                    // Front side (default): show the front image
+                    const img = document.createElement('img');
+                    img.src = card.frontImage || '';
+                    img.style.cssText = 'width:90%;height:88%;object-fit:contain;border-radius:8px;pointer-events:none;';
+                    g.appendChild(img);
+                }
                 overlay.appendChild(g);
                 ghosts.push(g);
             });
@@ -6553,7 +6611,7 @@
             setTimeout(() => {
                 cards = fisherYatesShuffle(cards);
                 currentIndex = 0;
-                isFlipped = false;
+                isFlipped = (lockSide === 'back');
                 saveCards();
                 overlay.remove();
                 isShuffling = false;
@@ -11398,6 +11456,11 @@
             document.getElementById('cardOverlaySettings').style.display = 'block';
             document.getElementById('cardOverlayNav').style.display = 'block';
             document.getElementById('cardOverlayCounter').style.display = 'none';
+            // Lock indicator: only visible when Lock Side is active.
+            // (renderDisplay runs after shuffle/swipe/flip, so this keeps the
+            //  indicator in sync without us touching anything else.)
+            document.getElementById('cardOverlayLock').style.display =
+                (lockSide === 'back') ? 'block' : 'none';
 
             // Set index and hint labels in nav row
             const navIndex = document.getElementById('navIndexLabel');
@@ -11847,23 +11910,237 @@
             renderDisplay();
         }
 
-        function toggleLockSide() {
-            lockSide = (lockSide === 'back') ? false : 'back';
-            // Clear the per-card size cache so cards immediately re-fit at the
-            // new max (bigger when locking to back, smaller when unlocking).
-            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+        let _lockAnimating = false;
 
+        function _updateLockMenuButton(active) {
             const btn = document.getElementById('lockSideBtn');
-            if (btn) {
-                const active = lockSide !== false;
-                const sideName = lockSide === 'back' ? 'Back' : lockSide === 'front' ? 'Front' : '';
-                btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${active ? '#1a4a32' : '#35654D'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${active ? `Lock Side (${sideName})` : 'Lock Side'}`;
-                btn.style.background = active ? '#f0f9f4' : 'white';
-                btn.style.color = active ? '#35654D' : '#333';
+            if (!btn) return;
+            const sideName = active ? 'Back' : '';
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${active ? '#1a4a32' : '#35654D'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${active ? `Lock Side (${sideName})` : 'Lock Side'}`;
+            btn.style.background = active ? '#f0f9f4' : 'white';
+            btn.style.color = active ? '#35654D' : '#333';
+        }
+
+        // Same mechanics as flipCard() — toggles the .flipped class on the
+        // existing card element so the CSS rotateY transition (0.6s) plays
+        // smoothly. Calling renderDisplay() instead would destroy and rebuild
+        // the DOM and kill the animation.
+        function _flipCardCss(targetFlipped) {
+            isFlipped = targetFlipped;
+            const cardEl = document.querySelector('.card');
+            if (cardEl) {
+                if (targetFlipped) cardEl.classList.add('flipped');
+                else cardEl.classList.remove('flipped');
             }
+            const navHint = document.getElementById('navHintLabel');
+            const navIndex = document.getElementById('navIndexLabel');
+            const labelColor = isFlipped ? 'white' : '#333';
+            if (navHint) { navHint.textContent = 'Tap to flip'; navHint.style.color = labelColor; }
+            if (navIndex) navIndex.style.color = labelColor;
+            if (isFlipped) {
+                const _ft = document.querySelector('.card > .card-back .card-text-auto-scale');
+                if (_ft) _ft.style.visibility = 'hidden';
+                requestAnimationFrame(() => {
+                    scaleTextToFit();
+                    const _ft2 = document.querySelector('.card > .card-back .card-text-auto-scale');
+                    if (_ft2) _ft2.style.visibility = '';
+                });
+            }
+            requestAnimationFrame(() => positionNavOverlay());
+        }
+
+        function toggleLockSide() {
+            if (_lockAnimating) return;
+            const willLock = (lockSide !== 'back');
+            _lockAnimating = true;
+
             const menu = document.getElementById('settingsMenu');
             if (menu) menu.style.display = 'none';
-            renderDisplay();
+            _updateLockMenuButton(willLock);
+
+            // Boost changes when lockSide changes — invalidate the size cache
+            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+
+            if (willLock) {
+                // LOCK SEQUENCE:
+                //   1) Flip front->back (CSS transition, 600ms) with the big
+                //      padlock (open shackle) fading in during the flip so the
+                //      padlock is "already there" when the back lands.
+                //   2) Shackle closes (open -> locked, 400ms).
+                //   3) Padlock shrinks to the corner spot, small indicator
+                //      becomes visible there.
+                lockSide = 'back';
+                const lockOverlay = document.getElementById('cardOverlayLock');
+                if (lockOverlay) {
+                    lockOverlay.style.display = 'block';
+                    lockOverlay.style.visibility = 'hidden';
+                }
+                positionNavOverlay();
+                if (!isFlipped) _flipCardCss(true);
+                else requestAnimationFrame(() => scaleTextToFit());
+                playLockAnimation('lock', () => { _lockAnimating = false; });
+            } else {
+                // UNLOCK SEQUENCE:
+                //   1) Hide small indicator; big padlock (locked) appears at
+                //      that spot and grows to card center.
+                //   2) Shackle opens (locked -> open, 400ms).
+                //   3) Card flips back->front while padlock fades out.
+                const lockOverlay = document.getElementById('cardOverlayLock');
+                if (lockOverlay) lockOverlay.style.visibility = 'hidden';
+                playLockAnimation('unlock', () => {
+                    lockSide = false;
+                    // Hide small lock container after the flip
+                    setTimeout(() => {
+                        const ov = document.getElementById('cardOverlayLock');
+                        if (ov) {
+                            ov.style.display = 'none';
+                            ov.style.visibility = '';
+                        }
+                        _lockAnimating = false;
+                    }, 650);
+                });
+            }
+        }
+
+        // Big-padlock animation between card center and the small lock spot.
+        // Includes a shackle open<->closed transition mid-sequence.
+        function playLockAnimation(direction, onComplete) {
+            const cardStack = document.querySelector('.card-stack')
+                          || document.querySelector('.card-container');
+            const smallLock = document.getElementById('cardOverlayLock');
+            if (!cardStack || !smallLock) {
+                if (smallLock) smallLock.style.visibility = '';
+                if (onComplete) onComplete();
+                return;
+            }
+
+            const stackRect = cardStack.getBoundingClientRect();
+            const smallRect = smallLock.getBoundingClientRect();
+            const centerX = stackRect.left + stackRect.width / 2;
+            const centerY = stackRect.top  + stackRect.height / 2;
+            const targetX = smallRect.left + smallRect.width / 2;
+            const targetY = smallRect.top  + smallRect.height / 2;
+
+            const BIG_PX = 200;
+            const SMALL_PX = 24;
+            const scaleSmall = SMALL_PX / BIG_PX;
+
+            // Build the big padlock overlay. The shackle is a separate <path>
+            // with id "lockAnimShackle" so we can rotate it for open/closed
+            // animation. Rotation pivots at (7, 11) — the bottom-left hinge.
+            const big = document.createElement('div');
+            big.style.cssText = [
+                'position:fixed', 'left:0', 'top:0',
+                'width:' + BIG_PX + 'px', 'height:' + BIG_PX + 'px',
+                'pointer-events:none', 'z-index:99999',
+                'transform-origin:center center',
+                'will-change:transform,opacity', 'transition:none',
+                'opacity:0'
+            ].join(';') + ';';
+            // Shackle is split into two pieces so we can do a "vertical lift with
+            // one side still attached" animation (no rotation):
+            //   - <g id="shackleGroup"> wraps the U-shape; this group TRANSLATES
+            //     straight up to "lift" the shackle out of the body.
+            //   - <line id="shackleStem"> is the thin bridge from the lifted
+            //     left foot DOWN to the body — it makes the left side look
+            //     "still attached" while the right side dangles free.
+            //   When closed, the group is at translateY(0) and the stem is
+            //   invisible (opacity 0). When open, the group lifts up and the
+            //   stem fades in to bridge the gap.
+            big.innerHTML =
+                '<svg width="' + BIG_PX + '" height="' + BIG_PX + '" viewBox="0 0 24 24" fill="none" ' +
+                'stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
+                'style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.45));display:block">' +
+                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' +
+                '<g id="shackleGroup" ' +
+                'style="transition:transform 500ms cubic-bezier(0.4,0.0,0.2,1)">' +
+                '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
+                '</g>' +
+                '<line id="shackleStem" x1="7" y1="8" x2="7" y2="11" ' +
+                'style="opacity:0; transition:opacity 300ms ease-out 100ms"/>' +
+                '</svg>';
+            document.body.appendChild(big);
+
+            const shackleGroup = big.querySelector('#shackleGroup');
+            const shackleStem  = big.querySelector('#shackleStem');
+            function setShackleOpen(open) {
+                // Open: lift the shackle straight up (no rotation, no lean).
+                //       Show the left-side stem so that side stays "attached".
+                // Closed: drop back into the body, hide the stem.
+                if (shackleGroup) {
+                    shackleGroup.style.transform = open ? 'translateY(-3px)' : 'translateY(0)';
+                }
+                if (shackleStem) {
+                    shackleStem.style.opacity = open ? '1' : '0';
+                }
+            }
+
+            function setAt(x, y, scale, opacity) {
+                big.style.transform =
+                    'translate(' + (x - BIG_PX/2) + 'px,' + (y - BIG_PX/2) + 'px) scale(' + scale + ')';
+                big.style.opacity = String(opacity);
+            }
+
+            const eased = 'cubic-bezier(0.4,0.0,0.2,1)';
+
+            if (direction === 'lock') {
+                // LOCK SEQUENCE
+                // The card is already flipping (CSS rotateY transition, 600ms).
+                // We fade the padlock in DURING that flip so it's "already there"
+                // when the back lands. Shackle starts OPEN.
+                setShackleOpen(true);
+                setAt(centerX, centerY, 1, 0);
+                // Fade in during the flip
+                requestAnimationFrame(() => {
+                    big.style.transition = 'opacity 500ms ease-out';
+                    setAt(centerX, centerY, 1, 0.5);
+                });
+                // After flip completes (~600ms), animate shackle closed
+                setTimeout(() => {
+                    setShackleOpen(false);
+                }, 650);
+                // Hold, then shrink to the corner spot while fading
+                setTimeout(() => {
+                    big.style.transition = 'transform 700ms ' + eased + ', opacity 700ms ease-in';
+                    setAt(targetX, targetY, scaleSmall, 0);
+                }, 1300);
+                setTimeout(() => {
+                    big.remove();
+                    const ov = document.getElementById('cardOverlayLock');
+                    if (ov) ov.style.visibility = '';
+                    if (onComplete) onComplete();
+                }, 2050);
+            } else {
+                // UNLOCK SEQUENCE
+                // 1) Big padlock (closed) appears at small lock corner spot
+                // 2) Grows to center (still closed)
+                // 3) Shackle opens
+                // 4) Card flips back to front while padlock fades out
+                setShackleOpen(false); // closed initially
+                setAt(targetX, targetY, scaleSmall, 0.65);
+                // Grow to center
+                requestAnimationFrame(() => {
+                    big.style.transition = 'transform 700ms ' + eased;
+                    setAt(centerX, centerY, 1, 0.55);
+                });
+                // After reaching center, open the shackle
+                setTimeout(() => {
+                    setShackleOpen(true);
+                }, 750);
+                // Hold a moment, then flip the card back to front while fading
+                setTimeout(() => {
+                    // Trigger the card flip now (CSS rotateY, 600ms)
+                    if (isFlipped) _flipCardCss(false);
+                    // Fade out the padlock during the flip
+                    big.style.transition = 'opacity 500ms ease-in';
+                    big.style.opacity = '0';
+                }, 1300);
+                // Cleanup once flip completes
+                setTimeout(() => {
+                    big.remove();
+                    if (onComplete) onComplete();
+                }, 1950);
+            }
         }
 
         function toggleMute() {
