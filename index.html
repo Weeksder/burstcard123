@@ -11493,17 +11493,40 @@
             const isSingleWord = wordCount === 1 && !hasHyphen;
 
             // Orientation-aware single-word length limit:
-            //   landscape → up to 14 chars stay on one line; 15+ break-word wrap
-            //   portrait  → up to 10 chars stay on one line; 11+ break-word wrap
-            // Multi-word & hyphenated text always wraps at the natural break.
+            //   landscape → fit up to 14 chars per line; 15+ break-word wrap
+            //   portrait  → fit up to 10 chars per line; 11+ break-word wrap
             const isLandscape = cardW >= cardH;
             const singleWordLimit = isLandscape ? 14 : 10;
             const breakLongWord = isSingleWord && trimmed.length > singleWordLimit;
 
-            const effectiveMax = scaledMax;
-            const startMax = effectiveMax;
             const maxWidth  = cardW - containerPadding;
             const maxHeight = cardH - containerPadding;
+
+            // Font-size cap: choose the largest font where {singleWordLimit} chars
+            // actually fit across the card width. Without this, the binary search
+            // shrinks long words but the FIRST line of a wrapped word can fit
+            // fewer chars than the user wants. (User reported wraps happening at
+            // 8 chars portrait / 10 chars landscape instead of 10 / 14.)
+            //
+            // For short words (≤ limit), we use min(word length, limit) as the
+            // reference so short words can still go BIG — e.g. "cat" isn't capped
+            // by the limit, only by its own length. For long words (> limit) that
+            // will wrap, we use the full limit so each wrapped line carries up to
+            // {limit} characters.
+            //
+            // 0.65em is a generous per-character width estimate for Fredoka
+            // (the font in use). It's deliberately wider than typical so the
+            // limit is honored even on wide-glyph words.
+            let effectiveMax = scaledMax;
+            if (isSingleWord && lockSide === 'back') {
+                const avgCharWidthEm = 0.65;
+                const referenceLen = breakLongWord
+                    ? singleWordLimit
+                    : Math.min(trimmed.length, singleWordLimit);
+                const maxRemFromChars = maxWidth / (referenceLen * avgCharWidthEm * 16);
+                effectiveMax = Math.min(scaledMax, maxRemFromChars);
+            }
+            const startMax = effectiveMax;
 
             if (isSingleWord && !breakLongWord) {
                 // Short single word — keep on one line
