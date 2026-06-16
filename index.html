@@ -11475,62 +11475,57 @@
             if (cardW <= 0 || cardH <= 0) return;
 
             const cardMin = Math.min(cardW, cardH);
-
-            // Need to know the text before computing the boost, because we tier
-            // the boost based on single-word length (Option 5).
-            const text = textElement.textContent || textElement.innerText;
-            const wordCount = text.trim().split(/\s+/).length;
-            const hasHyphen = text.includes('-');
-            const isSingleWord = wordCount === 1 && !hasHyphen;
-            const wordLen = isSingleWord ? text.trim().length : 0;
-
-            // === Lock Back Side single-word tiers ===
-            //   <= 6 letters  → full 1.35x boost, normal CSS kerning (0.02em)
-            //   7 - 9 letters → full 1.35x boost, tightened kerning (-0.02em)
-            //   >= 10 letters → drop boost back to 1.0 (i.e. unlocked-mode max)
-            // Multi-word & hyphenated cards keep the full boost — they can wrap.
-            let lockBackBoost = (lockSide === 'back') ? 1.35 : 1.0;
-            let letterSpacing = ''; // '' = inherit CSS default (0.02em)
-            // Tighter thresholds based on measured behavior — at the boosted
-            // size on portrait iPad, even 9-letter words like "Spaceship"
-            // overflow, so they drop to tier 3 (no boost).
-            if (isSingleWord && lockSide === 'back') {
-                if (wordLen >= 9)       lockBackBoost = 1.0;       // tier 3: no boost
-                else if (wordLen >= 6)  letterSpacing = '-0.02em'; // tier 2: boost + tight kerning
-                                                                   // tier 1 (<=5): boost + default kerning
-            }
-
+            const lockBackBoost = (lockSide === 'back') ? 1.35 : 1.0;
             const basePx = cardMin * 0.22 * lockBackBoost;
             const baseRem = basePx / 16;
             const maxFontSize = Math.min(Math.max(baseRem, 1.5), 9 * lockBackBoost);
             const minFontSize = maxFontSize * 0.2;
-            // Padding follows the boost: tighter when boosted, normal when not
-            const containerPadding = cardMin * (lockBackBoost > 1.0 ? 0.06 : 0.08);
+            const containerPadding = cardMin * ((lockSide === 'back') ? 0.06 : 0.08);
 
             const userScale = TEXT_SCALES[cardTextScaleIndex];
             const scaledMax = maxFontSize * userScale;
             const scaledMin = minFontSize * userScale;
 
-            // Apply the kerning choice (empty string lets the CSS default take over).
-            textElement.style.letterSpacing = letterSpacing;
+            const text = textElement.textContent || textElement.innerText;
+            const trimmed = text.trim();
+            const wordCount = trimmed.split(/\s+/).length;
+            const hasHyphen = text.includes('-');
+            const isSingleWord = wordCount === 1 && !hasHyphen;
+
+            // Orientation-aware single-word length limit:
+            //   landscape → up to 14 chars stay on one line; 15+ break-word wrap
+            //   portrait  → up to 10 chars stay on one line; 11+ break-word wrap
+            // Multi-word & hyphenated text always wraps at the natural break.
+            const isLandscape = cardW >= cardH;
+            const singleWordLimit = isLandscape ? 14 : 10;
+            const breakLongWord = isSingleWord && trimmed.length > singleWordLimit;
 
             const effectiveMax = scaledMax;
             const startMax = effectiveMax;
             const maxWidth  = cardW - containerPadding;
             const maxHeight = cardH - containerPadding;
 
-            if (isSingleWord) {
+            if (isSingleWord && !breakLongWord) {
+                // Short single word — keep on one line
                 textElement.style.whiteSpace = 'nowrap';
                 textElement.style.wordBreak = 'normal';
                 textElement.style.overflowWrap = 'normal';
+            } else if (breakLongWord) {
+                // Long single word — allow it to break across lines
+                textElement.style.whiteSpace = 'normal';
+                textElement.style.wordBreak = 'break-word';
+                textElement.style.overflowWrap = 'break-word';
             } else {
+                // Multi-word / hyphenated — wrap at natural breaks
                 textElement.style.whiteSpace = 'normal';
                 textElement.style.wordBreak = 'normal';
                 textElement.style.overflowWrap = 'break-word';
             }
 
             textElement.style.fontSize = startMax + 'rem';
-            const fitsAtMax = isSingleWord
+            // Short single words must fit on one line (width). Long broken words
+            // and multi-word text are wrapping, so they're constrained by height.
+            const fitsAtMax = (isSingleWord && !breakLongWord)
                 ? textElement.scrollWidth <= maxWidth
                 : textElement.scrollHeight <= maxHeight;
             if (fitsAtMax) {
@@ -11545,7 +11540,7 @@
             while (maxSize - minSize > 0.05) {
                 const testSize = (minSize + maxSize) / 2;
                 textElement.style.fontSize = testSize + 'rem';
-                const fits = isSingleWord
+                const fits = (isSingleWord && !breakLongWord)
                     ? textElement.scrollWidth <= maxWidth * 0.95
                     : textElement.scrollHeight <= maxHeight * 0.95;
                 if (fits) { optimalSize = testSize; minSize = testSize; }
@@ -11655,15 +11650,11 @@
             // Binary-search for the largest size that fits.
             let minSize = isSingleWord ? 0.5 : scaledMin;
             let maxSize = startMax;
-            // Critical: start optimalSize at the SAFE lower bound, not at maxSize
-            // (which we already know doesn't fit). If no testSize ever fits during
-            // the search, the fallback is the small known-good size — not the
-            // overflowing original.
-            let optimalSize = minSize;
+            let optimalSize = maxSize;
             while (maxSize - minSize > 0.05) {
                 const testSize = (minSize + maxSize) / 2;
                 textElement.style.fontSize = testSize + 'rem';
-                const fits = isSingleWord
+                const fits = (isSingleWord && !breakLongWord)
                     ? textElement.scrollWidth <= maxWidth * 0.95
                     : textElement.scrollHeight <= maxHeight * 0.95;
                 if (fits) { optimalSize = testSize; minSize = testSize; }
@@ -11671,18 +11662,8 @@
             }
 
             // Tiny safety nudge so the text doesn't kiss the card edges.
-            let finalSize = optimalSize * 0.97;
-
-            // Belt-and-braces: verify the final size actually fits visually.
-            // If not (rare measurement edge cases), shrink in 5% steps until it does.
+            const finalSize = optimalSize * 0.97;
             textElement.style.fontSize = finalSize + 'rem';
-            if (isSingleWord) {
-                let guard = 30;
-                while (textElement.scrollWidth > maxWidth && finalSize > 0.5 && guard-- > 0) {
-                    finalSize = finalSize * 0.95;
-                    textElement.style.fontSize = finalSize + 'rem';
-                }
-            }
             cachedBackTextSizes[currentIndex] = { size: finalSize, max: effectiveMax };
         }
         // Event listeners for save modal buttons
