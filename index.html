@@ -2254,12 +2254,11 @@
         .splash-letter {
             display: inline-block;
             color: white;
-            transition: transform 0.15s ease-out;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
             transform-origin: bottom center;
         }
         .splash-letter.pop {
-            transform: scale(1.25);
-            color: #ffffffee;
+            transform: scale(1.28);
         }
     </style>
 </head>
@@ -2281,27 +2280,25 @@
         var splash = document.getElementById('splashScreen');
 
         // Letter-by-letter pulse: each letter pops up then shrinks back
-        var stepDuration = 220; // ms each letter stays big
-        var startDelay = 800;   // initial delay before wave starts
+        var stepMs = 130;      // ms between each letter popping (overlap with transition)
+        var holdMs = 280;      // how long a letter stays popped before un-popping
+        var startDelay = 100;  // initial delay before wave starts
 
-        // Run through letters once, then exit
+        // Run through letters once with overlapping smooth wave
         function runWaveOnce(callback) {
-            var idx = 0;
-            function next() {
-                letters.forEach(function(l){ l.classList.remove('pop'); });
-                if (idx < letters.length) {
-                    letters[idx].classList.add('pop');
-                    idx++;
-                    setTimeout(next, stepDuration);
-                } else {
-                    // wave done — clear and call back after a short settle
-                    setTimeout(function() {
-                        letters.forEach(function(l){ l.classList.remove('pop'); });
-                        callback();
-                    }, 300);
-                }
-            }
-            next();
+            letters.forEach(function(letter, i) {
+                // pop up
+                setTimeout(function() {
+                    letter.classList.add('pop');
+                }, i * stepMs);
+                // pop down
+                setTimeout(function() {
+                    letter.classList.remove('pop');
+                }, i * stepMs + holdMs);
+            });
+            // callback after last letter finishes settling
+            var totalMs = (letters.length - 1) * stepMs + holdMs + 400;
+            setTimeout(callback, totalMs);
         }
 
         setTimeout(function() {
