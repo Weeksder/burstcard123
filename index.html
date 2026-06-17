@@ -11989,7 +11989,6 @@
                 if (lockOverlay) lockOverlay.style.visibility = 'hidden';
                 playLockAnimation('unlock', () => {
                     lockSide = false;
-                    // Hide small lock container after the flip
                     setTimeout(() => {
                         const ov = document.getElementById('cardOverlayLock');
                         if (ov) {
@@ -11997,7 +11996,7 @@
                             ov.style.visibility = '';
                         }
                         _lockAnimating = false;
-                    }, 650);
+                    }, 300);
                 });
             }
         }
@@ -12050,14 +12049,14 @@
             big.innerHTML =
                 '<svg width="' + BIG_PX + '" height="' + BIG_PX + '" viewBox="0 0 24 24" fill="none" ' +
                 'stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
-                'style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.45));display:block">' +
+                'style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.45));display:block;overflow:visible">' +
                 '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' +
                 '<g id="shackleGroup" ' +
-                'style="transition:transform 500ms cubic-bezier(0.4,0.0,0.2,1)">' +
+                'style="transition:transform 280ms cubic-bezier(0.4,0.0,0.2,1)">' +
                 '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
                 '</g>' +
                 '<line id="shackleStem" x1="7" y1="8" x2="7" y2="11" ' +
-                'style="opacity:0; transition:opacity 300ms ease-out 100ms"/>' +
+                'style="opacity:0; transition:opacity 200ms ease-out 80ms"/>' +
                 '</svg>';
             document.body.appendChild(big);
 
@@ -12084,62 +12083,44 @@
             const eased = 'cubic-bezier(0.4,0.0,0.2,1)';
 
             if (direction === 'lock') {
-                // LOCK SEQUENCE
-                // The card is already flipping (CSS rotateY transition, 600ms).
-                // We fade the padlock in DURING that flip so it's "already there"
-                // when the back lands. Shackle starts OPEN.
+                // LOCK SEQUENCE (visible but not slow)
                 setShackleOpen(true);
                 setAt(centerX, centerY, 1, 0);
-                // Fade in during the flip
                 requestAnimationFrame(() => {
-                    big.style.transition = 'opacity 500ms ease-out';
+                    big.style.transition = 'opacity 250ms ease-out';
                     setAt(centerX, centerY, 1, 0.5);
                 });
-                // After flip completes (~600ms), animate shackle closed
+                setTimeout(() => { setShackleOpen(false); }, 320);
+                // Shrink to corner — slower so the motion reads
                 setTimeout(() => {
-                    setShackleOpen(false);
-                }, 650);
-                // Hold, then shrink to the corner spot while fading
-                setTimeout(() => {
-                    big.style.transition = 'transform 700ms ' + eased + ', opacity 700ms ease-in';
+                    big.style.transition = 'transform 350ms ' + eased + ', opacity 350ms ease-in';
                     setAt(targetX, targetY, scaleSmall, 0);
-                }, 1300);
+                }, 650);
                 setTimeout(() => {
                     big.remove();
                     const ov = document.getElementById('cardOverlayLock');
                     if (ov) ov.style.visibility = '';
                     if (onComplete) onComplete();
-                }, 2050);
+                }, 1050);
             } else {
-                // UNLOCK SEQUENCE
-                // 1) Big padlock (closed) appears at small lock corner spot
-                // 2) Grows to center (still closed)
-                // 3) Shackle opens
-                // 4) Card flips back to front while padlock fades out
-                setShackleOpen(false); // closed initially
+                // UNLOCK SEQUENCE (visible but not slow)
+                setShackleOpen(false);
                 setAt(targetX, targetY, scaleSmall, 0.65);
-                // Grow to center
+                // Grow to center — visible
                 requestAnimationFrame(() => {
-                    big.style.transition = 'transform 700ms ' + eased;
+                    big.style.transition = 'transform 350ms ' + eased;
                     setAt(centerX, centerY, 1, 0.55);
                 });
-                // After reaching center, open the shackle
+                setTimeout(() => { setShackleOpen(true); }, 380);
                 setTimeout(() => {
-                    setShackleOpen(true);
-                }, 750);
-                // Hold a moment, then flip the card back to front while fading
-                setTimeout(() => {
-                    // Trigger the card flip now (CSS rotateY, 600ms)
                     if (isFlipped) _flipCardCss(false);
-                    // Fade out the padlock during the flip
-                    big.style.transition = 'opacity 500ms ease-in';
+                    big.style.transition = 'opacity 250ms ease-in';
                     big.style.opacity = '0';
-                }, 1300);
-                // Cleanup once flip completes
+                }, 700);
                 setTimeout(() => {
                     big.remove();
                     if (onComplete) onComplete();
-                }, 1950);
+                }, 1000);
             }
         }
 
