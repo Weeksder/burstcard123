@@ -5987,6 +5987,30 @@
         // Compress image to target size (500KB or less)
         async function compressImage(file, maxSizeKB = 500) {
             return new Promise((resolve, reject) => {
+                // GIFs must bypass canvas compression — canvas only captures the
+                // first frame, which kills the animation. Pass GIFs through as-is.
+                if ((file.type || '').toLowerCase() === 'image/gif') {
+                    const sizeKB = file.size / 1024;
+                    const sizeMB = (sizeKB / 1024).toFixed(1);
+
+                    // Hard reject above 3MB
+                    if (file.size > 3 * 1024 * 1024) {
+                        reject(new Error(`GIF too large (${sizeMB}MB). GIFs must be under 3MB to keep the app running smoothly.`));
+                        return;
+                    }
+
+                    // Warn between 2MB and 3MB but still allow
+                    if (file.size > 2 * 1024 * 1024) {
+                        alert(`⚠️ Large GIF (${sizeMB}MB)\n\nThis GIF is quite large and may slow down saving and loading. Consider using a smaller GIF (under 2MB) for best performance.`);
+                    }
+
+                    const gifReader = new FileReader();
+                    gifReader.onload = function(e) { resolve(e.target.result); };
+                    gifReader.onerror = function() { reject(new Error('Failed to read GIF')); };
+                    gifReader.readAsDataURL(file);
+                    return;
+                }
+
                 const reader = new FileReader();
 
                 reader.onload = function(e) {
@@ -6264,7 +6288,8 @@
                     }
                 }).catch(err => {
                     console.error('Image compression failed:', err);
-                    showToast('⚠️ Failed to compress image', 3000);
+                    const msg = (err && err.message) ? err.message : 'Failed to process image';
+                    showToastWithButton('⚠️ ' + msg);
                 });
             }
         }
