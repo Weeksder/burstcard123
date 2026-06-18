@@ -4650,7 +4650,7 @@
             window.speechSynthesis.cancel();
 
             const currentCard = cards[currentIndex];
-            document.getElementById('singleRenameImage').src = currentCard.frontImage;
+            document.getElementById('singleRenameImage').src = gifSrc(currentCard.frontImage);
             const input = document.getElementById('singleRenameInput');
             const name = currentCard.backText || '';
             input.value = name;
@@ -5985,6 +5985,24 @@
         }
 
         // Compress image to target size (500KB or less)
+        // Safari on iPad won't animate GIFs from base64 data URLs.
+        // Convert them to blob URLs at render time for animation support.
+        // Non-GIFs are returned as-is.
+        function gifSrc(dataUrl) {
+            if (!dataUrl || !dataUrl.startsWith('data:image/gif')) return dataUrl;
+            try {
+                const arr = dataUrl.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                const u8arr = new Uint8Array(bstr.length);
+                for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+                const blob = new Blob([u8arr], { type: mime });
+                return URL.createObjectURL(blob);
+            } catch(e) {
+                return dataUrl; // fallback
+            }
+        }
+
         async function compressImage(file, maxSizeKB = 500) {
             return new Promise((resolve, reject) => {
                 // GIFs must bypass canvas compression — canvas only captures the
@@ -6653,7 +6671,7 @@
                     // Back side: prefer backImage if present, else show backText
                     if (card.backImage) {
                         const img = document.createElement('img');
-                        img.src = card.backImage;
+                        img.src = gifSrc(card.backImage);
                         img.style.cssText = 'width:90%;height:88%;object-fit:contain;border-radius:8px;pointer-events:none;';
                         g.appendChild(img);
                     } else if (card.backText) {
@@ -6665,7 +6683,7 @@
                 } else {
                     // Front side (default): show the front image
                     const img = document.createElement('img');
-                    img.src = card.frontImage || '';
+                    img.src = gifSrc(card.frontImage || '');
                     img.style.cssText = 'width:90%;height:88%;object-fit:contain;border-radius:8px;pointer-events:none;';
                     g.appendChild(img);
                 }
@@ -7231,7 +7249,7 @@
                 const label = rawLabel !== '' ? rawLabel : `Card ${i + 1}`;
                 return `
                 <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-                    <img src="${card.frontImage}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:10px; border:1px solid #eee;">
+                    <img src="${gifSrc(card.frontImage)}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:10px; border:1px solid #eee;">
                     <div style="width:100%; box-sizing:border-box; text-align:center; font-size:1rem; font-weight:600;
                                 color:#1a1a1a; padding:0 2px; word-break:break-word; line-height:1.3;">
                         ${label}
@@ -7284,7 +7302,7 @@
                                 border-radius:12px; padding:4px;
                                 ${isCurrent ? 'background:#f0f9f4; outline:2.5px solid #35654D;' : ''}"
                          onclick="closePreviewOverlay(); currentIndex=${i}; isFlipped=false; renderDisplay();">
-                        <img src="${card.frontImage}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;
+                        <img src="${gifSrc(card.frontImage)}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;
                                     border:${isCurrent ? '2px solid #35654D' : '1px solid #eee'};">
                         <div style="width:100%; box-sizing:border-box; text-align:center; font-size:1rem; font-weight:600;
                                     color:${isCurrent ? '#35654D' : '#1a1a1a'}; padding:0 2px; word-break:break-word; line-height:1.3;">
@@ -7353,7 +7371,7 @@
                     <div style="background:#f9f9f9;border:1px solid #ddd;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;align-items:center;">
                         ${card.frontImage
                             ? `<div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-                                <img src="${card.frontImage}" style="width:100%;height:100%;object-fit:contain;padding:4px;box-sizing:border-box;">
+                                <img src="${gifSrc(card.frontImage)}" style="width:100%;height:100%;object-fit:contain;padding:4px;box-sizing:border-box;">
                                </div>`
                             : `<div style="width:100%;aspect-ratio:1;background:#e0e0e0;display:flex;align-items:center;justify-content:center;font-size:24px;">🖼️</div>`}
                         <div style="padding:5px 6px;font-size:12px;font-weight:600;color:#333;text-align:center;width:100%;box-sizing:border-box;background:white;border-top:1px solid #eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapedLabel}">
@@ -9599,7 +9617,7 @@
             const makePreview = (card, label, color) => card
                 ? `<div style="text-align:center;">
                        <div style="font-size:0.7rem;font-weight:700;color:${color};margin-bottom:3px;">${label}</div>
-                       <img src="${card.frontImage}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:3px solid ${color};">
+                       <img src="${gifSrc(card.frontImage)}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:3px solid ${color};">
                        <div style="font-size:0.7rem;color:#333;margin-top:2px;font-weight:600;">${card.backText||''}</div>
                    </div>`
                 : `<div style="width:60px;height:60px;border-radius:8px;border:3px dashed ${color};
@@ -9618,7 +9636,7 @@
                 const badgeB = isB ? `<div style="position:absolute;top:2px;right:2px;background:#2196F3;color:white;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:4px;">B</div>` : '';
                 return `<div onclick="stwPickerSelect(${idx})" style="cursor:pointer;border-radius:10px;overflow:hidden;
                     background:white;${border};box-sizing:border-box;position:relative;aspect-ratio:1/1;display:flex;flex-direction:column;">
-                    <img src="${card.frontImage}" style="width:100%;flex:1;min-height:0;object-fit:contain;display:block;">
+                    <img src="${gifSrc(card.frontImage)}" style="width:100%;flex:1;min-height:0;object-fit:contain;display:block;">
                     <div style="font-size:0.65rem;font-weight:700;color:#333;text-align:center;padding:2px;flex-shrink:0;
                         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${card.backText||''}</div>
                     ${badgeA}${badgeB}
@@ -9663,7 +9681,7 @@
 
         function stwCardTileContent(card) {
             if (!card) return '';
-            const img = `<img src="${card.frontImage}" style="width:100%;flex:1;min-height:0;object-fit:contain;display:block;">`;
+            const img = `<img src="${gifSrc(card.frontImage)}" style="width:100%;flex:1;min-height:0;object-fit:contain;display:block;">`;
             const label = card.backText
                 ? `<div style="flex-shrink:0;text-align:center;font-size:clamp(0.5rem,2vw,0.85rem);
                        font-weight:700;color:#1a1a1a;padding:2px 3px;
@@ -10031,7 +10049,7 @@
 
                     <!-- Right: image -->
                     <div style="flex:1;min-width:0;border:3px solid #35654D;border-radius:14px;overflow:hidden;">
-                        <img src="${q.card.frontImage}"
+                        <img src="${gifSrc(q.card.frontImage)}"
                              style="width:100%;height:100%;object-fit:contain;display:block;">
                     </div>
 
@@ -10254,7 +10272,7 @@
                                         <span style="font-size: 4rem; color: ${isFaded ? 'rgba(255,255,255,0.5)' : 'white'}; font-weight: bold;">${cardNumber}</span>
                                     </div>
                                     <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; background: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; padding: 10px; transform: rotateY(180deg); box-shadow: 0 4px 15px rgba(0,0,0,0.3); ${isSelected ? 'border: 4px solid #51cf66;' : ''}">
-                                        <img src="${card.frontImage}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;">
+                                        <img src="${gifSrc(card.frontImage)}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;">
                                     </div>
                                 </div>
                             </div>
@@ -10457,7 +10475,7 @@
                                 ${isBomb ? 
                                     `<p style="font-size: clamp(3rem, 12vw, 5rem); margin: 0;">💥</p>
                                      <p style="font-size: clamp(1.2rem, 4vw, 1.8rem); color: #ff6b6b; margin: 10px 0 0 0; font-weight: bold;">BOOM!</p>` :
-                                    `<img src="${card.frontImage}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;" onerror="console.error('Image failed to load:', this.src)">`
+                                    `<img src="${gifSrc(card.frontImage)}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;" onerror="console.error('Image failed to load:', this.src)">`
                                 }
                             </div>
                         </div>
@@ -10740,7 +10758,7 @@
                             <!-- Image area with buttons overlaid at fixed right inset -->
                             <div id="spellingImgWrap" style="flex:1;width:100%;min-height:0;position:relative;padding-top:4px;">
 
-                                <img id="spellingImg" src="${currentCard.frontImage}"
+                                <img id="spellingImg" src="${gifSrc(currentCard.frontImage)}"
                                      style="width:100%;height:100%;object-fit:contain;border-radius:10px;display:block;">
 
                                 <!-- Check button — appears over image below midpoint when all slots filled -->
@@ -11232,7 +11250,7 @@
                             <div style="width: 100%; height: 100%; position: relative;">
                                 <div style="position: absolute; width: 100%; height: 100%; background: ${isCorrect ? 'white' : 'linear-gradient(135deg, #35654D 0%, #2d5542 100%)'}; border-radius: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); ${isCorrect ? 'border: 4px solid #51cf66;' : ''}">
                                     ${isCorrect ? 
-                                        `<img src="${c.frontImage}" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 10px;">` :
+                                        `<img src="${gifSrc(c.frontImage)}" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 10px;">` :
                                         `<span style="font-size: clamp(2rem, 8vw, 4rem); color: white; font-weight: bold;">${index + 1}</span>`
                                     }
                                 </div>
@@ -11281,7 +11299,7 @@
                                             padding: 10px;
                                             transform: rotateY(180deg);
                                             box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-                                    <img src="${card.frontImage}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;">
+                                    <img src="${gifSrc(card.frontImage)}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;">
                                 </div>
                             </div>
                         </div>
@@ -11490,12 +11508,12 @@
                         <div class="card-prev">
                             ${lockSide === 'back' ? `
                             <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
-                                ${prevCard.backImage ? '<img src="' + prevCard.backImage + '" class="card-image">' : ''}
+                                ${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}
                                 ${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}
                             </div>` : `
                             <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">
                                 ${showCharOnCard && prevCard.backText ? `<span class="card-char-label">${prevCard.backText.charAt(0).toUpperCase()}${prevCard.backText.charAt(0).toLowerCase()}</span>` : ''}
-                                <img src="${prevCard.frontImage}" class="card-image">
+                                <img src="${gifSrc(prevCard.frontImage)}" class="card-image">
                                 ${showTextOnFront && prevCard.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(prevCard.backText)}</div>
                                 ` : ''}
@@ -11505,13 +11523,13 @@
                         <div class="card ${isFlipped ? 'flipped' : ''}" style="cursor: pointer;">
                             <div class="card-face card-front${showTextOnFront && card.backText ? ' show-text-active' : ''}${showCharOnCard && card.backText ? ' show-char-active' : ''}">
                                 ${showCharOnCard && card.backText ? `<span class="card-char-label">${card.backText.charAt(0).toUpperCase()}${card.backText.charAt(0).toLowerCase()}</span>` : ''}
-                                <img src="${card.frontImage}" class="card-image">
+                                <img src="${gifSrc(card.frontImage)}" class="card-image">
                                 ${showTextOnFront && card.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(card.backText)}</div>
                                 ` : ''}
                             </div>
                             <div class="card-face card-back">
-                                ${card.backImage ? '<img src="' + card.backImage + '" class="card-image">' : ''}
+                                ${card.backImage ? '<img src="' + gifSrc(card.backImage) + '" class="card-image">' : ''}
                                 ${card.backText ? '<p class="' + textClass + '">' + highlightVowels(card.backText) + '</p>' : ''}
                             </div>
                         </div>
@@ -11519,12 +11537,12 @@
                         <div class="card-next">
                             ${lockSide === 'back' ? `
                             <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
-                                ${nextCard.backImage ? '<img src="' + nextCard.backImage + '" class="card-image">' : ''}
+                                ${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}
                                 ${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}
                             </div>` : `
                             <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">
                                 ${showCharOnCard && nextCard.backText ? `<span class="card-char-label">${nextCard.backText.charAt(0).toUpperCase()}${nextCard.backText.charAt(0).toLowerCase()}</span>` : ''}
-                                <img src="${nextCard.frontImage}" class="card-image">
+                                <img src="${gifSrc(nextCard.frontImage)}" class="card-image">
                                 ${showTextOnFront && nextCard.backText ? `
                                 <div class="card-front-text">${highlightVowelsFront(nextCard.backText)}</div>
                                 ` : ''}
@@ -12552,7 +12570,7 @@
                 cropState.imgNaturalH = img.naturalHeight;
                 requestAnimationFrame(initCropCanvas);
             };
-            img.src = card.frontImage;
+            img.src = gifSrc(card.frontImage);
         }
 
         function initCropCanvas() {
