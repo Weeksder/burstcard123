@@ -2451,6 +2451,29 @@
 
         <div id="cardDisplay"></div>
 
+        <!-- Main-page quick-add drop overlay (PC only, shown when dragging images over a loaded deck) -->
+        <div id="mainDropOverlay" style="display:none; position:fixed; inset:0; z-index:9500;
+             background:rgba(53,101,77,0.82); backdrop-filter:blur(3px);
+             pointer-events:none; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+            <div style="width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,0.18);
+                         border:3px dashed rgba(255,255,255,0.7);
+                         display:flex; align-items:center; justify-content:center;">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <div style="color:white; font-size:1.35rem; font-weight:700; text-align:center; line-height:1.4;
+                         text-shadow:0 1px 4px rgba(0,0,0,0.3);">
+                Drop to add cards
+            </div>
+            <div id="mainDropSubtext" style="color:rgba(255,255,255,0.82); font-size:0.95rem; font-weight:500;">
+                Drop 2 or more images
+            </div>
+        </div>
+
         <!-- Lock indicator — appears above the gear only when Lock Side is
              active. Tap it to unlock (toggleLockSide). Hidden when unlocked. -->
         <div id="cardOverlayLock" style="display:none; position:fixed; z-index:10000;">
@@ -2790,6 +2813,12 @@
             <!-- Control Panel (stays with modal) -->
             <div id="guessGameControls" style="display: inline-flex; align-items: center; gap: 12px; background: white; border-radius: 12px; padding: 8px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); margin-bottom: clamp(6px, 1vh, 10px);">
                 <h2 style="margin: 0; font-size: clamp(1rem, 2.5vw, 1.2rem); color: #35654D; white-space: nowrap;">🎯 Guess the Word</h2>
+                <!-- Grid size toggle -->
+                <div id="guessGridToggle" style="display:inline-flex; gap:3px; background:#f0f0f0; border-radius:8px; padding:3px;">
+                    <button onclick="setGuessGridSize(9)"  id="guessSize9"  style="padding:4px 9px; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer; background:#35654D; color:white; transition:all 0.15s;">9</button>
+                    <button onclick="setGuessGridSize(12)" id="guessSize12" style="padding:4px 9px; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">12</button>
+                    <button onclick="setGuessGridSize(15)" id="guessSize15" style="padding:4px 9px; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">15</button>
+                </div>
                 <button onclick="startNewGuessGame()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" title="Shuffle Cards">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
@@ -3735,6 +3764,7 @@
             score: 0,
             answered: []
         };
+        let guessGridSize = 9; // 9, 12, or 15
 
         let bombGameState = {
             gameCards: [],
@@ -3840,14 +3870,76 @@
         document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
         document.addEventListener('gestureend', function(e) { e.preventDefault(); });
 
+        // ---- Main-page quick-add drop (PC, deck loaded, 2-10 images) ----
+        let _mainDropActive = false;
+        let _mainDropEnterCount = 0; // track nested dragenter/dragleave
+
+        function _hasImageFiles(dt) {
+            if (!dt) return false;
+            if (dt.types && Array.from(dt.types).includes('Files')) {
+                // During dragover, items may be available
+                if (dt.items && dt.items.length > 0) {
+                    return Array.from(dt.items).some(it => it.kind === 'file' && it.type.startsWith('image/'));
+                }
+                return true; // assume files when types says 'Files'
+            }
+            return false;
+        }
+
+        function _showMainDropOverlay(fileCount) {
+            const ol = document.getElementById('mainDropOverlay');
+            if (!ol) return;
+            ol.style.display = 'flex';
+            ol.style.pointerEvents = 'none';
+            const sub = document.getElementById('mainDropSubtext');
+            if (sub) {
+                if (fileCount && fileCount > 1) {
+                    const remaining = 30 - cards.length;
+                    const willAdd  = Math.min(fileCount, remaining > 0 ? remaining : 0);
+                    if (remaining <= 0) {
+                        sub.textContent = '⚠️ Deck is full (30 cards max)';
+                    } else {
+                        sub.textContent = willAdd < fileCount
+                            ? `${willAdd} of ${fileCount} images will be added`
+                            : `${fileCount} image${fileCount > 1 ? 's' : ''} ready`;
+                    }
+                } else {
+                    sub.textContent = 'Drop 2 or more images';
+                }
+            }
+        }
+
+        function _hideMainDropOverlay() {
+            const ol = document.getElementById('mainDropOverlay');
+            if (ol) ol.style.display = 'none';
+        }
+
         // Prevent browser from opening dropped files outside upload area
         document.addEventListener('dragover', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            // Show overlay when dragging over the main page with a deck loaded
+            if (cards.length > 0 && !document.querySelector('.modal.active') && _hasImageFiles(e.dataTransfer)) {
+                _showMainDropOverlay();
+            }
         }, false);
 
         document.addEventListener('drop', function(e) {
-            // Only allow drops in the upload area
+            _mainDropEnterCount = 0;
+            _hideMainDropOverlay();
+
+            // Route to main-page quick-add when deck is loaded and modal is NOT open
+            if (cards.length > 0 && !document.querySelector('.modal.active')) {
+                const dt = e.dataTransfer;
+                if (dt && dt.files && dt.files.length >= 2) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleMainPageDrop(dt.files);
+                    return;
+                }
+            }
+
+            // Otherwise only allow drops inside the upload area
             const uploadArea = document.getElementById('frontUpload');
             if (!uploadArea || !uploadArea.contains(e.target)) {
                 e.preventDefault();
@@ -3859,7 +3951,66 @@
         document.addEventListener('dragenter', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            _mainDropEnterCount++;
+            if (cards.length > 0 && !document.querySelector('.modal.active') && _hasImageFiles(e.dataTransfer)) {
+                _showMainDropOverlay();
+            }
         }, false);
+
+        document.addEventListener('dragleave', function(e) {
+            _mainDropEnterCount--;
+            if (_mainDropEnterCount <= 0) {
+                _mainDropEnterCount = 0;
+                _hideMainDropOverlay();
+            }
+        }, false);
+
+        // Handle main-page drop: open createModal with images pre-loaded
+        function handleMainPageDrop(files) {
+            const DECK_MAX = 30;
+
+            // Filter to images only
+            const validTypes = ['image/jpeg','image/jpg','image/png','image/gif','image/webp',
+                                'image/bmp','image/svg+xml','image/heic','image/heif','image/avif'];
+            let imageFiles = Array.from(files).filter(f => validTypes.includes(f.type.toLowerCase()));
+
+            if (imageFiles.length < 2) {
+                showToast('⚠️ Drop 2 or more images to quick-add cards', 2500);
+                return;
+            }
+
+            // Check remaining capacity against the deck max
+            const remaining = DECK_MAX - cards.length;
+            if (remaining <= 0) {
+                showToast('⚠️ Deck is full (30 cards max)', 2500);
+                return;
+            }
+
+            if (imageFiles.length > remaining) {
+                showToast('⚠️ Only ' + remaining + ' slot(s) left — adding first ' + remaining, 2500);
+                imageFiles = imageFiles.slice(0, remaining);
+            }
+
+            // Sort by name (natural/numeric)
+            imageFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+            // Build a FileList via DataTransfer
+            let fileList;
+            try {
+                const dt2 = new DataTransfer();
+                imageFiles.forEach(f => dt2.items.add(f));
+                fileList = dt2.files;
+            } catch(e) {
+                fileList = imageFiles;
+            }
+
+            // Open the Add+ modal then pass the files into handleImageUpload
+            openCreateModal();
+            // Give the modal a tick to render before processing files
+            setTimeout(() => {
+                handleImageUpload('front', { files: fileList });
+            }, 80);
+        }
 
         // Handle paste events for copying images from clipboard
         document.addEventListener('paste', function(e) {
@@ -9457,6 +9608,23 @@
             document.getElementById('gameMenuModal').classList.remove('active');
         }
 
+        function setGuessGridSize(n) {
+            guessGridSize = n;
+            // Update button styles
+            [9, 12, 15].forEach(size => {
+                const btn = document.getElementById('guessSize' + size);
+                if (!btn) return;
+                btn.style.background = size === n ? '#35654D' : 'transparent';
+                btn.style.color     = size === n ? 'white'   : '#666';
+            });
+            // Reset current round so new size takes effect immediately
+            guessGameState.currentRoundCards = null;
+            guessGameState.correctCards = {};
+            guessGameState.selectedCard = null;
+            guessGameState.currentCardOrder = 0;
+            renderGuessGame();
+        }
+
         function startNewGuessGame() {
             // Force reset the game state
             guessGameState = {
@@ -9465,6 +9633,7 @@
                 answered: [],
                 gameCards: []
             };
+            guessGridSize = 9;
 
             // Start a fresh game
             startGame('guess');
@@ -9496,6 +9665,13 @@
 
                 document.body.style.overflow = 'hidden'; // Disable background scrolling
                 document.getElementById('guessGameModal').classList.add('active');
+                // Sync grid-size toggle buttons with current guessGridSize
+                [9, 12, 15].forEach(size => {
+                    const btn = document.getElementById('guessSize' + size);
+                    if (!btn) return;
+                    btn.style.background = size === guessGridSize ? '#35654D' : 'transparent';
+                    btn.style.color      = size === guessGridSize ? 'white'   : '#666';
+                });
                 renderGuessGame();
             } else if (gameType === 'bomb') {
                 // Initialize bomb game
@@ -10523,7 +10699,7 @@
 
             // Get all cards for the current round
             const allCards = [...cards];
-            const optionsCount = Math.min(Math.max(3, Math.min(9, allCards.length)), allCards.length);
+            const optionsCount = Math.min(Math.max(3, Math.min(guessGridSize, allCards.length)), allCards.length);
 
             // Get random cards for this round
             if (!guessGameState.currentRoundCards) {
@@ -10543,9 +10719,9 @@
             const currentCardIndex = guessGameState.currentCardOrder;
             const isCardFlipped = guessGameState.selectedCard !== null;
 
-            // Always create 9 grid cells for consistent sizing
+            // Always create guessGridSize grid cells for consistent sizing
             const gridCells = [];
-            for (let i = 0; i < 9; i++) {
+            for (let i = 0; i < guessGridSize; i++) {
                 if (i < roundCards.length) {
                     const card = roundCards[i];
                     const index = i;
@@ -10582,9 +10758,12 @@
                 }
             }
 
+            const gridCols = guessGridSize === 9 ? 3 : guessGridSize === 12 ? 4 : 5;
+            const gridAspect = guessGridSize === 9 ? '1 / 1' : guessGridSize === 12 ? '4 / 3' : '5 / 3';
+
             content.innerHTML = `
                 <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
-                    <div style="position: relative; width: 100%; max-width: 700px; aspect-ratio: 1 / 1;">
+                    <div style="position: relative; width: 100%; max-width: 700px; aspect-ratio: ${gridAspect};">
                         ${allCorrect ? `
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; text-align: center;">
                                 <button class="btn btn-success" onclick="nextRound()" style="padding: 15px 30px; font-size: 1.2rem; min-width: 180px; justify-content: center; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
@@ -10592,7 +10771,7 @@
                                 </button>
                             </div>
                         ` : `
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
+                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
                             ${gridCells.join('')}
                         </div>
                         `}
