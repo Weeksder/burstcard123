@@ -10758,8 +10758,16 @@
                 }
             }
 
-            const gridCols = guessGridSize === 9 ? 3 : guessGridSize === 12 ? 4 : 5;
-            const gridAspect = guessGridSize === 9 ? '1 / 1' : guessGridSize === 12 ? '4 / 3' : '5 / 3';
+            const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+            let gridCols, gridRows;
+            if (guessGridSize === 9) {
+                gridCols = 3; gridRows = 3;
+            } else if (guessGridSize === 12) {
+                gridCols = isLandscape ? 4 : 3; gridRows = isLandscape ? 3 : 4;
+            } else { // 15
+                gridCols = isLandscape ? 5 : 3; gridRows = isLandscape ? 3 : 5;
+            }
+            const gridAspect = `${gridCols} / ${gridRows}`;
 
             content.innerHTML = `
                 <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
@@ -13350,6 +13358,10 @@
                 if (document.getElementById('matchGameModal')?.style.display === 'flex') {
                     renderMatchGame();
                 }
+                // Re-render guess game on rotation so grid columns update
+                if (document.getElementById('guessGameModal')?.classList.contains('active')) {
+                    renderGuessGame();
+                }
             }, 300);
         });
         let resizeTimer;
@@ -13364,6 +13376,10 @@
                 // Re-render match game on window resize (PC orientation change)
                 if (document.getElementById('matchGameModal')?.style.display === 'flex') {
                     renderMatchGame();
+                }
+                // Re-render guess game on window resize so grid columns update
+                if (document.getElementById('guessGameModal')?.classList.contains('active')) {
+                    renderGuessGame();
                 }
             }, 250);
         });
