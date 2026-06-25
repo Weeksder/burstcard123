@@ -2810,33 +2810,33 @@
 
     <div class="modal" id="guessGameModal">
         <div style="position: relative; width: 100%; max-width: 900px; margin: 0 auto; padding-top: clamp(10px, 2vh, 20px); display: flex; flex-direction: column; align-items: center;">
-            <!-- Control Panel (stays with modal) -->
-            <div id="guessGameControls" style="display: inline-flex; align-items: center; gap: 12px; background: white; border-radius: 12px; padding: 8px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); margin-bottom: clamp(6px, 1vh, 10px);">
-                <h2 style="margin: 0; font-size: clamp(1rem, 2.5vw, 1.2rem); color: #35654D; white-space: nowrap;">🎯 Guess the Word</h2>
+            <!-- Floating pill toolbar -->
+            <div id="guessGameControls" style="position: absolute; top: clamp(10px, 2vh, 18px); left: 50%; transform: translateX(-50%); z-index: 30; display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);">
                 <!-- Grid size toggle -->
-                <div id="guessGridToggle" style="display:inline-flex; gap:3px; background:#f0f0f0; border-radius:8px; padding:3px;">
-                    <button onclick="setGuessGridSize(9)"  id="guessSize9"  style="padding:4px 9px; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer; background:#35654D; color:white; transition:all 0.15s;">9</button>
-                    <button onclick="setGuessGridSize(12)" id="guessSize12" style="padding:4px 9px; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">12</button>
-                    <button onclick="setGuessGridSize(15)" id="guessSize15" style="padding:4px 9px; border:none; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">15</button>
+                <div id="guessGridToggle" style="display:inline-flex; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
+                    <button onclick="setGuessGridSize(9)"  id="guessSize9"  style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:pointer; background:#35654D; color:white; transition:all 0.15s;">9</button>
+                    <button onclick="setGuessGridSize(12)" id="guessSize12" style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">12</button>
+                    <button onclick="setGuessGridSize(15)" id="guessSize15" style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">15</button>
                 </div>
+                <span style="width:1px; height:18px; background:#e0e0e0;"></span>
                 <button onclick="startNewGuessGame()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" title="Shuffle Cards">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
                         <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
                     </svg>
                 </button>
-                <button onclick="openGuessGameHelp()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; font-size: clamp(1.2rem, 3vw, 1.4rem);" title="How to Play">
+                <button onclick="openGuessGameHelp()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; font-size: 1.2rem;" title="How to Play">
                     ❓
                 </button>
                 <button onclick="closeGuessGame()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" title="Back to Menu">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 12H5M12 19l-7-7 7-7"/>
                     </svg>
                 </button>
             </div>
             
             <!-- Card Content (no background) -->
-            <div class="modal-content" style="max-width: 900px; padding: clamp(15px, 3vw, 20px); margin: 0; background: none; box-shadow: none;">
+            <div class="modal-content" style="max-width: 900px; padding: clamp(56px, 8vh, 78px) clamp(15px, 3vw, 20px) clamp(15px, 3vw, 20px); margin: 0; background: none; box-shadow: none;">
                 <div id="guessGameContent"></div>
             </div>
         </div>
@@ -10728,6 +10728,20 @@
             const currentCardIndex = guessGameState.currentCardOrder;
             const isCardFlipped = guessGameState.selectedCard !== null;
 
+            // Compute grid layout up front (needed for cell aspect during the loop)
+            const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+            let gridCols, gridRows;
+            if (guessGridSize === 9) {
+                gridCols = 3; gridRows = 3;
+            } else if (guessGridSize === 12) {
+                gridCols = isLandscape ? 4 : 3; gridRows = isLandscape ? 3 : 4;
+            } else { // 15
+                gridCols = isLandscape ? 5 : 3; gridRows = isLandscape ? 3 : 5;
+            }
+            const gridAspect = `${gridCols} / ${gridRows}`;
+            const fillByHeight = isLandscape && guessGridSize !== 9;
+            const cellAspect = 'aspect-ratio:1;';
+
             // Always create guessGridSize grid cells for consistent sizing
             const gridCells = [];
             for (let i = 0; i < guessGridSize; i++) {
@@ -10749,11 +10763,11 @@
                             <img src="${gifSrc(card.frontImage)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
                         </div>`;
                     } else if (isCurrentCard) {
-                        // Active tile — original green card with cornerLift3D animation + yellow border
+                        // Active tile — green card with cornerLift3D + yellow border + spotlight glow
                         cellInner = `<div id="gtw_active_tile" onclick="flipOptionCard(${index})"
                             class="guess-card-hint"
                             style="cursor:pointer;width:100%;height:100%;position:relative;transform-style:preserve-3d;">
-                            <div style="position:absolute;width:100%;height:100%;backface-visibility:hidden;background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);border-radius:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,0,0,0.3);border:3px solid #ffc107;">
+                            <div style="position:absolute;width:100%;height:100%;backface-visibility:hidden;background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);border-radius:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px 6px rgba(255,193,7,0.55), 0 4px 15px rgba(0,0,0,0.3);border:3px solid #ffc107;">
                                 <span style="font-size:clamp(1.8rem,6vw,3.5rem);color:white;font-weight:bold;">${cardNumber}</span>
                             </div>
                         </div>`;
@@ -10769,22 +10783,39 @@
                         }
                     }
 
-                    gridCells.push(`<div style="position:relative;width:100%;aspect-ratio:1;">${cellInner}</div>`);
+                    gridCells.push(`<div style="position:relative;width:100%;${cellAspect}">${cellInner}</div>`);
                 } else {
-                    gridCells.push(`<div style="width:100%;aspect-ratio:1;"></div>`);
+                    gridCells.push(`<div style="width:100%;${cellAspect}"></div>`);
                 }
             }
 
-            const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-            let gridCols, gridRows;
-            if (guessGridSize === 9) {
-                gridCols = 3; gridRows = 3;
-            } else if (guessGridSize === 12) {
-                gridCols = isLandscape ? 4 : 3; gridRows = isLandscape ? 3 : 4;
-            } else { // 15
-                gridCols = isLandscape ? 5 : 3; gridRows = isLandscape ? 3 : 5;
+            // In landscape with 12/15 cards, fill the whole play area (menu goes vertical
+            // on the side), stretching tiles to use all horizontal + vertical space.
+            const outerStyle = fillByHeight
+                ? 'position: relative; height: 90vh; max-height: 90vh; aspect-ratio: ' + gridAspect + '; max-width: calc(100vw - 100px);'
+                : 'position: relative; width: 100%; max-width: 700px; aspect-ratio: ' + gridAspect + ';';
+
+            // Move the floating pill to a vertical side bar in fill mode, else top pill
+            const contentEl = document.querySelector('#guessGameModal .modal-content');
+            if (contentEl) {
+                contentEl.style.padding = fillByHeight ? '8px' : '';
             }
-            const gridAspect = `${gridCols} / ${gridRows}`;
+            const pill = document.getElementById('guessGameControls');
+            if (pill) {
+                if (fillByHeight) {
+                    pill.style.cssText = 'position: absolute; top: 50%; right: clamp(6px,1.5vw,16px); left: auto; transform: translateY(-50%); z-index: 30; display: inline-flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 12px 7px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
+                    const divider = pill.querySelector('span[style*="width:1px"], span[style*="width: 1px"]');
+                    if (divider) divider.style.cssText = 'height:1px; width:18px; background:#e0e0e0;';
+                    const toggle = document.getElementById('guessGridToggle');
+                    if (toggle) toggle.style.flexDirection = 'column';
+                } else {
+                    pill.style.cssText = 'position: absolute; top: clamp(10px, 2vh, 18px); left: 50%; right: auto; transform: translateX(-50%); z-index: 30; display: inline-flex; flex-direction: row; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
+                    const divider = pill.querySelector('span[style*="height:1px"], span[style*="height: 1px"]');
+                    if (divider) divider.style.cssText = 'width:1px; height:18px; background:#e0e0e0;';
+                    const toggle = document.getElementById('guessGridToggle');
+                    if (toggle) toggle.style.flexDirection = 'row';
+                }
+            }
 
             content.innerHTML = `
                 <style>
@@ -10799,7 +10830,7 @@
                     }
                 </style>
                 <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
-                    <div style="position: relative; width: 100%; max-width: 700px; aspect-ratio: ${gridAspect};">
+                    <div style="${outerStyle}">
                         ${allCorrect ? `
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; text-align: center;">
                                 <button class="btn btn-success" onclick="nextRound()" style="padding: 15px 30px; font-size: 1.2rem; min-width: 180px; justify-content: center; box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
@@ -10807,7 +10838,7 @@
                                 </button>
                             </div>
                         ` : `
-                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
+                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); grid-template-rows: repeat(${gridRows}, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
                             ${gridCells.join('')}
                         </div>
                         `}
