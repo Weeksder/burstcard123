@@ -2836,7 +2836,7 @@
             </div>
             
             <!-- Card Content (no background) -->
-            <div class="modal-content" style="max-width: 900px; padding: clamp(56px, 8vh, 78px) clamp(15px, 3vw, 20px) clamp(15px, 3vw, 20px); margin: 0; background: none; box-shadow: none;">
+            <div class="modal-content" style="max-width: 100%; padding: clamp(56px, 8vh, 78px) 5px 5px; margin: 0; background: none; box-shadow: none;">
                 <div id="guessGameContent"></div>
             </div>
         </div>
@@ -10739,7 +10739,7 @@
                 gridCols = isLandscape ? 5 : 3; gridRows = isLandscape ? 3 : 5;
             }
             const gridAspect = `${gridCols} / ${gridRows}`;
-            const fillByHeight = isLandscape && guessGridSize !== 9;
+            const fillByHeight = isLandscape;
             const cellAspect = 'aspect-ratio:1;';
 
             // Always create guessGridSize grid cells for consistent sizing
@@ -10789,21 +10789,26 @@
                 }
             }
 
-            // In landscape with 12/15 cards, fill the whole play area (menu goes vertical
-            // on the side), stretching tiles to use all horizontal + vertical space.
+            // In landscape, fill the whole play area (menu goes vertical on the side).
+            // In portrait, cap by both width AND available height so the grid never
+            // exceeds the viewport and triggers a scrollbar.
             const outerStyle = fillByHeight
                 ? 'position: relative; height: 90vh; max-height: 90vh; aspect-ratio: ' + gridAspect + '; max-width: calc(100vw - 100px);'
-                : 'position: relative; width: 100%; max-width: 700px; aspect-ratio: ' + gridAspect + ';';
+                : 'position: relative; width: min(95vw, 700px); max-height: calc(100vh - 130px); margin: 0 auto; aspect-ratio: ' + gridAspect + ';';
 
             // Move the floating pill to a vertical side bar in fill mode, else top pill
             const contentEl = document.querySelector('#guessGameModal .modal-content');
+            const wrapperEl = contentEl ? contentEl.parentElement : null;
             if (contentEl) {
                 contentEl.style.padding = fillByHeight ? '8px' : '';
+            }
+            if (wrapperEl) {
+                wrapperEl.style.maxWidth = fillByHeight ? '100%' : '900px';
             }
             const pill = document.getElementById('guessGameControls');
             if (pill) {
                 if (fillByHeight) {
-                    pill.style.cssText = 'position: absolute; top: 50%; right: clamp(6px,1.5vw,16px); left: auto; transform: translateY(-50%); z-index: 30; display: inline-flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 12px 7px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
+                    pill.style.cssText = 'position: fixed; top: 50%; right: clamp(8px,2vw,20px); left: auto; transform: translateY(-50%); z-index: 30; display: inline-flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 12px 7px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
                     const divider = pill.querySelector('span[style*="width:1px"], span[style*="width: 1px"]');
                     if (divider) divider.style.cssText = 'height:1px; width:18px; background:#e0e0e0;';
                     const toggle = document.getElementById('guessGridToggle');
@@ -10838,7 +10843,7 @@
                                 </button>
                             </div>
                         ` : `
-                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); grid-template-rows: repeat(${gridRows}, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
+                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); grid-template-rows: repeat(${gridRows}, 1fr); gap: 8px; width: 100%; height: 100%;">
                             ${gridCells.join('')}
                         </div>
                         `}
@@ -11859,6 +11864,11 @@
                 }
             }
 
+            const fillByHeight = isLandscape;
+            const revealOuterStyle = fillByHeight
+                ? 'position: relative; height: 90vh; max-height: 90vh; aspect-ratio: ' + gridAspect + '; max-width: calc(100vw - 100px);'
+                : 'position: relative; width: min(95vw, 700px); max-height: calc(100vh - 130px); margin: 0 auto; aspect-ratio: ' + gridAspect + ';';
+
             content.innerHTML = `
                 <style>
                     @keyframes gtw_fadein {
@@ -11876,8 +11886,8 @@
                     }
                 </style>
                 <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
-                    <div style="position: relative; width: 100%; max-width: 700px; aspect-ratio: ${gridAspect};">
-                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
+                    <div style="${revealOuterStyle}">
+                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); grid-template-rows: repeat(${gridRows}, 1fr); gap: 8px; width: 100%; height: 100%;">
                             ${gridCells.join('')}
                         </div>
 
