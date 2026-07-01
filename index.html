@@ -2836,7 +2836,7 @@
             </div>
             
             <!-- Card Content (no background) -->
-            <div class="modal-content" style="max-width: 900px; padding: clamp(56px, 8vh, 78px) clamp(15px, 3vw, 20px) clamp(15px, 3vw, 20px); margin: 0; background: none; box-shadow: none;">
+            <div class="modal-content" style="max-width: 100%; padding: 8px; margin: 0; background: none; box-shadow: none;">
                 <div id="guessGameContent"></div>
             </div>
         </div>
@@ -9611,13 +9611,18 @@
         }
 
         function setGuessGridSize(n) {
+            if (cards.length < n) return; // not enough cards for this size
+            if (cards.length < 9) return; // locked to 9-tile mode
             guessGridSize = n;
-            // Update button styles
+            // Update button styles in the DOM pill (touch portrait)
             [9, 12, 15].forEach(size => {
                 const btn = document.getElementById('guessSize' + size);
                 if (!btn) return;
+                const available = cards.length >= size;
                 btn.style.background = size === n ? '#35654D' : 'transparent';
-                btn.style.color     = size === n ? 'white'   : '#666';
+                btn.style.color      = size === n ? 'white' : (available ? '#666' : '#ccc');
+                btn.style.cursor     = available ? 'pointer' : 'not-allowed';
+                btn.style.opacity    = available ? '1' : '0.4';
             });
             // Reset current round so new size takes effect immediately
             guessGameState.currentRoundCards = null;
@@ -9625,6 +9630,18 @@
             guessGameState.selectedCard = null;
             guessGameState.currentCardOrder = 0;
             renderGuessGame();
+        }
+
+        // Returns inline style string for a grid-size button based on selection & availability
+        function guessGridSizeBtnStyle(size, selected) {
+            const available = cards.length >= size;
+            // Sub-9 decks are locked to the 9-tile layout — all buttons disabled
+            const locked = cards.length < 9;
+            const bg    = selected ? '#35654D' : 'transparent';
+            const color = selected ? 'white' : (available && !locked ? '#666' : '#ccc');
+            const cursor  = (available && !locked) ? 'pointer' : 'not-allowed';
+            const opacity = (available && !locked) ? '1' : '0.4';
+            return `padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:${cursor}; background:${bg}; color:${color}; opacity:${opacity}; transition:all 0.15s;`;
         }
 
         function startNewGuessGame() {
@@ -10687,6 +10704,26 @@
         function renderGuessGame() {
             const content = document.getElementById('guessGameContent');
 
+            // Auto-clamp grid size if deck has fewer cards than the selected size.
+            // Minimum is always 9 (3x3) — smaller decks still use the 9-tile layout.
+            if (cards.length < guessGridSize) {
+                if (cards.length >= 12) guessGridSize = 12;
+                else guessGridSize = 9;
+            }
+
+            // Sync DOM pill button states (touch portrait pill)
+            const _locked = cards.length < 9;
+            [9, 12, 15].forEach(size => {
+                const btn = document.getElementById('guessSize' + size);
+                if (!btn) return;
+                const available = cards.length >= size;
+                const selected  = size === guessGridSize;
+                btn.style.background = selected ? '#35654D' : 'transparent';
+                btn.style.color      = selected ? 'white' : (available && !_locked ? '#666' : '#ccc');
+                btn.style.cursor     = (available && !_locked) ? 'pointer' : 'not-allowed';
+                btn.style.opacity    = (available && !_locked) ? '1' : '0.4';
+            });
+
             if (guessGameState.currentCardIndex >= guessGameState.gameCards.length) {
                 // Game over - play winning sound
                 console.log('🎉 Game completed! Attempting to play winning sound...');
@@ -10739,8 +10776,8 @@
                 gridCols = isLandscape ? 5 : 3; gridRows = isLandscape ? 3 : 5;
             }
             const gridAspect = `${gridCols} / ${gridRows}`;
-            const fillByHeight = isLandscape && guessGridSize !== 9;
-            const cellAspect = fillByHeight ? '' : 'aspect-ratio:1;';
+            const fillByHeight = isLandscape;
+            const cellAspect = 'aspect-ratio:1;';
 
             // Always create guessGridSize grid cells for consistent sizing
             const gridCells = [];
@@ -10789,33 +10826,61 @@
                 }
             }
 
-            // In landscape with 12/15 cards, fill the whole play area (menu goes vertical
-            // on the side), stretching tiles to use all horizontal + vertical space.
+            // In landscape, fill the whole play area (menu goes vertical on the side).
+            // In portrait, cap by both width AND available height so the grid never
+            // exceeds the viewport and triggers a scrollbar.
             const outerStyle = fillByHeight
-                ? 'position: relative; width: calc(100% - 80px); margin-right: 80px; height: 88vh; max-height: 88vh;'
-                : 'position: relative; width: 100%; max-width: 700px; aspect-ratio: ' + gridAspect + ';';
+                ? 'position: relative; height: 90vh; max-height: 90vh; aspect-ratio: ' + gridAspect + '; max-width: calc(100vw - 100px);'
+                : 'position: relative; width: min(95vw, 700px); max-height: calc(100vh - 130px); margin: 0 auto; aspect-ratio: ' + gridAspect + ';';
 
-            // Move the floating pill to a vertical side bar in fill mode, else top pill
+            // Move the floating pill to a vertical side bar in landscape OR on non-touch devices (desktop/PC).
+            // On touch portrait (phones/tablets), keep the top pill to save horizontal space.
+            const isTouchPortrait = !isLandscape && (('ontouchstart' in window) || navigator.maxTouchPoints > 0);
             const contentEl = document.querySelector('#guessGameModal .modal-content');
+            const wrapperEl = contentEl ? contentEl.parentElement : null;
             if (contentEl) {
-                contentEl.style.padding = fillByHeight ? '8px' : '';
+                contentEl.style.padding = isTouchPortrait ? 'clamp(56px, 8vh, 78px) 5px 5px' : '8px';
+            }
+            if (wrapperEl) {
+                wrapperEl.style.maxWidth = isTouchPortrait ? '900px' : '100%';
             }
             const pill = document.getElementById('guessGameControls');
             if (pill) {
-                if (fillByHeight) {
-                    pill.style.cssText = 'position: absolute; top: 50%; right: clamp(6px,1.5vw,16px); left: auto; transform: translateY(-50%); z-index: 30; display: inline-flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 12px 7px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
-                    const divider = pill.querySelector('span[style*="width:1px"], span[style*="width: 1px"]');
-                    if (divider) divider.style.cssText = 'height:1px; width:18px; background:#e0e0e0;';
-                    const toggle = document.getElementById('guessGridToggle');
-                    if (toggle) toggle.style.flexDirection = 'column';
-                } else {
+                if (isTouchPortrait) {
+                    // Touch phone portrait — pill floats at top center
                     pill.style.cssText = 'position: absolute; top: clamp(10px, 2vh, 18px); left: 50%; right: auto; transform: translateX(-50%); z-index: 30; display: inline-flex; flex-direction: row; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
                     const divider = pill.querySelector('span[style*="height:1px"], span[style*="height: 1px"]');
                     if (divider) divider.style.cssText = 'width:1px; height:18px; background:#e0e0e0;';
                     const toggle = document.getElementById('guessGridToggle');
                     if (toggle) toggle.style.flexDirection = 'row';
+                } else {
+                    // Desktop/PC or landscape — pill hidden from its original position;
+                    // it will be rendered inline beside the grid in content.innerHTML below
+                    pill.style.cssText = 'display: none;';
                 }
             }
+
+            // Build inline pill HTML for desktop/landscape (rendered beside the grid)
+            const inlinePillHtml = isTouchPortrait ? '' : `
+                <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px; background:rgba(255,255,255,0.96); border-radius:999px; padding:12px 7px; box-shadow:0 4px 22px rgba(0,0,0,0.28); margin-left:10px; flex-shrink:0; align-self:center;">
+                    <div id="guessGridToggleInline" style="display:inline-flex; flex-direction:column; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
+                        <button onclick="setGuessGridSize(9)"  id="guessSize9Inline"  style="${guessGridSizeBtnStyle(9,  guessGridSize===9)}">9</button>
+                        <button onclick="setGuessGridSize(12)" id="guessSize12Inline" style="${guessGridSizeBtnStyle(12, guessGridSize===12)}">12</button>
+                        <button onclick="setGuessGridSize(15)" id="guessSize15Inline" style="${guessGridSizeBtnStyle(15, guessGridSize===15)}">15</button>
+                    </div>
+                    <span style="height:1px; width:18px; background:#e0e0e0;"></span>
+                    <button onclick="startNewGuessGame()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center;" title="Shuffle Cards">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                        </svg>
+                    </button>
+                    <button onclick="openGuessGameHelp()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;" title="How to Play">❓</button>
+                    <button onclick="closeGuessGame()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center;" title="Back to Menu">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                </div>
+            `;
 
             content.innerHTML = `
                 <style>
@@ -10838,11 +10903,12 @@
                                 </button>
                             </div>
                         ` : `
-                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); grid-template-rows: repeat(${gridRows}, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
+                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); grid-template-rows: repeat(${gridRows}, 1fr); gap: 8px; width: 100%; height: 100%;">
                             ${gridCells.join('')}
                         </div>
                         `}
                     </div>
+                    ${inlinePillHtml}
                 </div>
             `;
 
@@ -11859,6 +11925,37 @@
                 }
             }
 
+            const fillByHeight = isLandscape;
+            const isTouchPortrait = !isLandscape && (('ontouchstart' in window) || navigator.maxTouchPoints > 0);
+            const revealOuterStyle = fillByHeight
+                ? 'position: relative; height: 90vh; max-height: 90vh; aspect-ratio: ' + gridAspect + '; max-width: calc(100vw - 100px);'
+                : 'position: relative; width: min(95vw, 700px); max-height: calc(100vh - 130px); margin: 0 auto; aspect-ratio: ' + gridAspect + ';';
+
+            // Keep original pill hidden for non-touch desktop/landscape (inline pill used instead)
+            const revealPill = document.getElementById('guessGameControls');
+            if (revealPill && !isTouchPortrait) revealPill.style.display = 'none';
+
+            const revealInlinePillHtml = isTouchPortrait ? '' : `
+                <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px; background:rgba(255,255,255,0.96); border-radius:999px; padding:12px 7px; box-shadow:0 4px 22px rgba(0,0,0,0.28); margin-left:10px; flex-shrink:0; align-self:center;">
+                    <div style="display:inline-flex; flex-direction:column; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
+                        <button onclick="setGuessGridSize(9)"  style="${guessGridSizeBtnStyle(9,  guessGridSize===9)}">9</button>
+                        <button onclick="setGuessGridSize(12)" style="${guessGridSizeBtnStyle(12, guessGridSize===12)}">12</button>
+                        <button onclick="setGuessGridSize(15)" style="${guessGridSizeBtnStyle(15, guessGridSize===15)}">15</button>
+                    </div>
+                    <span style="height:1px; width:18px; background:#e0e0e0;"></span>
+                    <button onclick="startNewGuessGame()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center;" title="Shuffle Cards">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                            <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                        </svg>
+                    </button>
+                    <button onclick="openGuessGameHelp()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;" title="How to Play">❓</button>
+                    <button onclick="closeGuessGame()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center;" title="Back to Menu">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                </div>
+            `;
+
             content.innerHTML = `
                 <style>
                     @keyframes gtw_fadein {
@@ -11876,8 +11973,8 @@
                     }
                 </style>
                 <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
-                    <div style="position: relative; width: 100%; max-width: 700px; aspect-ratio: ${gridAspect};">
-                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: clamp(6px, 1vw, 10px); width: 100%; height: 100%;">
+                    <div style="${revealOuterStyle}">
+                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); grid-template-rows: repeat(${gridRows}, 1fr); gap: 8px; width: 100%; height: 100%;">
                             ${gridCells.join('')}
                         </div>
 
@@ -11899,6 +11996,7 @@
                             </div>
                         </div>
                     </div>
+                    ${revealInlinePillHtml}
                 </div>
             `;
 
@@ -11945,6 +12043,13 @@
         function markWrong() {
             playSound('errorSound');
             clearTimeout(_gtwHintTimer); _gtwHintTimer = null;
+
+            // Mark the wrong card as seen so it shows grey (with number) on reset
+            const wrongIndex = guessGameState.selectedCard;
+            if (wrongIndex !== null && wrongIndex !== undefined) {
+                if (!guessGameState.seenCards) guessGameState.seenCards = {};
+                guessGameState.seenCards[wrongIndex] = true;
+            }
 
             // Reset correct cards but keep seenCards so students see their progress
             guessGameState.correctCards = {};
