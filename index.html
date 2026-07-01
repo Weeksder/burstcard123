@@ -2814,9 +2814,9 @@
             <div id="guessGameControls" style="position: absolute; top: clamp(10px, 2vh, 18px); left: 50%; transform: translateX(-50%); z-index: 30; display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);">
                 <!-- Grid size toggle -->
                 <div id="guessGridToggle" style="display:inline-flex; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
-                    <button onclick="setGuessGridSize(9)"  id="guessSize9"  style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:pointer; background:#35654D; color:white; transition:all 0.15s;">9</button>
-                    <button onclick="setGuessGridSize(12)" id="guessSize12" style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">12</button>
-                    <button onclick="setGuessGridSize(15)" id="guessSize15" style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:pointer; background:transparent; color:#666; transition:all 0.15s;">15</button>
+                    <button onclick="setGuessGridSize(9)"  id="guessSize9"  style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; transition:all 0.15s;">9</button>
+                    <button onclick="setGuessGridSize(12)" id="guessSize12" style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; transition:all 0.15s;">12</button>
+                    <button onclick="setGuessGridSize(15)" id="guessSize15" style="padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; transition:all 0.15s;">15</button>
                 </div>
                 <span style="width:1px; height:18px; background:#e0e0e0;"></span>
                 <button onclick="startNewGuessGame()" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" title="Shuffle Cards">
@@ -9687,12 +9687,17 @@
                 document.querySelector('.container').style.filter = 'blur(6px)';
                 document.querySelector('.container').style.transition = 'filter 0.3s ease';
                 document.getElementById('guessGameModal').classList.add('active');
-                // Sync grid-size toggle buttons with current guessGridSize
+                // Sync grid-size toggle buttons with current guessGridSize and card count
+                const _locked = cards.length < 9;
                 [9, 12, 15].forEach(size => {
                     const btn = document.getElementById('guessSize' + size);
                     if (!btn) return;
-                    btn.style.background = size === guessGridSize ? '#35654D' : 'transparent';
-                    btn.style.color      = size === guessGridSize ? 'white'   : '#666';
+                    const available = cards.length >= size;
+                    const selected  = size === guessGridSize;
+                    btn.style.background = selected ? '#35654D' : 'transparent';
+                    btn.style.color      = selected ? 'white' : (available && !_locked ? '#666' : '#ccc');
+                    btn.style.cursor     = (available && !_locked) ? 'pointer' : 'not-allowed';
+                    btn.style.opacity    = (available && !_locked) ? '1' : '0.4';
                 });
                 renderGuessGame();
             } else if (gameType === 'bomb') {
