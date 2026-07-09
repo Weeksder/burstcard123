@@ -1361,9 +1361,109 @@
             flex: 1;
         }
 
-        /* Hide upload area on iPad */
+        /* Hide PC drop-zone on digital / iPad empty state (Paste + Add only) */
         .upload-area-wrapper.ipad-layout .upload-area-main {
-            display: none;
+            display: none !important;
+        }
+        /* Must beat #createModal .image-upload-group .upload-area-main { display:flex } */
+        #createModal .upload-area-wrapper.ipad-layout .upload-area-main,
+        #createModal .upload-area-wrapper.ipad-layout #frontUpload,
+        #createModal .upload-area-wrapper.ipad-layout #frontPreview {
+            display: none !important;
+            flex: 0 0 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+        }
+        #createModal .upload-area-wrapper.ipad-layout .ipad-paste-section {
+            display: grid !important;
+            flex: 0 0 auto;
+            min-height: 0;
+            align-content: center;
+            gap: 12px;
+        }
+        #createModal .upload-area-wrapper.ipad-layout .ipad-paste-button,
+        #createModal .upload-area-wrapper.ipad-layout .ipad-add-button {
+            min-height: 140px;
+        }
+        /* After images: digital layout shows preview toolbar (Add More / Reorder & Remove) */
+        #createModal .upload-area-wrapper:not(.ipad-layout) .ipad-paste-section,
+        #createModal .upload-area-wrapper:not(.ipad-layout) .ipad-helper-text {
+            display: none !important;
+        }
+
+        /* ===== Compact empty create window (desktop + digital) until images import ===== */
+        #createModal.create-compact.modal.active {
+            align-items: center;
+            justify-content: center;
+        }
+        #createModal.create-compact .modal-content {
+            height: auto !important;
+            max-height: min(92vh, 100%) !important;
+            min-height: 0 !important;
+            width: min(100%, 480px);
+            transition: height 0.2s ease, max-height 0.2s ease, width 0.2s ease;
+        }
+        #createModal.create-compact .create-modal-header {
+            padding: 12px 40px 8px 14px;
+        }
+        #createModal.create-compact .create-modal-header h2 {
+            margin-bottom: 6px;
+            font-size: 1.1rem;
+        }
+        #createModal.create-compact .wizard-step-hint {
+            margin-top: 4px;
+            font-size: 0.78rem;
+        }
+        #createModal.create-compact .create-modal-body {
+            flex: 0 0 auto !important;
+            min-height: 0 !important;
+            overflow: visible;
+            padding: 10px 14px 6px;
+            gap: 6px;
+        }
+        #createModal.create-compact .image-upload-group {
+            flex: 0 0 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible;
+        }
+        #createModal.create-compact .image-upload-group > label,
+        #createModal.create-compact #modalLabel {
+            display: none !important;
+        }
+        #createModal.create-compact .image-upload-group .upload-area-wrapper {
+            flex: 0 0 auto !important;
+            min-height: 0 !important;
+            overflow: visible;
+            gap: 0;
+        }
+        /* Desktop empty: compact drop-zone (no tall flex stretch) */
+        #createModal.create-compact .image-upload-group .upload-area-main,
+        #createModal.create-compact .image-upload-group .upload-area,
+        #createModal.create-compact #frontPreview,
+        #createModal.create-compact #frontPreview > div {
+            flex: 0 0 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible;
+        }
+        #createModal.create-compact .image-upload-group .upload-area {
+            padding: 18px 14px;
+        }
+        #createModal.create-compact .upload-icon img {
+            width: 64px !important;
+            height: 64px !important;
+        }
+        #createModal.create-compact .create-modal-footer {
+            padding: 8px 12px 12px;
+        }
+        /* Expanded after import (full tall modal once create-compact is removed) */
+        #createModal:not(.create-compact) .modal-content {
+            transition: height 0.2s ease, max-height 0.2s ease, width 0.2s ease;
         }
 
         .ipad-paste-section {
@@ -1583,6 +1683,351 @@
             flex: 1;
         }
 
+        /* ===== Create New Cards: sticky footer + maximized content ===== */
+        #createModal.modal.active {
+            align-items: stretch;
+            justify-content: center;
+            padding: 12px;
+        }
+        #createModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 640px;
+            height: min(92vh, 920px);
+            max-height: 92vh;
+            margin: auto;
+            overflow: hidden;
+            padding: 0;
+            position: relative;
+        }
+        #createModal .create-modal-header {
+            flex-shrink: 0;
+            padding: 12px 44px 10px 16px;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+        }
+        #createModal .create-modal-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.15rem;
+            line-height: 1.3;
+            color: #333;
+        }
+        /* Wizard step indicator */
+        #createModal .wizard-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin: 0;
+            padding: 0 4px 2px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #createModal .wizard-step {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 2px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #aaa;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: 600;
+            min-width: 0;
+        }
+        #createModal .wizard-step .wizard-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8e8e8;
+            color: #888;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        #createModal .wizard-step .wizard-label {
+            white-space: nowrap;
+        }
+        #createModal .wizard-step.active {
+            color: #35654D;
+        }
+        #createModal .wizard-step.active .wizard-num {
+            background: #35654D;
+            color: #fff;
+        }
+        #createModal .wizard-step.done {
+            color: #35654D;
+        }
+        #createModal .wizard-step.done .wizard-num {
+            background: #a7d4bc;
+            color: #1e4d35;
+        }
+        #createModal .wizard-step:disabled {
+            cursor: default;
+            opacity: 0.55;
+        }
+        #createModal .wizard-connector {
+            width: 18px;
+            height: 2px;
+            background: #e0e0e0;
+            flex-shrink: 0;
+            margin: 0 2px;
+        }
+        #createModal .wizard-connector.done {
+            background: #a7d4bc;
+        }
+        #createModal .wizard-step-hint {
+            margin: 6px 0 0;
+            font-size: 0.8rem;
+            color: #777;
+            font-weight: 500;
+            text-align: center;
+        }
+        /* Wizard step panels: 1 = Add & Arrange (images), 2 = Names */
+        #createModal.wizard-step-1 .card-name-group {
+            display: none !important;
+        }
+        #createModal.wizard-step-2 .image-upload-group {
+            display: none !important;
+        }
+        #createModal.wizard-step-1 .image-upload-group,
+        #createModal.wizard-step-2 .card-name-group {
+            flex: 1 1 auto !important;
+            max-height: none !important;
+            min-height: 0 !important;
+        }
+        /* Combined import+reorder: subtle arrange affordance when images present */
+        #createModal.wizard-step-1.reorder-mode-on .image-upload-group .upload-area.has-image {
+            border-style: solid;
+            border-color: #c4b5fd;
+            background: #faf8ff;
+        }
+        #createModal .wizard-footer-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+            align-items: stretch;
+        }
+        #createModal .wizard-footer-nav .btn {
+            flex: 1 1 auto;
+            min-width: 88px;
+        }
+        /* Back: violet — not gray (Cancel), not green (Next/Finish) */
+        #createModal #wizardBackBtn {
+            background: #7c3aed;
+            color: #fff;
+            border: none;
+            box-shadow: 0 1px 3px rgba(124, 58, 237, 0.35);
+        }
+        #createModal #wizardBackBtn:hover {
+            background: #6d28d9;
+        }
+        #createModal #wizardBackBtn:active {
+            background: #5b21b6;
+        }
+        #createModal #wizardNextBtn {
+            background: #35654D;
+            color: #fff;
+            border: none;
+        }
+        /* Finish (Names page) — same green family as Next but labeled Finish */
+        #createModal #wizardCreateBtn {
+            background: #35654D;
+            color: #fff;
+            border: none;
+        }
+        #createModal #wizardCreateBtn:hover {
+            background: #2d5542;
+        }
+        /* Cancel always far left; then Back; then Next/Finish */
+        #createModal.wizard-step-1 #wizardCancelBtn { order: 1; }
+        #createModal.wizard-step-1 #wizardBackBtn { order: 2; }
+        #createModal.wizard-step-1 #wizardNextBtn { order: 3; }
+        #createModal.wizard-step-2 #wizardCancelBtn { order: 1; }
+        #createModal.wizard-step-2 #wizardBackBtn { order: 2; }
+        #createModal.wizard-step-2 #wizardCreateBtn { order: 3; }
+        #createModal #wizardNextBtn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        #createModal .create-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #aaa;
+            line-height: 1;
+            padding: 4px 8px;
+            z-index: 2;
+        }
+        #createModal .create-modal-close:hover {
+            color: #666;
+        }
+        #createModal .create-modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #fff;
+        }
+        #createModal .create-modal-body .form-group {
+            margin-bottom: 0;
+        }
+        #createModal .create-modal-body .form-group > label {
+            margin-bottom: 6px;
+            font-size: 0.92rem;
+        }
+        /* Image area: flexible share of body, scrolls internally */
+        #createModal .image-upload-group {
+            flex: 1 1 48%;
+            min-height: 140px;
+            max-height: 55%;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+        }
+        #createModal .image-upload-group .upload-area-wrapper {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #createModal .image-upload-group .upload-area-main {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #createModal .image-upload-group .upload-area {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 12px;
+        }
+        #createModal .image-upload-group .upload-area.has-image {
+            padding: 10px 8px;
+        }
+        #createModal #frontPreview {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #createModal #frontPreview > div {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #createModal #imagePreviewGrid {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* Card Name: takes remaining space and grows */
+        #createModal .card-name-group {
+            flex: 1 1 52%;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+        }
+        #createModal .card-name-count {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: #35654D;
+            margin-left: 6px;
+        }
+        #createModal .card-name-group #backText,
+        #createModal .card-name-group #renameEditor,
+        #createModal .card-name-group #renameNamesList {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+            height: auto;
+            resize: none;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* Sticky action bar — always visible */
+        #createModal .create-modal-footer {
+            flex-shrink: 0;
+            margin-top: 0;
+            padding: 10px 12px 14px;
+            border-top: 1px solid #e5e5e5;
+            background: #fafafa;
+            box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.06);
+            border-radius: 0 0 20px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: stretch;
+        }
+        #createModal .create-modal-footer button {
+            flex: 1 1 auto;
+            min-width: 88px;
+            white-space: nowrap;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 420px) {
+            #createModal .create-modal-footer button {
+                min-width: calc(50% - 8px);
+                font-size: 0.85rem;
+                padding: 10px 8px;
+            }
+            #createModal .wizard-step .wizard-label {
+                display: none;
+            }
+            #createModal .wizard-connector {
+                width: 28px;
+            }
+        }
+        @media (max-height: 600px) {
+            #createModal .modal-content {
+                height: 96vh;
+                max-height: 96vh;
+            }
+            #createModal .create-modal-header {
+                padding: 10px 40px 8px 14px;
+            }
+            #createModal .create-modal-body {
+                padding: 8px 12px;
+                gap: 8px;
+            }
+            #createModal .image-upload-group {
+                max-height: 45%;
+            }
+        }
+
         @media (max-width: 768px) and (orientation: portrait) {
             .card { max-height: none; }
             .card-stack { max-height: none; }
@@ -1747,6 +2192,96 @@
             border-radius: 8px;
         }
 
+        /* ===== Drag-to-reorder styles ===== */
+        .preview-image-container.reorder-enabled {
+            cursor: grab;
+            outline: 2px dashed #8b5cf6;
+            outline-offset: 2px;
+            border-radius: 8px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            /* Prevent browser scroll/gesture takeover when grabbing a card */
+            touch-action: none;
+            -ms-touch-action: none;
+            -webkit-touch-action: none;
+            will-change: transform;
+        }
+        .preview-image-container.reorder-enabled:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+        .preview-image-container.reorder-enabled:active {
+            cursor: grabbing;
+        }
+        .preview-image-container.reorder-dragging {
+            opacity: 0.3;
+            transform: scale(0.92);
+            /* Placeholder stays in-grid while floating ghost follows the finger */
+            z-index: 1;
+        }
+        /* iPhone-like live shift: siblings slide into place while dragging */
+        body.reorder-active-drag #imagePreviewGrid .preview-image-container.reorder-enabled {
+            transition: transform 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);
+        }
+        body.reorder-active-drag #imagePreviewGrid .preview-image-container.reorder-enabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        body.reorder-active-drag #imagePreviewGrid .preview-image-container.reorder-dragging {
+            transition: none;
+            opacity: 0.28;
+            transform: scale(0.9);
+        }
+        body.reorder-active-drag #imagePreviewGrid .preview-image-container.reorder-shifting {
+            /* class hook for FLIP frames */
+        }
+        /* While a reorder drag is active, freeze scroll on the Create New Cards modal */
+        body.reorder-active-drag {
+            overflow: hidden !important;
+            touch-action: none !important;
+            overscroll-behavior: none !important;
+        }
+        body.reorder-active-drag .modal,
+        body.reorder-active-drag .modal-content,
+        body.reorder-active-drag #imagePreviewGrid {
+            overflow: hidden !important;
+            touch-action: none !important;
+            overscroll-behavior: none !important;
+            -webkit-overflow-scrolling: auto !important;
+        }
+        /* Reorder mode: reduce accidental scroll when touching the preview grid */
+        #createModal.reorder-mode-on {
+            overscroll-behavior: none;
+        }
+        #createModal.reorder-mode-on #imagePreviewGrid {
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+        }
+        #createModal.reorder-mode-on #imagePreviewGrid .reorder-enabled {
+            touch-action: none;
+            -ms-touch-action: none;
+            -webkit-touch-action: none;
+        }
+        /* Insert-between drop indicators (left/right edge bars) */
+        .preview-image-container.reorder-insert-before::before,
+        .preview-image-container.reorder-insert-after::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            bottom: -2px;
+            width: 5px;
+            background: #10b981;
+            border-radius: 3px;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.85);
+            z-index: 10;
+            pointer-events: none;
+        }
+        .preview-image-container.reorder-insert-before::before {
+            left: -9px;
+        }
+        .preview-image-container.reorder-insert-after::after {
+            right: -9px;
+        }
+
         .preview-image-delete {
             position: absolute;
             top: 5px;
@@ -1762,12 +2297,51 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 10;
+            z-index: 25;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
 
-        .preview-image-container.selected .preview-image-delete {
+        /* ✕ only visible while Reorder & Remove mode is active (dotted outline mode) */
+        #createModal.reorder-mode-on .preview-image-container .preview-image-delete,
+        .preview-image-container.reorder-enabled .preview-image-delete {
             display: flex;
+        }
+
+        /* Preview toolbar: Add More + Reorder & Remove */
+        .preview-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .preview-toolbar-btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .preview-toolbar-btn:active {
+            transform: scale(0.97);
+        }
+        .preview-toolbar-btn.add-more {
+            background: #667eea;
+            color: white;
+        }
+        .preview-toolbar-btn.arrange {
+            background: #8b5cf6;
+            color: white;
+        }
+        .preview-toolbar-btn.arrange.active {
+            background: #10b981;
         }
 
         /* Responsive grid for image previews: 3-5 columns */
@@ -2298,104 +2872,37 @@
             justify-content: center;
         }
 
-        /* ── Directional drift animations (one per direction) ── */
-        @keyframes swipeHintDriftLeft {
-            0%   { transform: translateX(0px)   translateY(0px)  rotate(0deg); }
-            30%  { transform: translateX(-56px) translateY(-8px) rotate(-5deg); }
-            60%  { transform: translateX(0px)   translateY(0px)  rotate(0deg); }
-            100% { transform: translateX(0px)   translateY(0px)  rotate(0deg); }
-        }
-        @keyframes swipeHintDriftRight {
-            0%   { transform: translateX(0px)  translateY(0px)  rotate(0deg); }
-            30%  { transform: translateX(56px) translateY(-8px) rotate(5deg); }
-            60%  { transform: translateX(0px)  translateY(0px)  rotate(0deg); }
-            100% { transform: translateX(0px)  translateY(0px)  rotate(0deg); }
-        }
-        @keyframes swipeHintDriftUp {
-            0%   { transform: translateX(0px)  translateY(0px)   rotate(0deg); }
-            30%  { transform: translateX(8px)  translateY(-56px) rotate(3deg); }
-            60%  { transform: translateX(0px)  translateY(0px)   rotate(0deg); }
-            100% { transform: translateX(0px)  translateY(0px)   rotate(0deg); }
-        }
-        @keyframes swipeHintDriftDown {
-            0%   { transform: translateX(0px)  translateY(0px)  rotate(0deg); }
-            30%  { transform: translateX(8px)  translateY(56px) rotate(3deg); }
-            60%  { transform: translateX(0px)  translateY(0px)  rotate(0deg); }
-            100% { transform: translateX(0px)  translateY(0px)  rotate(0deg); }
+        /* Pulse ring on finger */
+        @keyframes swipeHintPulse {
+            0%   { transform: scale(1);   opacity: 0.6; }
+            50%  { transform: scale(1.12); opacity: 0.9; }
+            100% { transform: scale(1);   opacity: 0.6; }
         }
 
-        /* Arrow flash animations for each direction — opacity only; position is baked into each SVG */
-        @keyframes swipeArrowFlashLeft {
-            0%,100% { opacity:0; }
-            20%     { opacity:1; }
-            60%     { opacity:0.85; }
-            80%     { opacity:0; }
-        }
-        @keyframes swipeArrowFlashRight {
-            0%,100% { opacity:0; }
-            20%     { opacity:1; }
-            60%     { opacity:0.85; }
-            80%     { opacity:0; }
-        }
-        @keyframes swipeArrowFlashUp {
-            0%,100% { opacity:0; }
-            20%     { opacity:1; }
-            60%     { opacity:0.85; }
-            80%     { opacity:0; }
-        }
-        @keyframes swipeArrowFlashDown {
-            0%,100% { opacity:0; }
-            20%     { opacity:1; }
-            60%     { opacity:0.85; }
-            80%     { opacity:0; }
+        /* Card drift animation – shared by the card, the arrows container, and the finger */
+        @keyframes swipeHintDrift {
+            0%   { transform: translateX(0px)   translateY(0px)   rotate(0deg); }
+            20%  { transform: translateX(46px)  translateY(-10px) rotate(4deg); }
+            40%  { transform: translateX(0px)   translateY(0px)   rotate(0deg); }
+            60%  { transform: translateX(-46px) translateY(-10px) rotate(-4deg); }
+            80%  { transform: translateX(0px)   translateY(0px)   rotate(0deg); }
+            100% { transform: translateX(0px)   translateY(0px)   rotate(0deg); }
         }
 
-        /* All-arrows pulse keyframe — used after cycling completes */
-        @keyframes swipeArrowPulseAll {
-            0%,100% { opacity: 0.35; transform: scale(1); }
-            50%     { opacity: 1;    transform: scale(1.12); }
+        /* Spotlight hole also drifts (kept for sync, no visible shadow now) */
+        #swipeHintCardHole.drifting {
+            animation: swipeHintDrift 3.2s ease-in-out infinite;
         }
-
         /* Applied directly to the real .card element during the demo — grey wash */
         .card.swipeHintDrifting {
+            animation: swipeHintDrift 3.2s ease-in-out infinite;
             filter: brightness(1.6) saturate(0.1) contrast(0.7);
             transition: filter 0.3s ease;
         }
-        .card.swipeHintDrifting.drift-left  { animation: swipeHintDriftLeft  1.6s ease-in-out; }
-        .card.swipeHintDrifting.drift-right { animation: swipeHintDriftRight 1.6s ease-in-out; }
-        .card.swipeHintDrifting.drift-up    { animation: swipeHintDriftUp    1.6s ease-in-out; }
-        .card.swipeHintDrifting.drift-down  { animation: swipeHintDriftDown  1.6s ease-in-out; }
-
-        /* Arrows container matches card drift */
-        #swipeHintArrows.drift-left  { animation: swipeHintDriftLeft  1.6s ease-in-out; }
-        #swipeHintArrows.drift-right { animation: swipeHintDriftRight 1.6s ease-in-out; }
-        #swipeHintArrows.drift-up    { animation: swipeHintDriftUp    1.6s ease-in-out; }
-        #swipeHintArrows.drift-down  { animation: swipeHintDriftDown  1.6s ease-in-out; }
-
-        /* Individual directional arrows — hidden by default; position baked into inline style */
-        #swipeHintArrowLeft, #swipeHintArrowRight,
-        #swipeHintArrowUp, #swipeHintArrowDown {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
+        /* Arrows container drifts in sync with the card */
+        #swipeHintArrows.drifting {
+            animation: swipeHintDrift 3.2s ease-in-out infinite;
         }
-        #swipeHintArrows.drift-left  #swipeHintArrowLeft  { animation: swipeArrowFlashLeft  1.6s ease-in-out; }
-        #swipeHintArrows.drift-right #swipeHintArrowRight { animation: swipeArrowFlashRight 1.6s ease-in-out; }
-        #swipeHintArrows.drift-up    #swipeHintArrowUp    { animation: swipeArrowFlashUp    1.6s ease-in-out; }
-        #swipeHintArrows.drift-down  #swipeHintArrowDown  { animation: swipeArrowFlashDown  1.6s ease-in-out; }
-
-        /* All-pulse state: all four arrows visible and pulsing, card stays still */
-        #swipeHintArrows.all-pulse #swipeHintArrowLeft,
-        #swipeHintArrows.all-pulse #swipeHintArrowRight,
-        #swipeHintArrows.all-pulse #swipeHintArrowUp,
-        #swipeHintArrows.all-pulse #swipeHintArrowDown {
-            animation: swipeArrowPulseAll 1.4s ease-in-out infinite;
-        }
-        /* Stagger each arrow's pulse slightly for a breathing effect */
-        #swipeHintArrows.all-pulse #swipeHintArrowRight { animation-delay: 0.35s; }
-        #swipeHintArrows.all-pulse #swipeHintArrowUp    { animation-delay: 0.7s; }
-        #swipeHintArrows.all-pulse #swipeHintArrowDown  { animation-delay: 1.05s; }
-
         /* Finger inside arrows — no extra drift needed, parent handles it */
         #swipeHintFingerWrap {
             position: absolute;
@@ -2413,70 +2920,25 @@
         <div id="swipeHintCardHole"></div>
         <!-- Arrows + finger container: all drift together with the card -->
         <div id="swipeHintArrows">
-            <!--
-              All 4 arrows use the same 48×48 viewBox so they're visually the same size.
-              Each is positioned with top:50%;left:50% then shifted by a fixed OFFSET
-              in the relevant direction, so all four are equidistant from the center.
-              OFFSET = half the container half-dimension (AW=70) + some padding = 80px.
-              translateX/Y(-50%) re-centers each SVG on its anchor point.
-            -->
-            <!--
-              All 4 arrows are 48×48px identical SVGs.
-              The #swipeHintArrows container is 140×140px (AW=70 each side) centered on the card.
-              Arrows are anchored to the OUTSIDE of each container edge with a 12px gap,
-              so their far edge sits 12px beyond the container edge.
-              This means every arrow center is exactly (70 + 12 + 24) = 106px from the container center —
-              equal in all four directions → perfect even cross.
-              Horizontal arrows: right:100% → pushed 12px further out via translateX(-12px) / translateX(12px)
-              Vertical arrows:   bottom:100% / top:100% → pushed 12px via translateY
-            -->
-            <!-- LEFT arrow: anchored to left edge of container, 12px gap -->
-            <svg id="swipeHintArrowLeft"
-                 style="position:absolute; top:50%; right:100%;
-                        transform: translateY(-50%) translateX(-12px);"
-                 width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <defs><filter id="glow-l" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="2.5" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter></defs>
-                <line x1="44" y1="24" x2="8" y2="24" stroke="white" stroke-width="4" stroke-linecap="round" filter="url(#glow-l)"/>
-                <polyline points="22,10 6,24 22,38" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow-l)"/>
+            <!-- UP arrow -->
+            <svg style="position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(-6px);" width="28" height="40" viewBox="0 0 28 40" fill="none">
+                <line x1="14" y1="36" x2="14" y2="5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <polyline points="5,15 14,5 23,15" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
-            <!-- RIGHT arrow: anchored to right edge of container, 12px gap -->
-            <svg id="swipeHintArrowRight"
-                 style="position:absolute; top:50%; left:100%;
-                        transform: translateY(-50%) translateX(12px);"
-                 width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <defs><filter id="glow-r" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="2.5" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter></defs>
-                <line x1="4" y1="24" x2="40" y2="24" stroke="white" stroke-width="4" stroke-linecap="round" filter="url(#glow-r)"/>
-                <polyline points="26,10 42,24 26,38" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow-r)"/>
+            <!-- DOWN arrow -->
+            <svg style="position:absolute;top:100%;left:50%;transform:translateX(-50%) translateY(6px);" width="28" height="40" viewBox="0 0 28 40" fill="none">
+                <line x1="14" y1="4" x2="14" y2="35" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <polyline points="5,25 14,35 23,25" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
-            <!-- UP arrow: anchored to top edge of container, 12px gap -->
-            <svg id="swipeHintArrowUp"
-                 style="position:absolute; left:50%; bottom:100%;
-                        transform: translateX(-50%) translateY(-12px);"
-                 width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <defs><filter id="glow-u" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="2.5" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter></defs>
-                <line x1="24" y1="44" x2="24" y2="8" stroke="white" stroke-width="4" stroke-linecap="round" filter="url(#glow-u)"/>
-                <polyline points="10,22 24,6 38,22" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow-u)"/>
+            <!-- LEFT arrow -->
+            <svg style="position:absolute;right:100%;top:50%;transform:translateY(-50%) translateX(-6px);" width="40" height="28" viewBox="0 0 40 28" fill="none">
+                <line x1="36" y1="14" x2="5" y2="14" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <polyline points="15,5 5,14 15,23" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
-            <!-- DOWN arrow: anchored to bottom edge of container, 12px gap -->
-            <svg id="swipeHintArrowDown"
-                 style="position:absolute; left:50%; top:100%;
-                        transform: translateX(-50%) translateY(12px);"
-                 width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <defs><filter id="glow-d" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="2.5" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter></defs>
-                <line x1="24" y1="4" x2="24" y2="40" stroke="white" stroke-width="4" stroke-linecap="round" filter="url(#glow-d)"/>
-                <polyline points="10,26 24,42 38,26" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#glow-d)"/>
+            <!-- RIGHT arrow -->
+            <svg style="position:absolute;left:100%;top:50%;transform:translateY(-50%) translateX(6px);" width="40" height="28" viewBox="0 0 40 28" fill="none">
+                <line x1="4" y1="14" x2="35" y2="14" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <polyline points="25,5 35,14 25,23" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
             <!-- Finger icon — drifts with the card via parent animation -->
             <div id="swipeHintFingerWrap">
@@ -2857,11 +3319,26 @@
     </div>
 
     <div class="modal" id="createModal">
-        <div class="modal-content" id="createModalContent" style="position:relative;">
-            <button onclick="closeCreateModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
-            <h2 id="modalTitle">Create New Cards</h2>
+        <div class="modal-content" id="createModalContent">
+            <div class="create-modal-header">
+                <button type="button" onclick="closeCreateModal()" class="create-modal-close" aria-label="Close">✕</button>
+                <h2 id="modalTitle">Create New Cards</h2>
+                <div class="wizard-steps" id="createWizardSteps" role="tablist" aria-label="Create card steps">
+                    <button type="button" class="wizard-step active" id="wizardStepBtn1" data-step="1" onclick="createWizardGoTo(1)" role="tab" aria-selected="true">
+                        <span class="wizard-num">1</span>
+                        <span class="wizard-label">Cards</span>
+                    </button>
+                    <span class="wizard-connector" id="wizardConn1"></span>
+                    <button type="button" class="wizard-step" id="wizardStepBtn2" data-step="2" onclick="createWizardGoTo(2)" role="tab" aria-selected="false">
+                        <span class="wizard-num">2</span>
+                        <span class="wizard-label">Names</span>
+                    </button>
+                </div>
+                <p class="wizard-step-hint" id="wizardStepHint">Add images to get started</p>
+            </div>
 
-            <div class="form-group">
+            <div class="create-modal-body">
+            <div class="form-group image-upload-group">
                 <label id="modalLabel">Image</label>
                 <div class="upload-area-wrapper">
                     <div class="upload-area-main">
@@ -2900,8 +3377,8 @@
                 <input type="file" id="frontImage" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/heic,image/heif,image/avif" multiple title="Select up to 30 images (auto-compressed to 500KB)" onchange="handleImageUpload('front', this)">
             </div>
 
-            <div class="form-group">
-                <label>Card Name</label>
+            <div class="form-group card-name-group">
+                <label id="cardNameLabel">Card Name <span id="cardNameCount" class="card-name-count" style="display:none;"></span></label>
                 <textarea id="backText" autocapitalize="none" autocorrect="off" placeholder="Word or phrase..." disabled style="line-height:1.5;color:#222;"></textarea>
                 <div id="renameEditor" contenteditable="true" spellcheck="false"></div>
                 <div id="renameNamesList" role="list" aria-label="Edit card names">
@@ -2909,13 +3386,21 @@
                     <div id="renameNamesBody"></div>
                 </div>
             </div>
+            </div><!-- /.create-modal-body -->
 
-            <div class="form-actions">
-                <button class="btn btn-success" onclick="addCard()">Add Card</button>
-                <button class="btn btn-primary" id="addMoreButton" onclick="addMoreImages()" style="display: none;">➕ Add More</button>
-                <button class="btn btn-warning" id="renameButton" onclick="toggleRenameMode()" style="display: none;">✏️ Rename</button>
-                <button class="btn btn-info" id="renameMultipleButton" onclick="toggleMultiRenameMode()" style="display: none;">📝 Rename Multiple</button>
-                <button class="btn btn-secondary" onclick="closeCreateModal()" style="padding: 8px 12px;">Cancel</button>
+            <div class="form-actions create-modal-footer">
+                <div class="wizard-footer-nav">
+                    <button type="button" class="btn btn-secondary" id="wizardCancelBtn" onclick="closeCreateModal()" style="padding: 8px 12px;">Cancel</button>
+                    <button type="button" class="btn" id="wizardBackBtn" onclick="createWizardBack()" style="display: none;">← Back</button>
+                    <button type="button" class="btn" id="wizardNextBtn" onclick="createWizardNext()">Next →</button>
+                    <button type="button" class="btn" id="wizardCreateBtn" onclick="addCard()" style="display: none;">✓ Finish</button>
+                    <!-- Legacy controls kept for existing JS hooks; wizard UI manages real navigation -->
+                    <button class="btn btn-success" id="legacyCreateBtn" onclick="addCard()" style="display: none;">Add Card</button>
+                    <button class="btn btn-primary" id="addMoreButton" onclick="addMoreImages()" style="display: none;">➕ Add More</button>
+                    <button class="btn btn-warning" id="renameButton" onclick="toggleRenameMode()" style="display: none;">✏️ Rename</button>
+                    <button class="btn btn-info" id="renameMultipleButton" onclick="toggleMultiRenameMode()" style="display: none;">📝 Rename Multiple</button>
+                    <button class="btn btn-primary" id="reorderButton" onclick="toggleDragReorderMode()" style="display: none; background: #8b5cf6;">🔀 Reorder</button>
+                </div>
             </div>
         </div>
 
@@ -3871,6 +4356,52 @@
             return false;
         }
 
+        // Digital-device create UI: Paste + Add buttons (not the PC drag/drop panel)
+        function isDigitalDeviceLayout() {
+            if (isIPad()) return true;
+            // Touch-first tablets / phones (coarse pointer + multi-touch)
+            try {
+                if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+                    if (navigator.maxTouchPoints && navigator.maxTouchPoints > 1) return true;
+                }
+            } catch (e) { /* ignore */ }
+            return false;
+        }
+
+        // Empty-state layout: compact window until images are imported (desktop + digital)
+        function applyCreateUploadLayout() {
+            const modal = document.getElementById('createModal');
+            const wrapper = document.querySelector('#createModal .upload-area-wrapper') || document.querySelector('.upload-area-wrapper');
+            const ipadSection = document.getElementById('ipadPasteSection');
+            const helper = document.getElementById('ipadHelperText');
+            const hasImage = (typeof newCard !== 'undefined') && newCard && (
+                newCard.frontImage || (newCard.multipleFiles && newCard.multipleFiles.length > 0)
+            );
+            const digital = isDigitalDeviceLayout();
+
+            if (!hasImage) {
+                // Compact empty window on all platforms until import
+                if (modal) modal.classList.add('create-compact');
+                if (helper) helper.style.display = 'none';
+
+                if (digital) {
+                    // Digital: Paste + Add only
+                    if (wrapper) wrapper.classList.add('ipad-layout');
+                    if (ipadSection) ipadSection.style.display = 'grid';
+                } else {
+                    // Desktop: compact drag/drop panel (not full 92vh)
+                    if (wrapper) wrapper.classList.remove('ipad-layout');
+                    if (ipadSection) ipadSection.style.display = 'none';
+                }
+            } else {
+                // After images: expand to full create window
+                if (modal) modal.classList.remove('create-compact');
+                if (wrapper) wrapper.classList.remove('ipad-layout');
+                if (ipadSection) ipadSection.style.display = 'none';
+                if (helper) helper.style.display = 'none';
+            }
+        }
+
         // ==================== STATE ====================
         let cards = [];
         let isShuffling = false;
@@ -3981,6 +4512,12 @@
         let gameTimeout = null;
         let isRenameMode = false;
         let isMultiRenameMode = false;
+        let isDragReorderMode = false; // Mutual exclusion with rename modes
+        let _reorderDragIndex = null;  // Index of card being dragged
+        // Create New Cards wizard: 1=Cards (import+reorder+delete), 2=Names
+        let createWizardStep = 1;
+        let _wizardSyncing = false; // prevent re-entrancy when modes sync to steps
+        const CREATE_WIZARD_MAX_STEP = 2;
         let guessGameState = {
             currentCardIndex: 0,
             score: 0,
@@ -4995,36 +5532,340 @@
             document.body.style.overflow = 'hidden'; // Disable background scrolling
             document.getElementById('createModal').classList.add('active');
             resetForm();
+            createWizardStep = 1;
+            updateCreateWizardUI();
+            applyCreateUploadLayout();
 
             // Setup scroll indicator
             setTimeout(setupScrollIndicator, 100);
         }
 
+        // ===== Create New Cards step wizard (2 steps: Cards → Names) =====
+        function createWizardHasImages() {
+            return !!(newCard.multipleFiles && newCard.multipleFiles.length > 0);
+        }
+
+        function createWizardGoTo(step) {
+            step = parseInt(step, 10);
+            if (step < 1 || step > CREATE_WIZARD_MAX_STEP || step === createWizardStep) return;
+            if (step > 1 && !createWizardHasImages()) {
+                showToast('Add at least one image first', 2000);
+                return;
+            }
+            // Leaving Names: commit any open rename edits
+            if (createWizardStep === 2 && step !== 2) {
+                createWizardCommitNames();
+            }
+            // Leaving Cards: end reorder mode
+            if (createWizardStep === 1 && step !== 1) {
+                createWizardSetReorder(false);
+            }
+            createWizardStep = step;
+            updateCreateWizardUI();
+        }
+
+        function createWizardNext() {
+            if (createWizardStep >= CREATE_WIZARD_MAX_STEP) return;
+            if (!createWizardHasImages()) {
+                showToast('Add at least one image first', 2000);
+                return;
+            }
+            createWizardGoTo(createWizardStep + 1);
+        }
+
+        function createWizardBack() {
+            // Names → Cards (keep images)
+            if (createWizardStep === 2) {
+                createWizardGoTo(1);
+                return;
+            }
+            // Cards (with images) → empty Paste + Add page
+            if (createWizardStep === 1 && createWizardHasImages()) {
+                createWizardReturnToPasteAdd();
+                return;
+            }
+        }
+
+        // Clear imported images and return to compact Paste / Add + empty state
+        function createWizardReturnToPasteAdd() {
+            if (isDragReorderMode) {
+                isDragReorderMode = false;
+                _reorderDragIndex = null;
+                document.body.classList.remove('reorder-active-drag');
+            }
+            const createModal = document.getElementById('createModal');
+            if (createModal) createModal.classList.remove('reorder-mode-on');
+
+            if (_renameUIActive) {
+                try { createWizardCommitNames(); } catch (e) { _renameUIActive = false; }
+            }
+            _renameUIActive = false;
+
+            newCard.multipleFiles = null;
+            newCard.frontImage = null;
+            newCard.backText = '';
+            newCard.editedNames = null;
+
+            if (typeof clearPastePreview === 'function') clearPastePreview();
+
+            const frontUpload = document.getElementById('frontUpload');
+            if (frontUpload) frontUpload.classList.remove('has-image');
+            const frontImage = document.getElementById('frontImage');
+            if (frontImage) frontImage.value = '';
+
+            // Restore empty PC drop-zone content (hidden on digital; used on desktop)
+            const fp = document.getElementById('frontPreview');
+            if (fp) {
+                fp.innerHTML =
+                    '<p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p>' +
+                    '<p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p>' +
+                    '<p style="font-size: 0.95rem; color: #4caf50; margin-top: 10px; font-weight: 600;">✅ Images automatically compressed to 500KB each</p>';
+            }
+
+            const bt = document.getElementById('backText');
+            if (bt) {
+                bt.value = '';
+                bt.disabled = true;
+                bt.style.display = '';
+                bt.style.background = '#f8f9fa';
+                bt.style.border = '';
+            }
+            const rnl = document.getElementById('renameNamesList');
+            if (rnl) rnl.style.display = 'none';
+            const rnlBody = document.getElementById('renameNamesBody');
+            if (rnlBody) rnlBody.innerHTML = '';
+            const re = document.getElementById('renameEditor');
+            if (re) { re.style.display = 'none'; re.innerHTML = ''; }
+
+            createWizardStep = 1;
+            applyCreateUploadLayout();
+            updateCreateWizardUI();
+        }
+
+        function createWizardSetReorder(on) {
+            if (_wizardSyncing) return;
+            _wizardSyncing = true;
+            try {
+                const createModal = document.getElementById('createModal');
+                if (on) {
+                    // Reorder & Remove mode: dotted outlines + ✕; drag when 2+ images
+                    if (_renameUIActive) createWizardCommitNames();
+                    const wasOn = isDragReorderMode;
+                    isDragReorderMode = true;
+                    if (createModal) createModal.classList.add('reorder-mode-on');
+                    selectedImageIndex = null;
+                    if (!wasOn) renderImagePreviews();
+                } else {
+                    if (isDragReorderMode) {
+                        isDragReorderMode = false;
+                        _reorderDragIndex = null;
+                        if (createModal) createModal.classList.remove('reorder-mode-on');
+                        document.body.classList.remove('reorder-active-drag');
+                        renderImagePreviews();
+                    } else if (createModal) {
+                        createModal.classList.remove('reorder-mode-on');
+                    }
+                }
+            } finally {
+                _wizardSyncing = false;
+            }
+        }
+
+        function createWizardCommitNames() {
+            if (!_renameUIActive) return;
+            _wizardSyncing = true;
+            try {
+                // Reuse toggleRenameMode exit path
+                if (_renameUIActive) toggleRenameMode();
+            } finally {
+                _wizardSyncing = false;
+            }
+        }
+
+        function createWizardEnterNames() {
+            if (_wizardSyncing) return;
+            if (_renameUIActive) return; // already editing
+            _wizardSyncing = true;
+            try {
+                // Ensure name preview text is populated from current files
+                if (newCard.multipleFiles && newCard.multipleFiles.length > 0) {
+                    const bt = document.getElementById('backText');
+                    if (bt && (!bt.value || bt.value.trim().length < 3 || bt.value.indexOf('.') === -1)) {
+                        // Rebuild name list text without leaving wizard step
+                        const files = newCard.multipleFiles;
+                        const fileNames = [];
+                        for (let i = 0; i < files.length; i++) {
+                            if (newCard.editedNames && newCard.editedNames[i]) {
+                                fileNames.push(newCard.editedNames[i]);
+                            } else {
+                                fileNames.push(files[i].name.replace(/\.[^/.]+$/, ''));
+                            }
+                        }
+                        bt.value = '📝 Edit names:\n\n' + fileNames.map((name, i) => (i + 1) + '. ' + name).join('\n');
+                    }
+                }
+                if (!_renameUIActive) {
+                    toggleRenameMode();
+                }
+            } finally {
+                _wizardSyncing = false;
+            }
+        }
+
+        function updateCreateWizardUI() {
+            const modal = document.getElementById('createModal');
+            if (!modal) return;
+
+            // Step class on modal (1 = Cards, 2 = Names)
+            modal.classList.remove('wizard-step-1', 'wizard-step-2', 'wizard-step-3');
+            modal.classList.add('wizard-step-' + createWizardStep);
+
+            const hasImages = createWizardHasImages();
+            const count = hasImages ? newCard.multipleFiles.length : 0;
+
+            // Step pills (2 steps only)
+            for (let i = 1; i <= CREATE_WIZARD_MAX_STEP; i++) {
+                const btn = document.getElementById('wizardStepBtn' + i);
+                if (!btn) continue;
+                btn.classList.remove('active', 'done');
+                btn.setAttribute('aria-selected', i === createWizardStep ? 'true' : 'false');
+                if (i === createWizardStep) btn.classList.add('active');
+                else if (i < createWizardStep) btn.classList.add('done');
+                // Names disabled until images exist
+                btn.disabled = (i > 1 && !hasImages);
+            }
+            const c1 = document.getElementById('wizardConn1');
+            if (c1) c1.classList.toggle('done', createWizardStep > 1);
+
+            // Hint + title
+            const hint = document.getElementById('wizardStepHint');
+            const title = document.getElementById('modalTitle');
+            const label = document.getElementById('modalLabel');
+            if (createWizardStep === 1) {
+                if (title) title.textContent = 'Create New Cards';
+                if (label) label.textContent = hasImages ? ('Cards (' + count + ')') : 'Add images';
+                if (hint) {
+                    if (!hasImages) {
+                        hint.textContent = 'Add images to get started';
+                    } else if (isDragReorderMode) {
+                        hint.textContent = 'Drag to reorder · tap ✕ to remove · Done when finished';
+                    } else {
+                        hint.textContent = 'Add More anytime · use Reorder & Remove to arrange';
+                    }
+                }
+            } else {
+                if (title) title.textContent = 'Card Names';
+                if (label) label.textContent = 'Names';
+                if (hint) hint.textContent = 'Edit names, then finish';
+            }
+
+            // Card Name header count — Names page only (e.g. "Card Name  (12)")
+            const cardNameCount = document.getElementById('cardNameCount');
+            if (cardNameCount) {
+                if (createWizardStep === 2 && hasImages) {
+                    cardNameCount.textContent = '(' + count + ')';
+                    cardNameCount.style.display = 'inline';
+                } else {
+                    cardNameCount.textContent = '';
+                    cardNameCount.style.display = 'none';
+                }
+            }
+
+            // Footer buttons — Cancel always leftmost
+            // Cards (with images): [Cancel] [Back] [Next]
+            // Names:               [Cancel] [Back] [Finish]
+            const backBtn = document.getElementById('wizardBackBtn');
+            const nextBtn = document.getElementById('wizardNextBtn');
+            const createBtn = document.getElementById('wizardCreateBtn');
+            const showBack = (createWizardStep === 2) || (createWizardStep === 1 && hasImages);
+            // Use explicit display values (not '') so CSS cannot hide Finish again
+            if (backBtn) backBtn.style.display = showBack ? 'block' : 'none';
+            if (nextBtn) {
+                nextBtn.style.display = createWizardStep < CREATE_WIZARD_MAX_STEP ? 'block' : 'none';
+                nextBtn.disabled = !hasImages;
+            }
+            if (createBtn) {
+                const showFinish = (createWizardStep === 2 && hasImages);
+                createBtn.style.display = showFinish ? 'block' : 'none';
+                createBtn.textContent = '✓ Finish';
+            }
+
+            // Hide legacy mode buttons in wizard footer (modes driven by steps)
+            ['renameButton', 'renameMultipleButton', 'reorderButton', 'addMoreButton', 'legacyCreateBtn'].forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+
+            // Step 1 = import (optional Reorder & Remove); Step 2 = names
+            if (createWizardStep === 1) {
+                if (_renameUIActive && !_wizardSyncing) createWizardCommitNames();
+                // Do NOT auto-enable arrange mode — user toggles via toolbar button
+                if (!hasImages && isDragReorderMode) createWizardSetReorder(false);
+            } else {
+                if (isDragReorderMode) createWizardSetReorder(false);
+                createWizardEnterNames();
+            }
+
+            setTimeout(setupScrollIndicator, 80);
+        }
+
+        // Toggle combined reorder + remove mode (dotted outline + ✕ buttons)
+        function toggleArrangeMode(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (!createWizardHasImages()) {
+                showToast('Add images first', 2000);
+                return;
+            }
+            if (isDragReorderMode) {
+                createWizardSetReorder(false);
+            } else {
+                // Allow even with 1 image so user can still remove via ✕
+                if (_renameUIActive) createWizardCommitNames();
+                isDragReorderMode = true;
+                const createModal = document.getElementById('createModal');
+                if (createModal) createModal.classList.add('reorder-mode-on');
+                selectedImageIndex = null;
+                renderImagePreviews();
+            }
+            if (typeof updateCreateWizardUI === 'function') {
+                // Refresh hint text only (avoid thrashing modes)
+                const hint = document.getElementById('wizardStepHint');
+                const count = newCard.multipleFiles ? newCard.multipleFiles.length : 0;
+                if (hint && createWizardStep === 1) {
+                    if (isDragReorderMode) {
+                        hint.textContent = 'Drag to reorder · tap ✕ to remove · Done when finished';
+                    } else {
+                        hint.textContent = 'Add More anytime · use Reorder & Remove to arrange';
+                    }
+                }
+            }
+        }
+
         let scrollIndicatorTimeout = null;
 
         function setupScrollIndicator() {
-            const modalContent = document.getElementById('createModalContent');
+            // Create modal no longer scrolls as a whole (sticky footer layout).
+            // Point the indicator at the image grid or card-name area if either scrolls.
             const indicator = document.getElementById('scrollIndicator');
+            const modalContent = document.getElementById('createModalContent');
+            if (!indicator) return;
 
-            if (!modalContent || !indicator) return;
+            if (modalContent) {
+                modalContent.removeEventListener('scroll', handleModalScroll);
+            }
 
-            // Remove any existing scroll listener
-            modalContent.removeEventListener('scroll', handleModalScroll);
+            const grid = document.getElementById('imagePreviewGrid');
+            const nameArea = document.getElementById('backText');
+            const scrollEl = (grid && grid.scrollHeight > grid.clientHeight + 4) ? grid
+                : (nameArea && nameArea.scrollHeight > nameArea.clientHeight + 4) ? nameArea
+                : null;
 
-            // Check if content is scrollable
-            const isScrollable = modalContent.scrollHeight > modalContent.clientHeight;
-
-            if (isScrollable) {
-                // Show indicator if at top
-                if (modalContent.scrollTop < 50) {
-                    indicator.style.display = 'block';
-                    indicator.style.opacity = '0.4';
-                } else {
-                    indicator.style.display = 'none';
-                }
-
-                // Add scroll listener
-                modalContent.addEventListener('scroll', handleModalScroll);
+            if (scrollEl && scrollEl.scrollTop < 50) {
+                indicator.style.display = 'block';
+                indicator.style.opacity = '0.4';
             } else {
                 indicator.style.display = 'none';
             }
@@ -5303,34 +6144,58 @@
                 renameButton.textContent = '✏️ Rename';
                 renameButton.classList.remove('btn-success');
                 renameButton.classList.add('btn-warning');
+                renameButton.disabled = false;
+                renameButton.style.opacity = '';
+                renameButton.style.cursor = '';
+                renameButton.title = '';
             }
 
             // Hide rename multiple button
             const renameMultiButton = document.getElementById('renameMultipleButton');
             if (renameMultiButton) {
                 renameMultiButton.style.display = 'none';
+                renameMultiButton.disabled = false;
+                renameMultiButton.style.opacity = '';
+                renameMultiButton.style.cursor = '';
+                renameMultiButton.title = '';
             }
+
+            // Hide and reset reorder button
+            const reorderButton = document.getElementById('reorderButton');
+            if (reorderButton) {
+                reorderButton.style.display = 'none';
+                reorderButton.textContent = '🔀 Reorder';
+                reorderButton.style.background = '#8b5cf6';
+            }
+            isDragReorderMode = false;
+            _reorderDragIndex = null;
+            createWizardStep = 1;
+            _wizardSyncing = false;
+            const createModalEl = document.getElementById('createModal');
+            if (createModalEl) {
+                createModalEl.classList.remove('reorder-mode-on', 'wizard-step-1', 'wizard-step-2', 'wizard-step-3', 'create-compact');
+                createModalEl.classList.add('wizard-step-1');
+            }
+            // (wizard UI refreshed by openCreateModal / updateCreateWizardUI)
+            document.body.classList.remove('reorder-active-drag');
 
             // Hide add more button
             const addMoreButton = document.getElementById('addMoreButton');
             if (addMoreButton) {
                 addMoreButton.style.display = 'none';
             }
-
-            // Device detection - show/hide iPad paste section
-            const ipadPasteSection = document.getElementById('ipadPasteSection');
-            const ipadHelperText = document.getElementById('ipadHelperText');
-            const uploadAreaWrapper = document.querySelector('.upload-area-wrapper');
-            
-            if (isIPad()) {
-                if (ipadPasteSection) ipadPasteSection.style.display = 'grid';
-                if (ipadHelperText) ipadHelperText.style.display = 'block';
-                if (uploadAreaWrapper) uploadAreaWrapper.classList.add('ipad-layout');
-            } else {
-                if (ipadPasteSection) ipadPasteSection.style.display = 'none';
-                if (ipadHelperText) ipadHelperText.style.display = 'none';
-                if (uploadAreaWrapper) uploadAreaWrapper.classList.remove('ipad-layout');
+            const wizardCreateBtn = document.getElementById('wizardCreateBtn');
+            if (wizardCreateBtn) wizardCreateBtn.style.display = 'none';
+            const wizardBackBtn = document.getElementById('wizardBackBtn');
+            if (wizardBackBtn) wizardBackBtn.style.display = 'none';
+            const wizardNextBtn = document.getElementById('wizardNextBtn');
+            if (wizardNextBtn) {
+                wizardNextBtn.style.display = '';
+                wizardNextBtn.disabled = true;
             }
+
+            // Digital device: Paste + Add only; desktop: drag/drop panel
+            applyCreateUploadLayout();
         }
 
         // Desktop: one-click clipboard read. On iPad the user long-presses the
@@ -5416,20 +6281,8 @@
         }
 
         function syncIpadLayoutForImages() {
-            if (!isIPad()) return;
-            const wrapper = document.querySelector('.upload-area-wrapper');
-            const ipadSection = document.getElementById('ipadPasteSection');
-            const helper = document.getElementById('ipadHelperText');
-            const hasImage = (typeof newCard !== 'undefined') && newCard && (newCard.frontImage || (newCard.multipleFiles && newCard.multipleFiles.length > 0));
-            if (hasImage) {
-                if (wrapper) wrapper.classList.remove('ipad-layout');
-                if (ipadSection) ipadSection.style.display = 'none';
-                if (helper) helper.style.display = 'none';
-            } else {
-                if (wrapper) wrapper.classList.add('ipad-layout');
-                if (ipadSection) ipadSection.style.display = 'grid';
-                if (helper) helper.style.display = 'block';
-            }
+            // Keep legacy name; now covers all digital-device create layouts
+            applyCreateUploadLayout();
         }
 
         // Reset the Paste button back to its icon + label.
@@ -5497,24 +6350,25 @@
             // iPad: now that we have images, swap to PC-style preview layout
             syncIpadLayoutForImages();
 
-            let previewHTML = '<div style="text-align: center; padding: 10px 5px;">';
+            let previewHTML = '<div style="text-align: center; padding: 6px 4px; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; width: 100%; box-sizing: border-box;">';
 
-            // Only show image count and button if NOT in rename mode
+            // Toolbar: Add More + Reorder & Remove (no "# selected" label)
             if (!isRenameMode) {
                 const totalCards = cards.length + files.length;
                 const showAddButton = totalCards < 30;
+                const arrangeActive = isDragReorderMode;
 
-                previewHTML += '<div style="display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 8px;">';
-                previewHTML += '<p style="font-size: 1.2rem; font-weight: bold; color: #35654D; margin: 0;">' + files.length + ' selected</p>';
-
+                previewHTML += '<div class="preview-toolbar">';
                 if (showAddButton) {
-                    previewHTML += '<button onclick="addMoreImages(); event.stopPropagation();" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">➕ Add More</button>';
+                    previewHTML += '<button type="button" class="preview-toolbar-btn add-more" onclick="addMoreImages(); event.stopPropagation();">➕ Add More</button>';
                 }
-
+                previewHTML += '<button type="button" class="preview-toolbar-btn arrange' + (arrangeActive ? ' active' : '') + '" id="arrangeModeBtn" onclick="toggleArrangeMode(event);">' +
+                    (arrangeActive ? '✓ Done' : '🔀 Reorder & Remove') +
+                    '</button>';
                 previewHTML += '</div>';
             }
 
-            previewHTML += '<div id="imagePreviewGrid" class="responsive-grid" style="display: grid; gap: 12px; max-height: 550px; overflow-y: auto; padding: 5px;"></div>';
+            previewHTML += '<div id="imagePreviewGrid" class="responsive-grid" style="display: grid; gap: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 5px;"></div>';
             previewHTML += '</div>';
 
             document.getElementById('frontPreview').innerHTML = previewHTML;
@@ -5568,6 +6422,7 @@
                 const container = document.createElement('div');
                 container.className = 'preview-image-container';
                 container.dataset.index = i;
+                container.dataset.origIndex = i; // stable file identity until next full re-render
                 container.style.minHeight = '100px'; // Prevent layout shift
                 containers.push(container);
                 grid.appendChild(container);
@@ -5580,28 +6435,38 @@
 
                 // Use compressed image for preview
                 compressImage(file, 500).then(compressedData => {
-                    // Only show X button if NOT in rename mode
-                    const deleteButton = isRenameMode ? '' : '<div class="preview-image-delete" onclick="event.preventDefault(); event.stopPropagation(); deletePreviewImage(' + i + ');">✕</div>';
+                    // ✕ only in Reorder & Remove mode — use dataset.index so order stays correct after live reorder
+                    const deleteButton = (isRenameMode || !isDragReorderMode)
+                        ? ''
+                        : '<div class="preview-image-delete" title="Remove" onclick="event.preventDefault(); event.stopPropagation(); deletePreviewImage(parseInt(this.parentElement.dataset.index,10));" onpointerdown="event.stopPropagation();">✕</div>';
 
                     container.innerHTML = `
                         <img src="${compressedData}" style="width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px;" draggable="false">
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7), 0 0 3px rgba(0, 0, 0, 0.5); pointer-events: none;">
+                        <div class="preview-card-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7), 0 0 3px rgba(0, 0, 0, 0.5); pointer-events: none;">
                             ${i + 1}
                         </div>
                         ${deleteButton}
                     `;
 
-                    container.onclick = function(event) {
-                        if (!event.target.classList.contains('preview-image-delete')) {
-                            toggleImageSelection(i);
+                    // Reorder & Remove mode: dotted outline + drag (2+) + ✕
+                    if (isDragReorderMode) {
+                        container.classList.add('reorder-enabled');
+                        container.onclick = null;
+                        container.ondragstart = function(e) { e.preventDefault(); return false; };
+                        if (files.length >= 2) {
+                            _attachReorderPointerEvents(container, i);
                         }
-                    };
-
-                    // Prevent drag and drop on images
-                    container.ondragstart = function(e) {
-                        e.preventDefault();
-                        return false;
-                    };
+                    } else {
+                        container.onclick = function(event) {
+                            if (!event.target.classList.contains('preview-image-delete')) {
+                                toggleImageSelection(i);
+                            }
+                        };
+                        container.ondragstart = function(e) {
+                            e.preventDefault();
+                            return false;
+                        };
+                    }
                 }).catch(err => {
                     console.error('Preview compression failed:', err);
                 });
@@ -5638,8 +6503,10 @@
             files.splice(index, 1);
 
             if (files.length === 0) {
-                // No files left, reset
+                // No files left, reset back to empty Import step
                 resetForm();
+                createWizardStep = 1;
+                if (typeof updateCreateWizardUI === 'function') updateCreateWizardUI();
                 return;
             }
 
@@ -5686,10 +6553,11 @@
                 }
             }, 50);
 
-            // Update button text
-            const addButton = document.querySelector('.form-actions .btn-success');
-            if (addButton) {
-                addButton.textContent = '✨ Create';
+            // Update wizard footer / create label
+            if (typeof updateCreateWizardUI === 'function') updateCreateWizardUI();
+            else {
+                const addButton = document.getElementById('wizardCreateBtn') || document.querySelector('.form-actions .btn-success');
+                if (addButton) addButton.textContent = '✨ Create';
             }
         }
 
@@ -5699,6 +6567,12 @@
             const backTextElement = document.getElementById('backText');
             const renameEditor    = document.getElementById('renameEditor');
             const renameButton    = document.getElementById('renameButton');
+
+            // Mutual exclusion with drag-reorder mode
+            if (!_renameUIActive && isDragReorderMode) {
+                alert('Please finish reordering first before renaming.');
+                return;
+            }
 
             if (!_renameUIActive) {
                 _renameUIActive = true;
@@ -6074,6 +6948,12 @@
         function toggleMultiRenameMode() {
             const renameMultiButton = document.getElementById('renameMultipleButton');
 
+            // Mutual exclusion with drag-reorder mode
+            if (!isMultiRenameMode && isDragReorderMode) {
+                alert('Please finish reordering first before renaming.');
+                return;
+            }
+
             if (!isMultiRenameMode) {
                 // Switch to multi-rename mode
                 isMultiRenameMode = true;
@@ -6157,6 +7037,459 @@
                 }
             }
         }
+
+        // ===== Drag-to-reorder for Create New Cards preview =====
+        function toggleDragReorderMode() {
+            const reorderButton   = document.getElementById('reorderButton');
+            const renameButton    = document.getElementById('renameButton');
+            const renameMultiBtn  = document.getElementById('renameMultipleButton');
+
+            if (!isDragReorderMode) {
+                // Mutual exclusion: reject if any rename mode is active
+                if (_renameUIActive || isMultiRenameMode || isRenameMode) {
+                    alert('Please finish renaming first before reordering images.');
+                    return;
+                }
+                if (!newCard.multipleFiles || newCard.multipleFiles.length < 2) {
+                    alert('Add at least 2 images to reorder.');
+                    return;
+                }
+
+                isDragReorderMode = true;
+
+                // Update button appearance
+                if (reorderButton) {
+                    reorderButton.textContent = '✓ Done Reorder';
+                    reorderButton.style.background = '#10b981';
+                }
+
+                // Mark modal so CSS can reduce accidental scroll during reorder
+                const createModal = document.getElementById('createModal');
+                if (createModal) createModal.classList.add('reorder-mode-on');
+
+                // Disable rename buttons visually + functionally while reordering
+                if (renameButton) {
+                    renameButton.disabled = true;
+                    renameButton.style.opacity = '0.4';
+                    renameButton.style.cursor = 'not-allowed';
+                    renameButton.title = 'Finish reordering first';
+                }
+                if (renameMultiBtn) {
+                    renameMultiBtn.disabled = true;
+                    renameMultiBtn.style.opacity = '0.4';
+                    renameMultiBtn.style.cursor = 'not-allowed';
+                    renameMultiBtn.title = 'Finish reordering first';
+                }
+
+                // Clear any current selection
+                selectedImageIndex = null;
+
+                // Re-render with drag handlers attached
+                renderImagePreviews();
+
+            } else {
+                isDragReorderMode = false;
+                _reorderDragIndex = null;
+
+                const createModal = document.getElementById('createModal');
+                if (createModal) createModal.classList.remove('reorder-mode-on');
+                document.body.classList.remove('reorder-active-drag');
+
+                if (reorderButton) {
+                    reorderButton.textContent = '🔀 Reorder';
+                    reorderButton.style.background = '#8b5cf6';
+                }
+
+                // Re-enable rename buttons
+                if (renameButton) {
+                    renameButton.disabled = false;
+                    renameButton.style.opacity = '';
+                    renameButton.style.cursor = '';
+                    renameButton.title = '';
+                }
+                if (renameMultiBtn) {
+                    renameMultiBtn.disabled = false;
+                    renameMultiBtn.style.opacity = '';
+                    renameMultiBtn.style.cursor = '';
+                    renameMultiBtn.title = '';
+                }
+
+                // Re-render without drag handlers, restore delete buttons
+                renderImagePreviews();
+            }
+        }
+
+        // Sync multipleFiles + editedNames from current DOM order (no image re-render).
+        // Uses data-orig-index captured at last full render as file identity.
+        function commitPreviewOrderFromDom() {
+            const grid = document.getElementById('imagePreviewGrid');
+            if (!grid || !newCard.multipleFiles) return;
+            const nodes = Array.from(grid.querySelectorAll('.preview-image-container'));
+            if (!nodes.length) return;
+
+            const oldFiles = Array.from(newCard.multipleFiles);
+            const newFiles = [];
+            const newNames = [];
+            const hadNames = !!(newCard.editedNames && newCard.editedNames.length);
+
+            if (hadNames) {
+                while (newCard.editedNames.length < oldFiles.length) {
+                    const idx = newCard.editedNames.length;
+                    newCard.editedNames.push(oldFiles[idx].name.replace(/\.[^/.]+$/, ''));
+                }
+            }
+
+            nodes.forEach(function(node, i) {
+                let orig = parseInt(node.dataset.origIndex, 10);
+                if (isNaN(orig) || orig < 0 || orig >= oldFiles.length) {
+                    orig = parseInt(node.dataset.index, 10);
+                }
+                if (isNaN(orig) || orig < 0 || orig >= oldFiles.length) orig = i;
+                newFiles.push(oldFiles[orig]);
+                if (hadNames) newNames.push(newCard.editedNames[orig]);
+                node.dataset.origIndex = String(i);
+                node.dataset.index = String(i);
+                const num = node.querySelector('.preview-card-num');
+                if (num) num.textContent = String(i + 1);
+            });
+
+            try {
+                const dt = new DataTransfer();
+                newFiles.forEach(function(f) { dt.items.add(f); });
+                newCard.multipleFiles = dt.files;
+            } catch (e) {
+                newCard.multipleFiles = newFiles;
+            }
+            if (hadNames) newCard.editedNames = newNames;
+
+            // Keep name preview textarea in sync if visible (no structured rename open)
+            if (!_renameUIActive && !isRenameMode) {
+                const bt = document.getElementById('backText');
+                if (bt) {
+                    const names = hadNames ? newNames : newFiles.map(function(f) {
+                        return f.name.replace(/\.[^/.]+$/, '');
+                    });
+                    bt.value = '📝 Card names preview:\n\n' + names.map(function(n, i) {
+                        return (i + 1) + '. ' + n;
+                    }).join('\n');
+                }
+            }
+        }
+
+        // Move the file at `fromIdx` so it lands at `toIdx` (insertion semantics).
+        // Prefer silent DOM+data update; optional full re-render only if grid missing.
+        function reorderPreviewImages(fromIdx, toIdx) {
+            if (!newCard.multipleFiles) return;
+            const filesArr = Array.from(newCard.multipleFiles);
+            if (fromIdx < 0 || fromIdx >= filesArr.length) return;
+            if (toIdx   < 0 || toIdx   >= filesArr.length) return;
+            if (fromIdx === toIdx) return;
+
+            const grid = document.getElementById('imagePreviewGrid');
+            if (grid && grid.querySelectorAll('.preview-image-container').length === filesArr.length) {
+                // Data already matches DOM after live reorder — just commit
+                commitPreviewOrderFromDom();
+                return;
+            }
+
+            const [movedFile] = filesArr.splice(fromIdx, 1);
+            filesArr.splice(toIdx, 0, movedFile);
+
+            if (newCard.editedNames && newCard.editedNames.length > 0) {
+                const orig = Array.from(newCard.multipleFiles);
+                while (newCard.editedNames.length < orig.length) {
+                    const idx = newCard.editedNames.length;
+                    newCard.editedNames.push(orig[idx].name.replace(/\.[^/.]+$/, ''));
+                }
+                const [movedName] = newCard.editedNames.splice(fromIdx, 1);
+                newCard.editedNames.splice(toIdx, 0, movedName);
+            }
+
+            try {
+                const dt = new DataTransfer();
+                filesArr.forEach(f => dt.items.add(f));
+                newCard.multipleFiles = dt.files;
+            } catch (e) {
+                newCard.multipleFiles = filesArr;
+            }
+
+            // Fallback only: full re-render
+            const scrollTop = grid ? grid.scrollTop : 0;
+            renderImagePreviews();
+            setTimeout(function() {
+                const g2 = document.getElementById('imagePreviewGrid');
+                if (g2) g2.scrollTop = scrollTop;
+            }, 0);
+        }
+
+        // ===== Pointer drag engine — live iPhone-style shift (no image refresh) =====
+        (function() {
+            let _dragEl     = null;
+            let _clone      = null;
+            let _startX     = 0;
+            let _startY     = 0;
+            let _offsetX    = 0;
+            let _offsetY    = 0;
+            let _moved      = false;
+            let _scrollLock = null;
+            let _pointerId  = null;
+            let _lastToIdx  = null; // last live target index
+
+            const THRESHOLD = 6;
+
+            window._attachReorderPointerEvents = function(container) {
+                container.addEventListener('pointerdown', onDown, { passive: false });
+            };
+
+            function getScrollParents() {
+                return [
+                    document.getElementById('createModal'),
+                    document.getElementById('createModalContent'),
+                    document.getElementById('imagePreviewGrid'),
+                    document.scrollingElement || document.documentElement
+                ].filter(Boolean);
+            }
+
+            function lockScroll() {
+                if (_scrollLock) return;
+                const parents = getScrollParents();
+                _scrollLock = parents.map(function(el) {
+                    return { el: el, top: el.scrollTop, left: el.scrollLeft };
+                });
+                document.body.classList.add('reorder-active-drag');
+                _scrollLock.forEach(function(s) {
+                    s.el.scrollTop = s.top;
+                    s.el.scrollLeft = s.left;
+                });
+                document.addEventListener('wheel', preventScrollEvent, { passive: false, capture: true });
+                document.addEventListener('touchmove', preventScrollEvent, { passive: false, capture: true });
+                document.addEventListener('scroll', freezeScrollPositions, { passive: false, capture: true });
+            }
+
+            function unlockScroll() {
+                document.body.classList.remove('reorder-active-drag');
+                document.removeEventListener('wheel', preventScrollEvent, { capture: true });
+                document.removeEventListener('touchmove', preventScrollEvent, { capture: true });
+                document.removeEventListener('scroll', freezeScrollPositions, { capture: true });
+                if (_scrollLock) {
+                    _scrollLock.forEach(function(s) {
+                        try {
+                            s.el.scrollTop = s.top;
+                            s.el.scrollLeft = s.left;
+                        } catch (err) { /* ignore */ }
+                    });
+                }
+                _scrollLock = null;
+            }
+
+            function preventScrollEvent(e) {
+                if (!_dragEl) return;
+                e.preventDefault();
+            }
+
+            function freezeScrollPositions() {
+                if (!_scrollLock) return;
+                _scrollLock.forEach(function(s) {
+                    if (s.el.scrollTop !== s.top) s.el.scrollTop = s.top;
+                    if (s.el.scrollLeft !== s.left) s.el.scrollLeft = s.left;
+                });
+            }
+
+            function getGridItems() {
+                const grid = document.getElementById('imagePreviewGrid');
+                if (!grid) return [];
+                return Array.from(grid.querySelectorAll('.preview-image-container'));
+            }
+
+            // FLIP animate siblings as the dragged card's slot moves in the grid
+            function liveReorderTo(toIdx) {
+                const grid = document.getElementById('imagePreviewGrid');
+                if (!grid || !_dragEl) return;
+                const items = getGridItems();
+                const fromIdx = items.indexOf(_dragEl);
+                if (fromIdx < 0 || toIdx < 0 || toIdx >= items.length || fromIdx === toIdx) return;
+                if (_lastToIdx === toIdx) return;
+                _lastToIdx = toIdx;
+
+                // FIRST: positions before DOM change
+                const first = new Map();
+                items.forEach(function(el) {
+                    first.set(el, el.getBoundingClientRect());
+                });
+
+                // Reorder DOM
+                items.splice(fromIdx, 1);
+                items.splice(toIdx, 0, _dragEl);
+                items.forEach(function(el) { grid.appendChild(el); });
+
+                // LAST + invert + play (skip dragged placeholder — ghost handles it)
+                items.forEach(function(el) {
+                    if (el === _dragEl) return;
+                    const f = first.get(el);
+                    if (!f) return;
+                    const l = el.getBoundingClientRect();
+                    const dx = f.left - l.left;
+                    const dy = f.top - l.top;
+                    if (!dx && !dy) return;
+                    el.classList.add('reorder-shifting');
+                    el.style.transition = 'none';
+                    el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+                    // force reflow
+                    void el.offsetWidth;
+                    el.style.transition = 'transform 0.28s cubic-bezier(0.2, 0.85, 0.25, 1)';
+                    el.style.transform = '';
+                    const clearShift = function() {
+                        el.classList.remove('reorder-shifting');
+                        el.style.transition = '';
+                        el.removeEventListener('transitionend', clearShift);
+                    };
+                    el.addEventListener('transitionend', clearShift);
+                    setTimeout(clearShift, 320);
+                });
+
+                // Update visible numbers only (no image reload)
+                getGridItems().forEach(function(el, i) {
+                    el.dataset.index = String(i);
+                    const num = el.querySelector('.preview-card-num');
+                    if (num) num.textContent = String(i + 1);
+                });
+            }
+
+            function onDown(e) {
+                if (!isDragReorderMode) return;
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                if (e.target && e.target.closest && e.target.closest('.preview-image-delete')) return;
+                e.preventDefault();
+
+                _dragEl  = e.currentTarget;
+                _moved   = false;
+                _pointerId = e.pointerId;
+                _lastToIdx = null;
+
+                try {
+                    if (_dragEl.setPointerCapture) _dragEl.setPointerCapture(e.pointerId);
+                } catch (err) { /* ignore */ }
+
+                const r  = _dragEl.getBoundingClientRect();
+                _startX  = e.clientX;
+                _startY  = e.clientY;
+                _offsetX = e.clientX - r.left;
+                _offsetY = e.clientY - r.top;
+
+                lockScroll();
+
+                document.addEventListener('pointermove',   onMove,  { passive: false });
+                document.addEventListener('pointerup',     onUp,    { passive: false });
+                document.addEventListener('pointercancel', onUp,    { passive: false });
+            }
+
+            function onMove(e) {
+                if (!_dragEl) return;
+                e.preventDefault();
+                freezeScrollPositions();
+
+                if (!_moved) {
+                    if (Math.abs(e.clientX - _startX) < THRESHOLD &&
+                        Math.abs(e.clientY - _startY) < THRESHOLD) return;
+                    _moved = true;
+                    _dragEl.classList.add('reorder-dragging');
+                    const r = _dragEl.getBoundingClientRect();
+                    _clone = _dragEl.cloneNode(true);
+                    _clone.classList.remove('reorder-dragging');
+                    _clone.style.cssText = [
+                        'position:fixed', 'z-index:99999', 'pointer-events:none',
+                        'width:'  + r.width  + 'px',
+                        'height:' + r.height + 'px',
+                        'left:'   + r.left   + 'px',
+                        'top:'    + r.top    + 'px',
+                        'opacity:0.92',
+                        'box-shadow:0 12px 28px rgba(0,0,0,0.35)',
+                        'border-radius:8px', 'transform:scale(1.08)', 'transition:none',
+                        'outline:3px solid #8b5cf6',
+                    ].join(';');
+                    document.body.appendChild(_clone);
+                }
+
+                if (!_clone) return;
+                _clone.style.left = (e.clientX - _offsetX) + 'px';
+                _clone.style.top  = (e.clientY - _offsetY) + 'px';
+
+                // Hit-test (hide ghost so it does not block)
+                _clone.style.visibility = 'hidden';
+                const el = document.elementFromPoint(e.clientX, e.clientY);
+                _clone.style.visibility = '';
+
+                const hit = el ? el.closest('.preview-image-container.reorder-enabled') : null;
+                if (!hit) return;
+
+                const items = getGridItems();
+                const hitIdx = items.indexOf(hit);
+                const dragIdx = items.indexOf(_dragEl);
+                if (hitIdx < 0 || dragIdx < 0) return;
+
+                const rect = hit.getBoundingClientRect();
+                // Use both axes for grid: prefer dominant edge of the cell
+                const midX = rect.left + rect.width / 2;
+                const midY = rect.top + rect.height / 2;
+                const afterX = e.clientX >= midX;
+                const afterY = e.clientY >= midY;
+                // For multi-column grid, horizontal half is primary
+                let gap = afterX ? hitIdx + 1 : hitIdx;
+                // If over same cell vertically far, still use horizontal
+                if (hit === _dragEl) {
+                    // over own placeholder: use center vs pointer for direction
+                    gap = afterX ? dragIdx + 1 : dragIdx;
+                }
+
+                // Target index after removal of drag item
+                let toIdx = gap;
+                if (dragIdx < gap) toIdx = gap - 1;
+                if (toIdx < 0) toIdx = 0;
+                if (toIdx >= items.length) toIdx = items.length - 1;
+                if (toIdx !== dragIdx) {
+                    liveReorderTo(toIdx);
+                }
+            }
+
+            function onUp(e) {
+                document.removeEventListener('pointermove',   onMove);
+                document.removeEventListener('pointerup',     onUp);
+                document.removeEventListener('pointercancel', onUp);
+                if (!_dragEl) return;
+
+                try {
+                    if (_pointerId != null && _dragEl.releasePointerCapture) {
+                        _dragEl.releasePointerCapture(_pointerId);
+                    }
+                } catch (err) { /* ignore */ }
+
+                const moved = _moved;
+                _cleanup();
+
+                // Commit data from DOM order — no re-compress / no image refresh
+                if (moved) {
+                    commitPreviewOrderFromDom();
+                }
+            }
+
+            function _cleanup() {
+                if (_clone)  { _clone.remove(); _clone = null; }
+                if (_dragEl) {
+                    _dragEl.classList.remove('reorder-dragging');
+                    _dragEl.style.transform = '';
+                    _dragEl.style.transition = '';
+                }
+                getGridItems().forEach(function(el) {
+                    el.classList.remove('reorder-shifting');
+                    if (el !== _dragEl) {
+                        el.style.transform = '';
+                        el.style.transition = '';
+                    }
+                });
+                unlockScroll();
+                _dragEl = null; _moved = false; _pointerId = null; _lastToIdx = null;
+            }
+        })();
 
         function handleDoubleClick(e) {
             const textarea = e.target;
@@ -6640,100 +7973,31 @@
                 }
             }
 
-            // If multiple files selected for front, show preview instead of creating immediately
-            if (side === 'front' && files.length > 1) {
+            // Front uploads always use multi-file preview + wizard (1 or many images)
+            if (side === 'front' && files.length >= 1) {
                 // Store files temporarily
                 newCard.multipleFiles = files;
+                newCard.frontImage = null;
 
                 // Show preview of all images
                 renderImagePreviews();
 
                 document.getElementById('frontUpload').classList.add('has-image');
 
-                // Change button text to indicate multiple cards will be created
-                const addButton = document.querySelector('.form-actions .btn-success');
-                if (addButton) {
-                    addButton.textContent = '✨ Create';
-                }
-
-                // Show rename button
-                const renameButton = document.getElementById('renameButton');
-                if (renameButton) {
-                    renameButton.style.display = 'block';
-                }
-
-                // Hide the bottom add more button (it's now in the preview area)
-                const addMoreButton = document.getElementById('addMoreButton');
-                if (addMoreButton) {
-                    addMoreButton.style.display = 'none';
-                }
+                // Stay on Import step; wizard Next → Order → Names → Create
+                if (typeof createWizardStep === 'undefined' || createWizardStep < 1) createWizardStep = 1;
+                if (typeof updateCreateWizardUI === 'function') updateCreateWizardUI();
 
                 return;
-            }
-
-            // Single file handling
-            const file = files[0];
-            if (file) {
-                let fileName = file.name.replace(/\.[^/.]+$/, "");
-                // Truncate to 60 chars excluding spaces
-                const charsWithoutSpaces = fileName.replace(/\s/g, '').length;
-                if (charsWithoutSpaces > 60) {
-                    let truncated = '';
-                    let charCount = 0;
-                    for (let char of fileName) {
-                        if (char !== ' ') charCount++;
-                        if (charCount > 60) break;
-                        truncated += char;
-                    }
-                    fileName = truncated;
-                }
-
-                // Compress image before using
-                compressImage(file, 500).then(imageData => {
-                    if (side === 'front') {
-                        newCard.frontImage = imageData;
-                        newCard.backText = fileName;
-                        newCard.multipleFiles = null; // Clear multiple files
-                        // Update both the textarea and newCard
-                        const backTextElement = document.getElementById('backText');
-                        if (backTextElement) {
-                            backTextElement.value = fileName;
-                            backTextElement.disabled = false;
-                            backTextElement.style.background = '';
-                        }
-                        document.getElementById('frontPreview').innerHTML =
-                            '<img src="' + imageData + '" class="preview-image"><p style="margin-top: 10px; font-size: 0.9rem;">Filename: ' + fileName + '</p>';
-                        document.getElementById('frontUpload').classList.add('has-image');
-                        // iPad: now that we have an image, swap to PC-style preview layout
-                        if (typeof syncIpadLayoutForImages === 'function') syncIpadLayoutForImages();
-
-                        // Reset button text
-                        const addButton = document.querySelector('.form-actions .btn-success');
-                        if (addButton) {
-                            addButton.textContent = 'Add Card';
-                        }
-
-                        // Hide rename button
-                        const renameButton = document.getElementById('renameButton');
-                        if (renameButton) {
-                            renameButton.style.display = 'none';
-                        }
-
-                        // Hide add more button
-                        const addMoreButton = document.getElementById('addMoreButton');
-                        if (addMoreButton) {
-                            addMoreButton.style.display = 'none';
-                        }
-                    }
-                }).catch(err => {
-                    console.error('Image compression failed:', err);
-                    const msg = (err && err.message) ? err.message : 'Failed to process image';
-                    showToastWithButton('⚠️ ' + msg);
-                });
             }
         }
 
         function addCard() {
+            // Wizard: commit open name edits before creating
+            if (typeof createWizardStep !== 'undefined' && createWizardStep === 2 && _renameUIActive) {
+                createWizardCommitNames();
+            }
+
             // Check if we're in multi-rename mode
             if (isMultiRenameMode && newCard.multipleFiles && newCard.multipleFiles.length > 0) {
                 // Parse edited names from textarea - DO NOT filter blank lines
@@ -6792,8 +8056,8 @@
                 return;
             }
 
-            // Handle multiple files (new import)
-            if (newCard.multipleFiles && newCard.multipleFiles.length > 1) {
+            // Handle multiple files (new import) — wizard supports 1+ images
+            if (newCard.multipleFiles && newCard.multipleFiles.length >= 1) {
                 const files = Array.from(newCard.multipleFiles);
 
                 // Parse edited names from textarea - DO NOT filter blank lines
@@ -6803,8 +8067,8 @@
 
                 // Extract names with their original indices (including blank names)
                 for (let line of lines) {
-                    // Skip header line
-                    if (line.includes('Card names preview')) continue;
+                    // Skip header lines
+                    if (line.includes('Card names preview') || line.includes('Edit names')) continue;
 
                     // Match pattern like "1. filename" or just "1." for blank
                     const match = line.match(/^(\d+)\.\s*(.*)$/);
@@ -6816,14 +8080,27 @@
                     }
                 }
 
+                // Prefer structured editedNames when present
+                if (newCard.editedNames && newCard.editedNames.length) {
+                    for (let i = 0; i < files.length; i++) {
+                        if (newCard.editedNames[i] !== undefined && newCard.editedNames[i] !== null) {
+                            namesByIndex[i] = String(newCard.editedNames[i]);
+                        }
+                    }
+                }
+
                 // Process ALL files with their corresponding names (including blank)
                 const filesToProcess = [];
                 const namesToProcess = [];
 
                 for (let i = 0; i < files.length; i++) {
+                    filesToProcess.push(files[i]);
                     if (namesByIndex.hasOwnProperty(i)) {
-                        filesToProcess.push(files[i]);
-                        namesToProcess.push(namesByIndex[i]); // This can be blank/empty
+                        namesToProcess.push(namesByIndex[i]); // can be blank
+                    } else {
+                        // Fallback to filename stem
+                        let n = files[i].name.replace(/\.[^/.]+$/, '');
+                        namesToProcess.push(n);
                     }
                 }
 
@@ -13845,13 +15122,11 @@
         // ==================== END CROP IMAGE ====================
 
         // ==================== SWIPE HINT ONBOARDING ====================
-        // Once per session (sessionStorage), appears after 15s inactivity when new deck loads.
-        // Cycles through all 4 swipe directions, 3 full cycles, then freezes until tapped.
-        const SWIPE_HINT_SESSION_KEY = 'swipeHintShownThisSession';
+        const SWIPE_HINT_KEY = 'swipeHintSeen_v4';
         let _swipeHintDone = false;
         let _swipeHintArmed = false;
         let _swipeHintInactivityTimer = null;
-        const SWIPE_HINT_INACTIVITY_MS = 15000; // 15 seconds
+        const SWIPE_HINT_INACTIVITY_MS = 5000; // 5 seconds of inactivity
 
         function _armSwipeHintTimer() {
             clearTimeout(_swipeHintInactivityTimer);
@@ -13870,34 +15145,28 @@
         }
 
         // Only reset on deliberate swipe-like gestures — NOT click/tap/scroll
+        // so that simply opening a deck and leaving it idle triggers the hint
         ['touchmove', 'mousemove'].forEach(evt => {
             window.addEventListener(evt, _onUserActivity, { passive: true });
         });
 
         function maybeShowSwipeHint() {
+            // Already done or armed — skip
             if (_swipeHintDone || _swipeHintArmed) return;
-            // Only once per browser session
-            try { if (sessionStorage.getItem(SWIPE_HINT_SESSION_KEY)) return; } catch(e) {}
+            // Already seen in a prior session — skip
+            try { if (localStorage.getItem(SWIPE_HINT_KEY)) return; } catch(e) {}
+            // Need at least one card rendered
             if (!document.querySelector('.card')) return;
+            // Start the 5-second countdown
             _swipeHintArmed = true;
             _armSwipeHintTimer();
         }
 
         function _showSwipeHint() {
-            try { sessionStorage.setItem(SWIPE_HINT_SESSION_KEY, '1'); } catch(e) {}
-
-            const overlay  = document.getElementById('swipeHintOverlay');
-            const cardHole = document.getElementById('swipeHintCardHole');
-            const arrowsEl = document.getElementById('swipeHintArrows');
+            const overlay    = document.getElementById('swipeHintOverlay');
+            const cardHole   = document.getElementById('swipeHintCardHole');
+            const arrowsEl   = document.getElementById('swipeHintArrows');
             if (!overlay) return;
-
-            // Directions to cycle through in order
-            const DIRS = ['left', 'right', 'up', 'down'];
-            const TOTAL_CYCLES = 3; // 3 full cycles through all 4 directions
-            const STEP_MS = 1800;   // ms per direction step (animation is 1.6s + small gap)
-            let stepIndex = 0;
-            let frozen = false;
-            let stepTimer = null;
 
             function positionElements() {
                 const cardEl = document.querySelector('.card');
@@ -13911,6 +15180,7 @@
                 cardHole.style.width  = (r.width  + PAD * 2) + 'px';
                 cardHole.style.height = (r.height + PAD * 2) + 'px';
 
+                // Arrows centered on the card, and don't drift with it
                 const AW = 70, AH = 70;
                 arrowsEl.style.left   = (r.left + r.width/2  - AW) + 'px';
                 arrowsEl.style.top    = (r.top  + r.height/2 - AH) + 'px';
@@ -13919,56 +15189,7 @@
                 return true;
             }
 
-            function applyDir(dir, animate) {
-                const cardEl = document.querySelector('.card');
-                const cardStack = document.querySelector('.card-stack');
-
-                // Remove all direction classes from card and arrows
-                DIRS.forEach(d => {
-                    if (cardEl) cardEl.classList.remove('drift-' + d);
-                    arrowsEl.classList.remove('drift-' + d);
-                });
-
-                if (!animate) return; // frozen state: just remove classes
-
-                // Force reflow to restart animation
-                if (cardEl) void cardEl.offsetWidth;
-                void arrowsEl.offsetWidth;
-
-                if (cardEl) cardEl.classList.add('drift-' + dir);
-                arrowsEl.classList.add('drift-' + dir);
-                if (cardStack) cardStack.classList.add('swiping');
-            }
-
-            function runNextStep() {
-                if (frozen) return;
-                const dir = DIRS[stepIndex % DIRS.length];
-                applyDir(dir, true);
-                stepIndex++;
-
-                // After 3 full cycles (12 steps), switch to all-arrows pulse mode
-                if (stepIndex >= TOTAL_CYCLES * DIRS.length) {
-                    stepTimer = setTimeout(() => {
-                        frozen = true;
-                        // Remove all individual drift classes from card and arrows
-                        const cardEl = document.querySelector('.card');
-                        DIRS.forEach(d => {
-                            if (cardEl) cardEl.classList.remove('drift-' + d);
-                            arrowsEl.classList.remove('drift-' + d);
-                        });
-                        // Card stays grey but stops drifting; all 4 arrows pulse together
-                        arrowsEl.classList.add('all-pulse');
-                    }, STEP_MS);
-                } else {
-                    stepTimer = setTimeout(runNextStep, STEP_MS);
-                }
-            }
-
             overlay.classList.add('visible');
-
-            const cardEl = document.querySelector('.card');
-            if (cardEl) cardEl.classList.add('swipeHintDrifting');
-
             if (!positionElements()) {
                 let tries = 0;
                 const rid = setInterval(() => {
@@ -13976,24 +15197,27 @@
                 }, 80);
             }
 
-            // Start cycling after a brief delay
-            setTimeout(runNextStep, 200);
+            // Animate the REAL first card: drift it, grey it out, and move
+            // the arrows + finger in perfect sync with it.
+            requestAnimationFrame(() => {
+                const cardEl = document.querySelector('.card');
+                const cardStack = document.querySelector('.card-stack');
+                if (cardStack) cardStack.classList.add('swiping'); // reveals card-next/card-prev peeks
+                if (cardEl) cardEl.classList.add('swipeHintDrifting');   // drift + grey filter
+                arrowsEl.classList.add('drifting');                       // arrows move with card
+            });
 
             function dismissHint() {
-                clearTimeout(stepTimer);
                 overlay.classList.remove('visible');
-                const cardEl2 = document.querySelector('.card');
+                const cardEl = document.querySelector('.card');
                 const cardStack = document.querySelector('.card-stack');
-                if (cardEl2) {
-                    cardEl2.classList.remove('swipeHintDrifting');
-                    DIRS.forEach(d => cardEl2.classList.remove('drift-' + d));
-                }
+                if (cardEl) cardEl.classList.remove('swipeHintDrifting');
                 if (cardStack) cardStack.classList.remove('swiping');
-                DIRS.forEach(d => arrowsEl.classList.remove('drift-' + d));
-                arrowsEl.classList.remove('all-pulse');
+                arrowsEl.classList.remove('drifting');
+                try { localStorage.setItem(SWIPE_HINT_KEY, '1'); } catch(e) {}
             }
 
-            // Tap/click anywhere to dismiss
+            // Tap/click anywhere to dismiss (no button needed)
             document.getElementById('swipeHintBg').addEventListener('click',    () => dismissHint(), { once: true });
             document.getElementById('swipeHintBg').addEventListener('touchend', (e) => { e.preventDefault(); dismissHint(); }, { once: true });
         }
