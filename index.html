@@ -1967,6 +1967,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative; /* host for scroll-hint fade + pill */
         }
         #createModal #imagePreviewGrid {
             flex: 1 1 auto !important;
@@ -1975,6 +1976,9 @@
             overflow-x: hidden !important;
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch;
+            /* Prevent flex from treating grid as a shrink-to-zero block */
+            flex-shrink: 1;
+            overscroll-behavior: contain;
         }
         /* Card Name: takes remaining space and grows */
         #createModal .card-name-group {
@@ -2048,8 +2052,13 @@
             #createModal .create-modal-body {
                 padding: 8px 12px;
                 gap: 8px;
+                min-height: 0;
+                overflow: hidden;
             }
-            #createModal .image-upload-group {
+            /* Only cap image area when Names is also sharing space (not step 1).
+               Step 1 overrides with max-height: none — forced 45% was crushing
+               the preview grid on short landscape screens. */
+            #createModal:not(.wizard-step-1) .image-upload-group {
                 max-height: 45%;
             }
         }
@@ -2199,22 +2208,46 @@
             background: #f0f0f0;
         }
 
-        /* Preview tiles: always equal squares, independent of how many images */
+        /*
+         * Preview tiles: equal squares that MUST keep their height.
+         * Important on tablet landscape: min-height:0 + flex/grid was letting
+         * rows squash so absolutely-positioned images stacked on top of each other.
+         */
         .preview-image-container {
             position: relative;
             width: 100%;
             min-width: 0;
-            min-height: 0;
+            /* Do NOT use min-height:0 here — it allows grid rows to collapse */
+            min-height: auto;
             aspect-ratio: 1 / 1;
+            height: auto;
             border-radius: 8px;
             overflow: hidden;
             background: #eef1f4;
             cursor: pointer;
             user-select: none;
             -webkit-user-drag: none;
-            /* Scale number badges with tile size */
-            container-type: size;
+            /* Width-only containment so numbers scale; avoid container-type:size
+               (needs definite height and can zero-out tiles on iPad Safari) */
+            container-type: inline-size;
             container-name: preview-tile;
+            align-self: start;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+
+        /* Reliable square when aspect-ratio is flaky inside nested flex (older WebKit) */
+        .preview-image-container::before {
+            content: '';
+            display: block;
+            width: 100%;
+            padding-bottom: 100%;
+            pointer-events: none;
+        }
+        @supports (aspect-ratio: 1 / 1) {
+            .preview-image-container::before {
+                display: none;
+            }
         }
 
         .preview-image-container img,
@@ -2223,6 +2256,8 @@
             inset: 0;
             width: 100%;
             height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             object-fit: cover;
             border-radius: 8px;
             display: block;
@@ -2241,9 +2276,9 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            /* Fallback then scale with tile size (same look for 5 or 15 images) */
-            font-size: 1.6rem;
-            font-size: clamp(0.95rem, 32cqmin, 2.35rem);
+            /* Fallback then scale with tile width */
+            font-size: 1.4rem;
+            font-size: clamp(0.9rem, 28cqw, 2.2rem);
             font-weight: 700;
             font-variant-numeric: tabular-nums;
             line-height: 1;
@@ -2422,15 +2457,14 @@
         }
 
         /*
-         * Preview grid: fixed column track sizing so 10 and 15 images
-         * share the same tile size, gap, and number style. Extra space
-         * stays at the bottom (align-content: start) — tiles never stretch.
+         * Preview grid: fixed columns; rows sized to tile content (min-content)
+         * so short landscape viewports scroll instead of squashing/overlapping tiles.
          */
         #createModal #imagePreviewGrid.responsive-grid,
         .responsive-grid {
             display: grid !important;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            grid-auto-rows: auto;
+            grid-auto-rows: min-content;
             grid-auto-flow: row;
             align-content: start;
             justify-items: stretch;
@@ -2439,14 +2473,70 @@
             padding: 4px;
             box-sizing: border-box;
             width: 100%;
+            height: auto;
+            /* Scroll inside the flex parent — never compress rows to fit */
+            min-height: 0;
         }
 
-        /* 4 equal columns on wider create-modal */
+        /* 4 equal columns on wider create-modal (desktop / large tablet portrait) */
         @media (min-width: 800px) {
             #createModal #imagePreviewGrid.responsive-grid,
             .responsive-grid {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
                 gap: 12px;
+            }
+        }
+
+        /*
+         * Tablet / phone landscape: short height. Use more columns so each
+         * square is smaller, and keep the upload pane fully scrollable.
+         */
+        @media (orientation: landscape) and (max-height: 700px) {
+            #createModal .modal-content {
+                height: 96vh;
+                max-height: 96vh;
+            }
+            #createModal .create-modal-header {
+                padding: 8px 40px 6px 12px;
+            }
+            #createModal .create-modal-body {
+                padding: 6px 10px;
+                gap: 6px;
+                min-height: 0;
+                overflow: hidden;
+            }
+            #createModal.wizard-step-1 .image-upload-group {
+                flex: 1 1 auto !important;
+                max-height: none !important;
+                min-height: 0 !important;
+                overflow: hidden;
+            }
+            #createModal #imagePreviewGrid.responsive-grid,
+            .responsive-grid {
+                /* 5 cols → smaller squares → less vertical pressure */
+                grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+                gap: 8px;
+                padding: 2px;
+            }
+            #createModal #frontPreview > div {
+                min-height: 0;
+                overflow: hidden;
+            }
+            .preview-toolbar {
+                margin-bottom: 4px;
+            }
+            .preview-toolbar-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Very short landscape (phones / small tablets) */
+        @media (orientation: landscape) and (max-height: 480px) {
+            #createModal #imagePreviewGrid.responsive-grid,
+            .responsive-grid {
+                grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+                gap: 6px;
             }
         }
 
@@ -2472,36 +2562,77 @@
             20%, 40%, 60%, 80% { transform: translateX(10px); }
         }
 
-        @keyframes bounce {
-            0%, 100% {
-                transform: translateY(0);
-                animation-timing-function: ease-in;
-            }
-            50% {
-                transform: translateY(-8px);
-                animation-timing-function: ease-out;
-            }
+        /* Create-modal scroll hint: gradient fade (A) + soft “More” pill (B) */
+        @keyframes scrollHintPulse {
+            0%, 100% { opacity: 0.92; transform: translateY(0); }
+            50%      { opacity: 1;    transform: translateY(2px); }
         }
 
-        .scroll-indicator {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 48px;
-            height: 48px;
-            opacity: 0.4;
-            animation: bounce 1.5s ease-in-out infinite;
+        .scroll-hint {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 64px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 10px;
             pointer-events: none;
-            z-index: 10001;
-            transition: opacity 0.3s ease;
+            z-index: 30;
+            opacity: 1;
+            transition: opacity 0.28s ease;
+            box-sizing: border-box;
         }
 
-        .scroll-indicator svg {
-            width: 100%;
-            height: 100%;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-            display: block;
+        .scroll-hint-fade {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(255, 255, 255, 0.97) 0%,
+                rgba(255, 255, 255, 0.72) 40%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            border-radius: 0 0 10px 10px;
+            pointer-events: none;
+        }
+
+        .scroll-hint-pill {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px 7px 12px;
+            border-radius: 999px;
+            background: rgba(53, 101, 77, 0.94);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 650;
+            font-family: inherit;
+            letter-spacing: 0.02em;
+            box-shadow: 0 2px 10px rgba(53, 101, 77, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+            animation: scrollHintPulse 2.2s ease-in-out infinite;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+
+        .scroll-hint-pill .scroll-hint-arrow {
+            font-size: 0.85rem;
+            line-height: 1;
+            opacity: 0.95;
+        }
+
+        .scroll-hint-pill .scroll-hint-text {
+            line-height: 1;
+        }
+
+        /* Legacy class name kept so old id hooks still style if needed */
+        .scroll-indicator.scroll-hint {
+            width: auto;
+            height: 64px;
         }
 
         /* Confetti Animation */
@@ -3498,14 +3629,13 @@
             </div>
         </div>
 
-        <!-- Scroll indicator -->
-        <div id="scrollIndicator" class="scroll-indicator" style="display: none;">
-            <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- First chevron (top) -->
-                <path d="M256 298.3L95.03 137.3c-9.38-9.38-24.56-9.37-33.94 0s-9.37 24.56 0 33.94l178.5 178.5c9.38 9.38 24.56 9.38 33.94 0l178.5-178.5c9.38-9.38 9.37-24.56 0-33.94s-24.56-9.37-33.94 0L256 298.3z" fill="white"/>
-                <!-- Second chevron (bottom) -->
-                <path d="M256 426.3L95.03 265.3c-9.38-9.38-24.56-9.37-33.94 0s-9.37 24.56 0 33.94l178.5 178.5c9.38 9.38 24.56 9.38 33.94 0l178.5-178.5c9.38-9.38 9.37-24.56 0-33.94s-24.56-9.37-33.94 0L256 426.3z" fill="white"/>
-            </svg>
+        <!-- Scroll hint: moved onto the image preview host by setupScrollIndicator() -->
+        <div id="scrollIndicator" class="scroll-hint scroll-indicator" style="display: none;" aria-hidden="true">
+            <div class="scroll-hint-fade"></div>
+            <div class="scroll-hint-pill">
+                <span class="scroll-hint-arrow">↓</span>
+                <span class="scroll-hint-text">More</span>
+            </div>
         </div>
     </div>
 
@@ -5712,6 +5842,7 @@
             // Restore empty PC drop-zone content (hidden on digital; used on desktop)
             const fp = document.getElementById('frontPreview');
             if (fp) {
+                if (typeof _rescueScrollIndicator === 'function') _rescueScrollIndicator();
                 fp.innerHTML =
                     '<p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p>' +
                     '<p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p>' +
@@ -5981,60 +6112,84 @@
 
         let scrollIndicatorTimeout = null;
 
+        /**
+         * Soft scroll hint on the image preview (gradient fade + “↓ More” pill).
+         * Shown only when the grid overflows and the user is still near the top.
+         */
         function setupScrollIndicator() {
-            // Create modal no longer scrolls as a whole (sticky footer layout).
-            // Point the indicator at the image grid or card-name area if either scrolls.
             const indicator = document.getElementById('scrollIndicator');
-            const modalContent = document.getElementById('createModalContent');
             if (!indicator) return;
 
-            if (modalContent) {
-                modalContent.removeEventListener('scroll', handleModalScroll);
+            // Detach previous scroll listener
+            if (indicator._scrollEl && indicator._onScroll) {
+                try { indicator._scrollEl.removeEventListener('scroll', indicator._onScroll); } catch (e) { /* ignore */ }
             }
+            indicator._scrollEl = null;
+            indicator._onScroll = null;
 
+            const createModal = document.getElementById('createModal');
             const grid = document.getElementById('imagePreviewGrid');
-            const nameArea = document.getElementById('backText');
-            const scrollEl = (grid && grid.scrollHeight > grid.clientHeight + 4) ? grid
-                : (nameArea && nameArea.scrollHeight > nameArea.clientHeight + 4) ? nameArea
-                : null;
+            const textEl = indicator.querySelector('.scroll-hint-text');
 
-            if (scrollEl && scrollEl.scrollTop < 50) {
-                indicator.style.display = 'block';
-                indicator.style.opacity = '0.4';
-            } else {
+            // Only on Create step 1 while modal is open and grid exists
+            const onCardsStep = (typeof createWizardStep === 'undefined' || createWizardStep === 1);
+            const modalOpen = createModal && createModal.classList.contains('active');
+            if (!modalOpen || !onCardsStep || !grid) {
                 indicator.style.display = 'none';
+                indicator.setAttribute('aria-hidden', 'true');
+                return;
             }
+
+            // Park the hint on the preview host so the fade sits on the grid edge
+            const host = grid.parentElement;
+            if (host) {
+                if (window.getComputedStyle(host).position === 'static') {
+                    host.style.position = 'relative';
+                }
+                if (indicator.parentElement !== host) {
+                    host.appendChild(indicator);
+                }
+            }
+
+            function gridCanScroll() {
+                return grid.scrollHeight > grid.clientHeight + 8;
+            }
+            function nearTop() {
+                return grid.scrollTop < 28;
+            }
+            function notAtBottom() {
+                return (grid.scrollTop + grid.clientHeight) < (grid.scrollHeight - 10);
+            }
+
+            function updateHint() {
+                if (!gridCanScroll() || !nearTop() || !notAtBottom()) {
+                    indicator.style.opacity = '0';
+                    if (scrollIndicatorTimeout) clearTimeout(scrollIndicatorTimeout);
+                    scrollIndicatorTimeout = setTimeout(function() {
+                        if (!gridCanScroll() || !nearTop() || !notAtBottom()) {
+                            indicator.style.display = 'none';
+                            indicator.setAttribute('aria-hidden', 'true');
+                        }
+                    }, 280);
+                    return;
+                }
+                if (textEl) textEl.textContent = 'More';
+                indicator.style.display = 'flex';
+                indicator.style.opacity = '1';
+                indicator.setAttribute('aria-hidden', 'false');
+            }
+
+            updateHint();
+
+            const onScroll = function() { updateHint(); };
+            indicator._scrollEl = grid;
+            indicator._onScroll = onScroll;
+            grid.addEventListener('scroll', onScroll, { passive: true });
         }
 
+        // Kept for any leftover callers; routes to the new hint logic
         function handleModalScroll() {
-            const modalContent = document.getElementById('createModalContent');
-            const indicator = document.getElementById('scrollIndicator');
-
-            if (!modalContent || !indicator) return;
-
-            // Clear existing timeout
-            if (scrollIndicatorTimeout) {
-                clearTimeout(scrollIndicatorTimeout);
-            }
-
-            const scrollTop = modalContent.scrollTop;
-            const isAtTop = scrollTop < 50;
-
-            if (isAtTop) {
-                // At top - show indicator
-                indicator.style.display = 'block';
-                indicator.style.opacity = '0.4';
-            } else {
-                // Scrolled down - hide indicator
-                indicator.style.opacity = '0';
-
-                // Fade out then hide
-                scrollIndicatorTimeout = setTimeout(() => {
-                    if (modalContent.scrollTop >= 50) {
-                        indicator.style.display = 'none';
-                    }
-                }, 300);
-            }
+            setupScrollIndicator();
         }
 
         let singleRenameOriginal = '';
@@ -6256,6 +6411,7 @@
                 handleUploadAreaClick(event);
             };
 
+            if (typeof _rescueScrollIndicator === 'function') _rescueScrollIndicator();
             document.getElementById('frontPreview').innerHTML = '<div class="upload-icon"><img src="data:image/webp;base64,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" alt="Add Image" style="width: 80px; height: 80px;"></div><p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p><p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p><p style="font-size: 0.9rem; color: #35654D; margin-top: 10px; font-weight: 600; line-height: 1.45;">' + imageImportLimitsSummary() + '</p>';
 
             const backTextElement = document.getElementById('backText');
@@ -6480,13 +6636,24 @@
             // If images are loaded, do nothing (user must use Add More button or click outside images)
         }
 
+        function _rescueScrollIndicator() {
+            // frontPreview.innerHTML rebuilds wipe children — keep the hint node alive
+            const indicator = document.getElementById('scrollIndicator');
+            const modal = document.getElementById('createModal');
+            if (indicator && modal && indicator.parentElement !== modal) {
+                modal.appendChild(indicator);
+                indicator.style.display = 'none';
+            }
+        }
+
         function renderImagePreviews() {
             const files = newCard.multipleFiles;
             if (!files || files.length === 0) return;
             // iPad: now that we have images, swap to PC-style preview layout
             syncIpadLayoutForImages();
+            _rescueScrollIndicator();
 
-            let previewHTML = '<div style="text-align: center; padding: 6px 4px; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; width: 100%; box-sizing: border-box;">';
+            let previewHTML = '<div style="text-align: center; padding: 6px 4px; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; width: 100%; box-sizing: border-box; position: relative;">';
 
             // Toolbar: Add More + Reorder & Remove (no "# selected" label)
             if (!isRenameMode) {
@@ -6509,8 +6676,9 @@
 
             document.getElementById('frontPreview').innerHTML = previewHTML;
 
-            // Check scroll indicator after content is loaded
+            // Check scroll hint after placeholders exist, then again after images paint
             setTimeout(setupScrollIndicator, 100);
+            setTimeout(setupScrollIndicator, 600);
 
             // Extract and display all filenames
             const fileNames = [];
@@ -7114,6 +7282,7 @@
 
                 // Show current card again
                 const currentCard = cards[currentIndex];
+                if (typeof _rescueScrollIndicator === 'function') _rescueScrollIndicator();
                 document.getElementById('frontPreview').innerHTML =
                     '<img src="' + currentCard.frontImage + '" class="preview-image"><p style="margin-top: 10px; font-size: 0.9rem;">Current card image</p>';
 
@@ -13824,6 +13993,10 @@
                 document.getElementById('cardOverlayNav').style.display = 'none';
                 document.getElementById('cardOverlayTTS').style.display = 'none';
 
+                // Import-then-delete (or clear all) must not leave a pending swipe demo
+                // timer that later fires on this empty home screen.
+                if (typeof cancelSwipeHint === 'function') cancelSwipeHint();
+
                 return;
             }
 
@@ -15199,19 +15372,60 @@
         let _swipeHintInactivityTimer = null;
         const SWIPE_HINT_INACTIVITY_MS = 5000; // 5 seconds of inactivity
 
+        /** True when the main deck UI is ready for the swipe demo */
+        function _swipeHintCanShow() {
+            if (!cards || cards.length < 1) return false;
+            // Don't show over create/load/etc. modals or empty home
+            if (document.querySelector('.modal.active')) return false;
+            if (document.querySelector('.empty-state')) return false;
+            const cardEl = document.querySelector('#cardDisplay .card');
+            if (!cardEl) return false;
+            const r = cardEl.getBoundingClientRect();
+            return r.width >= 10 && r.height >= 10;
+        }
+
+        /**
+         * Cancel a pending timer / hide a stray overlay.
+         * Used when the deck becomes empty (import then delete) so the demo
+         * never fires on the opening empty page.
+         */
+        function cancelSwipeHint() {
+            clearTimeout(_swipeHintInactivityTimer);
+            _swipeHintInactivityTimer = null;
+            _swipeHintArmed = false;
+            // Do NOT set _swipeHintDone — user never saw it; can arm again later
+
+            const overlay  = document.getElementById('swipeHintOverlay');
+            const arrowsEl = document.getElementById('swipeHintArrows');
+            if (overlay) overlay.classList.remove('visible');
+            const cardEl = document.querySelector('.card');
+            const cardStack = document.querySelector('.card-stack');
+            if (cardEl) cardEl.classList.remove('swipeHintDrifting');
+            if (cardStack) cardStack.classList.remove('swiping');
+            if (arrowsEl) arrowsEl.classList.remove('drifting');
+        }
+
         function _armSwipeHintTimer() {
             clearTimeout(_swipeHintInactivityTimer);
             _swipeHintInactivityTimer = setTimeout(() => {
-                if (!_swipeHintDone) {
-                    _swipeHintDone = true;
-                    _swipeHintArmed = false;
-                    _showSwipeHint();
+                if (_swipeHintDone) return;
+                _swipeHintArmed = false;
+                // Deck may have been cleared after arming — never show on empty home
+                if (!_swipeHintCanShow()) {
+                    return;
                 }
+                _swipeHintDone = true;
+                _showSwipeHint();
             }, SWIPE_HINT_INACTIVITY_MS);
         }
 
         function _onUserActivity() {
             if (!_swipeHintArmed || _swipeHintDone) return;
+            // Still need a live deck; otherwise disarm
+            if (!_swipeHintCanShow()) {
+                cancelSwipeHint();
+                return;
+            }
             _armSwipeHintTimer();
         }
 
@@ -15226,21 +15440,27 @@
             if (_swipeHintDone || _swipeHintArmed) return;
             // Already seen in a prior session — skip
             try { if (localStorage.getItem(SWIPE_HINT_KEY)) return; } catch(e) {}
-            // Need at least one card rendered
-            if (!document.querySelector('.card')) return;
+            // Need a real deck card (not empty state); swipe demo is for the main viewer
+            if (!_swipeHintCanShow()) return;
             // Start the 5-second countdown
             _swipeHintArmed = true;
             _armSwipeHintTimer();
         }
 
         function _showSwipeHint() {
+            if (!_swipeHintCanShow()) {
+                cancelSwipeHint();
+                return;
+            }
+
             const overlay    = document.getElementById('swipeHintOverlay');
             const cardHole   = document.getElementById('swipeHintCardHole');
             const arrowsEl   = document.getElementById('swipeHintArrows');
-            if (!overlay) return;
+            if (!overlay || !cardHole || !arrowsEl) return;
 
             function positionElements() {
-                const cardEl = document.querySelector('.card');
+                if (!_swipeHintCanShow()) return false;
+                const cardEl = document.querySelector('#cardDisplay .card');
                 if (!cardEl) return false;
                 const r = cardEl.getBoundingClientRect();
                 if (r.width < 10) return false;
@@ -15251,7 +15471,7 @@
                 cardHole.style.width  = (r.width  + PAD * 2) + 'px';
                 cardHole.style.height = (r.height + PAD * 2) + 'px';
 
-                // Arrows centered on the card, and don't drift with it
+                // Arrows centered on the card
                 const AW = 70, AH = 70;
                 arrowsEl.style.left   = (r.left + r.width/2  - AW) + 'px';
                 arrowsEl.style.top    = (r.top  + r.height/2 - AH) + 'px';
@@ -15260,18 +15480,24 @@
                 return true;
             }
 
-            overlay.classList.add('visible');
             if (!positionElements()) {
-                let tries = 0;
-                const rid = setInterval(() => {
-                    if (positionElements() || ++tries > 15) clearInterval(rid);
-                }, 80);
+                // Card not ready — don't flash a full-screen overlay on empty home
+                cancelSwipeHint();
+                _swipeHintDone = false; // allow retry when a deck is actually shown
+                return;
             }
+
+            overlay.classList.add('visible');
 
             // Animate the REAL first card: drift it, grey it out, and move
             // the arrows + finger in perfect sync with it.
             requestAnimationFrame(() => {
-                const cardEl = document.querySelector('.card');
+                if (!_swipeHintCanShow()) {
+                    cancelSwipeHint();
+                    _swipeHintDone = false;
+                    return;
+                }
+                const cardEl = document.querySelector('#cardDisplay .card');
                 const cardStack = document.querySelector('.card-stack');
                 if (cardStack) cardStack.classList.add('swiping'); // reveals card-next/card-prev peeks
                 if (cardEl) cardEl.classList.add('swipeHintDrifting');   // drift + grey filter
@@ -15285,6 +15511,7 @@
                 if (cardEl) cardEl.classList.remove('swipeHintDrifting');
                 if (cardStack) cardStack.classList.remove('swiping');
                 arrowsEl.classList.remove('drifting');
+                _swipeHintDone = true;
                 try { localStorage.setItem(SWIPE_HINT_KEY, '1'); } catch(e) {}
             }
 
