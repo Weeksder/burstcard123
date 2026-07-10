@@ -25,8 +25,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <!-- JSZip library for creating ZIP files -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- JSZip loaded on demand when user saves as ZIP -->
 
     <title>FlashABC</title>
     <!-- Custom Fonts -->
@@ -9187,9 +9186,19 @@
                 return;
             }
 
-            // Check if JSZip is available
+            // Lazy-load JSZip, then build the archive
+            showToast('⏳ Preparing ZIP…', 1500);
+            ensureJSZip().then(function() {
+                _saveAsZIPWithLibrary();
+            }).catch(function(err) {
+                console.error(err);
+                showToast('⚠️ ZIP needs network to load library. Use JSON save, or check connection.', 4000);
+            });
+        }
+
+        function _saveAsZIPWithLibrary() {
             if (typeof JSZip === 'undefined') {
-                alert('📦 ZIP Export requires network access\n\nTo use ZIP export:\n1. Go to Settings (gear icon)\n2. Enable "Network access"\n3. Refresh the page\n4. Try again\n\nFor now, please use Quick Save (JSON) instead.');
+                showToast('⚠️ ZIP library not available', 3000);
                 return;
             }
 
@@ -11412,6 +11421,1756 @@
             }
         }
 
+
+        // ── Lazy loaders (startup speed) ──────────────────────────────────
+        const JSZIP_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        let _jszipLoadPromise = null;
+
+        /** Load JSZip from CDN only when needed (Save ZIP). */
+        function ensureJSZip() {
+            if (typeof JSZip !== 'undefined') return Promise.resolve();
+            if (_jszipLoadPromise) return _jszipLoadPromise;
+            _jszipLoadPromise = new Promise(function(resolve, reject) {
+                const s = document.createElement('script');
+                s.src = JSZIP_CDN;
+                s.async = true;
+                s.onload = function() {
+                    if (typeof JSZip !== 'undefined') resolve();
+                    else reject(new Error('JSZip loaded but undefined'));
+                };
+                s.onerror = function() {
+                    _jszipLoadPromise = null;
+                    reject(new Error('Failed to load JSZip (network?)'));
+                };
+                document.head.appendChild(s);
+            });
+            return _jszipLoadPromise;
+        }
+
+        let _gameCodeLoadPromise = null;
+
+        /** Inject deferred game functions on first Games open. */
+        function ensureGameCode() {
+            if (window._gamesCodeReady && typeof window._openGameMenu === 'function') {
+                return Promise.resolve();
+            }
+            if (_gameCodeLoadPromise) return _gameCodeLoadPromise;
+            _gameCodeLoadPromise = new Promise(function(resolve, reject) {
+                try {
+                    const src = document.getElementById('deferredGameCode');
+                    if (!src || !src.textContent || !src.textContent.trim()) {
+                        reject(new Error('Game code missing'));
+                        return;
+                    }
+                    const el = document.createElement('script');
+                    el.textContent = src.textContent;
+                    document.body.appendChild(el);
+                    if (typeof window._openGameMenu === 'function') {
+                        window._gamesCodeReady = true;
+                        resolve();
+                    } else {
+                        _gameCodeLoadPromise = null;
+                        reject(new Error('Game code did not register entry points'));
+                    }
+                } catch (e) {
+                    _gameCodeLoadPromise = null;
+                    reject(e);
+                }
+            });
+            return _gameCodeLoadPromise;
+        }
+
+        /** Stub: load game code then open the real menu */
+        function openGameMenu() {
+            window.speechSynthesis && window.speechSynthesis.cancel();
+            if (typeof cards !== 'undefined' && cards.length === 0) {
+                alert('Please add some cards first!');
+                return;
+            }
+            if (window._gamesCodeReady && typeof window._openGameMenu === 'function') {
+                window._openGameMenu();
+                return;
+            }
+            if (typeof showToast === 'function') showToast('⏳ Loading games…', 1200);
+            ensureGameCode().then(function() {
+                if (typeof window._openGameMenu === 'function') window._openGameMenu();
+                else alert('Could not load games.');
+            }).catch(function(err) {
+                console.error(err);
+                if (typeof showToast === 'function') {
+                    showToast('⚠️ Could not load games', 3000);
+                } else {
+                    alert('Could not load games');
+                }
+            });
+        }
+
+        function closeGameMenu() {
+            if (typeof window._closeGameMenu === 'function') {
+                window._closeGameMenu();
+                return;
+            }
+            document.body.style.overflow = '';
+            const m = document.getElementById('gameMenuModal');
+            if (m) m.classList.remove('active');
+        }
+
+        function startGame(gameType) {
+            if (typeof window._startGame === 'function') {
+                window._startGame(gameType);
+                return;
+            }
+            // Menu buttons only work after ensureGameCode; load then start
+            ensureGameCode().then(function() {
+                if (typeof window._startGame === 'function') window._startGame(gameType);
+            }).catch(function(err) {
+                console.error(err);
+                if (typeof showToast === 'function') showToast('⚠️ Could not load games', 3000);
+            });
+        }
+
+        function renderDisplay() {
+            // Make controls visible now that JS has run (prevents flash of old layout)
+            const topControls = document.getElementById('topControls');
+            const quickLoadDropdownEl = document.getElementById('quickLoadDropdown');
+            if (topControls) topControls.style.visibility = 'visible';
+            if (quickLoadDropdownEl) quickLoadDropdownEl.style.visibility = 'visible';
+
+            // PERFORMANCE FIX: Use cached DOM references
+            const display = domCache.cardDisplay || document.getElementById('cardDisplay');
+            const shuffleBtn = domCache.shuffleBtn || document.getElementById('shuffleBtn');
+            const clearBtn = domCache.clearBtn || document.getElementById('clearBtn');
+            const deleteBtn = domCache.deleteBtn || document.getElementById('deleteBtn');
+            const renameCardBtn = domCache.renameCardBtn || document.getElementById('renameCardBtn');
+            const gameBtn = domCache.gameBtn || document.getElementById('gameBtn');
+            const saveBtn = domCache.saveBtn || document.getElementById('saveBtn');
+            const loadBtn = domCache.loadBtn || document.getElementById('loadBtn');
+            const moreDropdown = domCache.moreDropdown || document.getElementById('moreDropdown');
+            const addBtn = document.getElementById('addBtn');
+            const quickLoadDropdown = document.getElementById('quickLoadDropdown');
+
+            if (cards.length === 0) {
+                // Reset lock side when deck is cleared
+                if (lockSide) {
+                    lockSide = false;
+                    isFlipped = false;
+                    _updateLockMenuButton(false);
+                    const lockOverlay = document.getElementById('cardOverlayLock');
+                    if (lockOverlay) { lockOverlay.style.display = 'none'; lockOverlay.style.visibility = ''; }
+                }
+                display.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-card">
+                            <div class="empty-state-icon">📋</div>
+                            <h3>No Flashcards Yet</h3>
+                            <p>Get started by tapping Add, Load, or Manage<br>or try a sample deck</p>
+                            <div class="empty-action-btn-row" style="display:flex;flex-direction:row;justify-content:center;gap:12px;width:100%;margin-top:28px;">
+                                <button class="empty-action-btn" onclick="openCreateModal()">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                                    </svg>
+                                    <span>Add</span>
+                                </button>
+                                <button class="empty-action-btn" onclick="openLoadOptions()">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    <span>Load</span>
+                                </button>
+                                <div style="position:relative; flex:1; max-width:100px; display:flex; flex-direction:column; align-items:center;">
+                                    <button class="empty-action-btn" id="emptyManageBtn" style="width:100%;" onclick="openManageSidePanel()">
+                                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                        </svg>
+                                        <span>Manage</span>
+                                    </button>
+                                </div>
+                                <button class="empty-action-btn" onclick="openSampleDeck()">
+                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                    </svg>
+                                    <span>Samples</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // Hide ALL top bar controls on empty state
+                if (addBtn) addBtn.style.display = 'none';
+                if (loadBtn) loadBtn.style.display = 'none';
+                if (quickLoadDropdown) quickLoadDropdown.style.display = 'none';
+                if (shuffleBtn) { shuffleBtn.disabled = true; shuffleBtn.style.display = 'none'; }
+                if (clearBtn) { clearBtn.disabled = true; clearBtn.style.display = 'none'; }
+                if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.style.display = 'none'; }
+                if (renameCardBtn) { renameCardBtn.disabled = true; renameCardBtn.style.display = 'none'; }
+                if (gameBtn) { gameBtn.disabled = true; gameBtn.style.display = 'none'; }
+                if (saveBtn) { saveBtn.disabled = true; saveBtn.style.display = 'none'; }
+                if (moreDropdown) moreDropdown.style.display = 'none';
+                const helpBtnEmpty = document.getElementById('toolbarHelpBtn');
+                if (helpBtnEmpty) helpBtnEmpty.style.display = 'none';
+                document.getElementById('cardOverlaySettings').style.display = 'none';
+                document.getElementById('cardOverlayCounter').style.display = 'none';
+                document.getElementById('cardOverlayNav').style.display = 'none';
+                document.getElementById('cardOverlayTTS').style.display = 'none';
+
+                // Import-then-delete (or clear all) must not leave a pending swipe demo
+                // timer that later fires on this empty home screen.
+                if (typeof cancelSwipeHint === 'function') cancelSwipeHint();
+
+                return;
+            }
+
+            if (shuffleBtn) {
+                shuffleBtn.disabled = false;
+                shuffleBtn.style.display = 'flex';
+            }
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.style.display = 'flex';
+            }
+            if (gameBtn) {
+                gameBtn.disabled = false;
+                gameBtn.style.display = 'flex';
+            }
+
+            // Restore Add button and Quick Load when cards are loaded
+            if (addBtn) addBtn.style.display = 'flex';
+            const helpBtnCards = document.getElementById('toolbarHelpBtn');
+            if (helpBtnCards) helpBtnCards.style.display = 'flex';
+            if (quickLoadDropdown) {
+                quickLoadDropdown.style.position = '';
+                quickLoadDropdown.style.top = '';
+                quickLoadDropdown.style.left = '';
+                quickLoadDropdown.style.transform = '';
+                quickLoadDropdown.style.display = 'inline-block';
+                quickLoadDropdown.style.zIndex = '';
+                const qlTriggerBtn = quickLoadDropdown.querySelector('button');
+                if (qlTriggerBtn) qlTriggerBtn.style.display = '';
+            }
+
+            // Show dropdown when cards are loaded
+            if (moreDropdown) {
+                moreDropdown.style.display = 'inline-block';
+            }
+
+            // Hide Load button when cards are loaded (it's now in dropdown)
+            if (loadBtn) {
+                loadBtn.style.display = 'none';
+            }
+
+            const card = cards[currentIndex];
+            const nextCard = cards[(currentIndex + 1) % cards.length]; // Preview next card
+            const prevCard = cards[(currentIndex - 1 + cards.length) % cards.length]; // Preview previous card
+
+            // Auto-scale ALL text to fit within card boundaries
+            const textClass = 'card-text card-text-auto-scale';
+
+            display.innerHTML = `
+                <div class="card-container">
+                    <div class="card-stack">
+                        ${prevCard && cards.length > 1 ? `
+                        <div class="card-prev">
+                            ${lockSide === 'back' ? `
+                            <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
+                                ${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}
+                                ${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}
+                            </div>` : `
+                            <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">
+                                ${showCharOnCard && prevCard.backText ? `<span class="card-char-label">${prevCard.backText.charAt(0).toUpperCase()}${prevCard.backText.charAt(0).toLowerCase()}</span>` : ''}
+                                <img src="${gifSrc(prevCard.frontImage)}" class="card-image">
+                                ${showTextOnFront && prevCard.backText ? `
+                                <div class="card-front-text">${highlightVowelsFront(prevCard.backText)}</div>
+                                ` : ''}
+                            </div>`}
+                        </div>
+                        ` : ''}
+                        <div class="card ${isFlipped ? 'flipped' : ''}" style="cursor: pointer;">
+                            <div class="card-face card-front${showTextOnFront && card.backText ? ' show-text-active' : ''}${showCharOnCard && card.backText ? ' show-char-active' : ''}">
+                                ${showCharOnCard && card.backText ? `<span class="card-char-label">${card.backText.charAt(0).toUpperCase()}${card.backText.charAt(0).toLowerCase()}</span>` : ''}
+                                <img src="${gifSrc(card.frontImage)}" class="card-image">
+                                ${showTextOnFront && card.backText ? `
+                                <div class="card-front-text">${highlightVowelsFront(card.backText)}</div>
+                                ` : ''}
+                            </div>
+                            <div class="card-face card-back">
+                                ${card.backImage ? '<img src="' + gifSrc(card.backImage) + '" class="card-image">' : ''}
+                                ${card.backText ? '<p class="' + textClass + '">' + highlightVowels(card.backText) + '</p>' : ''}
+                            </div>
+                        </div>
+                        ${nextCard && cards.length > 1 ? `
+                        <div class="card-next">
+                            ${lockSide === 'back' ? `
+                            <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
+                                ${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}
+                                ${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}
+                            </div>` : `
+                            <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">
+                                ${showCharOnCard && nextCard.backText ? `<span class="card-char-label">${nextCard.backText.charAt(0).toUpperCase()}${nextCard.backText.charAt(0).toLowerCase()}</span>` : ''}
+                                <img src="${gifSrc(nextCard.frontImage)}" class="card-image">
+                                ${showTextOnFront && nextCard.backText ? `
+                                <div class="card-front-text">${highlightVowelsFront(nextCard.backText)}</div>
+                                ` : ''}
+                            </div>`}
+                        </div>
+                        ` : ''}
+
+                        ${cards.length > 1 ? `
+                        <div style="position:absolute;top:10px;left:8px;display:flex;align-items:center;gap:5px;z-index:20;pointer-events:none;">
+                            <button class="nav-btn prev" style="pointer-events:auto;flex-shrink:0;"
+                                onclick="event.stopPropagation();prevCard()"
+                                ontouchend="event.stopPropagation();event.preventDefault();prevCard()">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
+                                    <path d="M14 8L10 12L14 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <span id="navIndexLabel" style="font-size:0.65rem;opacity:0.75;color:${isFlipped ? 'white' : '#333'};white-space:nowrap;">${currentIndex + 1} / ${cards.length}</span>
+                        </div>
+                        <div style="position:absolute;top:10px;right:8px;display:flex;align-items:center;gap:5px;z-index:20;pointer-events:none;">
+                            <span id="navHintLabel" style="font-size:0.65rem;opacity:0.75;color:${isFlipped ? 'white' : '#333'};white-space:nowrap;">Tap to flip</span>
+                            <button class="nav-btn next" style="pointer-events:auto;flex-shrink:0;"
+                                onclick="event.stopPropagation();nextCard()"
+                                ontouchend="event.stopPropagation();event.preventDefault();nextCard()">
+                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
+                                    <path d="M10 8L14 12L10 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            // Show fixed overlays
+            document.getElementById('cardOverlaySettings').style.display = 'block';
+            document.getElementById('cardOverlayNav').style.display = 'block';
+            document.getElementById('cardOverlayCounter').style.display = 'none';
+            // Lock indicator: only visible when Lock Side is active.
+            // (renderDisplay runs after shuffle/swipe/flip, so this keeps the
+            //  indicator in sync without us touching anything else.)
+            document.getElementById('cardOverlayLock').style.display =
+                (lockSide === 'back') ? 'block' : 'none';
+
+            // Set index and hint labels in nav row
+            const navIndex = document.getElementById('navIndexLabel');
+            const navHint = document.getElementById('navHintLabel');
+            if (navIndex) navIndex.textContent = `${currentIndex + 1} / ${cards.length}`;
+            if (navHint) navHint.textContent = isFlipped ? 'Tap to flip' : 'Tap to flip';
+
+            // Position nav overlay to match card container bounds
+            requestAnimationFrame(() => positionNavOverlay());
+
+            // TTS button — bottom right, same style as settings button
+            const ttsEl = document.getElementById('cardOverlayTTS');
+            if (card.backText) {
+                ttsEl.innerHTML = `<button class="audio-btn" style="color:#35654D;" onclick="event.stopPropagation(); speakText('${card.backText.replace(/'/g, "\\'")}')">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    </svg>
+                </button>`;
+                ttsEl.style.display = 'block';
+            } else {
+                ttsEl.style.display = 'none';
+            }
+
+            // Hide ALL back-text (main + prev/next peeks) until after the scaler
+            // sets the final size. Without this, the text paints at its 7.5rem
+            // CSS default for one frame, then jumps to the bigger fitted size —
+            // visible as a "small → big" pop on each swipe in Lock Back Side mode.
+            const _pendingTexts = display.querySelectorAll(
+                '.card > .card-back .card-text-auto-scale, ' +
+                '.card-prev .card-text-auto-scale, ' +
+                '.card-next .card-text-auto-scale'
+            );
+            _pendingTexts.forEach(t => { t.style.visibility = 'hidden'; });
+
+            // Auto-scale text to fit on one line if needed - use requestAnimationFrame for proper timing
+            requestAnimationFrame(() => {
+                scaleTextToFit();
+                applyCardTextScale();
+                scaleFrontText();
+                // Reveal the now-sized back text everywhere
+                document.querySelectorAll(
+                    '.card > .card-back .card-text-auto-scale, ' +
+                    '.card-prev .card-text-auto-scale, ' +
+                    '.card-next .card-text-auto-scale'
+                ).forEach(t => { t.style.visibility = ''; });
+            });
+
+            // Show swipe onboarding hint on first-ever open with cards
+            maybeShowSwipeHint();
+        }
+
+        // cachedBackTextSizes[i] = { size: finalRem, max: maxFontSize used when computed }
+        // This lets us rescale proportionally when cardTextScaleIndex changes
+
+        // Internal: fit a single text element to a given card container.
+        // Same logic as scaleTextToFit but operates on any provided element so we
+        // can also size the prev/next peek text (which is identical in dimensions
+        // to the main card and slides into view during swipes — without sizing
+        // it, the peek shows tiny CSS-default text and the user perceives a
+        // "small → big" pop on every swipe in Lock Back Side mode).
+        function _fitOneBackText(textElement, container, cacheKey) {
+            if (!textElement || !container) return;
+            const needsFix = container.offsetWidth === 0;
+            if (needsFix) {
+                container.style.transform = 'none';
+                container.style.backfaceVisibility = 'visible';
+                container.style.webkitBackfaceVisibility = 'visible';
+            }
+            const cardW = container.offsetWidth;
+            const cardH = container.offsetHeight;
+            if (needsFix) {
+                container.style.transform = '';
+                container.style.backfaceVisibility = '';
+                container.style.webkitBackfaceVisibility = '';
+            }
+            if (cardW <= 0 || cardH <= 0) return;
+
+            const cardMin = Math.min(cardW, cardH);
+            const lockBackBoost = (lockSide === 'back') ? 1.35 : 1.0;
+            const basePx = cardMin * 0.22 * lockBackBoost;
+            const baseRem = basePx / 16;
+            const maxFontSize = Math.min(Math.max(baseRem, 1.5), 9 * lockBackBoost);
+            const minFontSize = maxFontSize * 0.2;
+            const containerPadding = cardMin * ((lockSide === 'back') ? 0.06 : 0.08);
+
+            const userScale = TEXT_SCALES[cardTextScaleIndex];
+            const scaledMax = maxFontSize * userScale;
+            const scaledMin = minFontSize * userScale;
+
+            const text = textElement.textContent || textElement.innerText;
+            const trimmed = text.trim();
+            const wordCount = trimmed.split(/\s+/).length;
+            const hasHyphen = text.includes('-');
+            const isSingleWord = wordCount === 1 && !hasHyphen;
+
+            // Orientation-aware single-word length limit:
+            //   landscape → fit up to 14 chars per line; 15+ break-word wrap
+            //   portrait  → fit up to 10 chars per line; 11+ break-word wrap
+            const isLandscape = cardW >= cardH;
+            const singleWordLimit = isLandscape ? 14 : 10;
+            const breakLongWord = isSingleWord && trimmed.length > singleWordLimit;
+
+            const maxWidth  = cardW - containerPadding;
+            const maxHeight = cardH - containerPadding;
+
+            // Font-size cap: choose the largest font where {singleWordLimit} chars
+            // actually fit across the card width. Without this, the binary search
+            // shrinks long words but the FIRST line of a wrapped word can fit
+            // fewer chars than the user wants. (User reported wraps happening at
+            // 8 chars portrait / 10 chars landscape instead of 10 / 14.)
+            //
+            // For short words (≤ limit), we use min(word length, limit) as the
+            // reference so short words can still go BIG — e.g. "cat" isn't capped
+            // by the limit, only by its own length. For long words (> limit) that
+            // will wrap, we use the full limit so each wrapped line carries up to
+            // {limit} characters.
+            //
+            // 0.65em is a generous per-character width estimate for Fredoka
+            // (the font in use). It's deliberately wider than typical so the
+            // limit is honored even on wide-glyph words.
+            let effectiveMax = scaledMax;
+            if (isSingleWord && lockSide === 'back') {
+                const avgCharWidthEm = 0.65;
+                const referenceLen = breakLongWord
+                    ? singleWordLimit
+                    : Math.min(trimmed.length, singleWordLimit);
+                const maxRemFromChars = maxWidth / (referenceLen * avgCharWidthEm * 16);
+                effectiveMax = Math.min(scaledMax, maxRemFromChars);
+            }
+            const startMax = effectiveMax;
+
+            if (isSingleWord && !breakLongWord) {
+                // Short single word — keep on one line
+                textElement.style.whiteSpace = 'nowrap';
+                textElement.style.wordBreak = 'normal';
+                textElement.style.overflowWrap = 'normal';
+            } else if (breakLongWord) {
+                // Long single word — allow it to break across lines
+                textElement.style.whiteSpace = 'normal';
+                textElement.style.wordBreak = 'break-word';
+                textElement.style.overflowWrap = 'break-word';
+            } else {
+                // Multi-word / hyphenated — wrap at natural breaks
+                textElement.style.whiteSpace = 'normal';
+                textElement.style.wordBreak = 'normal';
+                textElement.style.overflowWrap = 'break-word';
+            }
+
+            textElement.style.fontSize = startMax + 'rem';
+            // Short single words must fit on one line (width). Long broken words
+            // and multi-word text are wrapping, so they're constrained by height.
+            const fitsAtMax = (isSingleWord && !breakLongWord)
+                ? textElement.scrollWidth <= maxWidth
+                : textElement.scrollHeight <= maxHeight;
+            if (fitsAtMax) {
+                if (cacheKey !== undefined && cacheKey !== null)
+                    cachedBackTextSizes[cacheKey] = { size: startMax, max: effectiveMax };
+                return;
+            }
+
+            let minSize = isSingleWord ? 0.5 : scaledMin;
+            let maxSize = startMax;
+            let optimalSize = maxSize;
+            while (maxSize - minSize > 0.05) {
+                const testSize = (minSize + maxSize) / 2;
+                textElement.style.fontSize = testSize + 'rem';
+                const fits = (isSingleWord && !breakLongWord)
+                    ? textElement.scrollWidth <= maxWidth * 0.95
+                    : textElement.scrollHeight <= maxHeight * 0.95;
+                if (fits) { optimalSize = testSize; minSize = testSize; }
+                else       { maxSize = testSize; }
+            }
+
+            const finalSize = optimalSize * 0.97;
+            textElement.style.fontSize = finalSize + 'rem';
+            if (cacheKey !== undefined && cacheKey !== null)
+                cachedBackTextSizes[cacheKey] = { size: finalSize, max: effectiveMax };
+        }
+
+        function scaleTextToFit() {
+            // Main card
+            const mainText = document.querySelector('.card > .card-back .card-text-auto-scale');
+            if (mainText) {
+                const mainContainer = mainText.closest('.card-back');
+                _fitOneBackText(mainText, mainContainer, currentIndex);
+            }
+
+            // Prev / next peek text (only present when Lock Back Side is on).
+            // These are physically the same size as the main card but live in
+            // a different DOM structure (.card-prev/.card-next wrap a bare
+            // .card-face, not .card-back). Without sizing these too, the peek
+            // shows tiny default-CSS text during swipe transitions.
+            const peekTexts = document.querySelectorAll('.card-prev .card-text-auto-scale, .card-next .card-text-auto-scale');
+            peekTexts.forEach(t => {
+                const c = t.closest('.card-face');
+                _fitOneBackText(t, c, null); // no cache for peeks
+            });
+        }
+
+        // Event listeners for save modal buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const saveJSONBtn = document.getElementById('saveJSONBtn');
+            const saveZIPBtn = document.getElementById('saveZIPBtn');
+            const closeSaveBtn = document.getElementById('closeSaveBtn');
+
+            if (saveJSONBtn) {
+                let _saveJsonTouched = false;
+                saveJSONBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    _saveJsonTouched = true;
+                    saveAsJSON();
+                    setTimeout(() => { _saveJsonTouched = false; }, 600);
+                });
+                saveJSONBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (_saveJsonTouched) return; // already handled by touchend
+                    saveAsJSON();
+                });
+            }
+
+            if (saveZIPBtn) {
+                saveZIPBtn.addEventListener('click', function() {
+                    console.log('ZIP button clicked');
+                    saveAsZIP();
+                });
+            }
+
+            if (closeSaveBtn) {
+                closeSaveBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSaveOptions();
+                });
+                closeSaveBtn.addEventListener('click', function(e) {
+                    closeSaveOptions();
+                });
+            }
+        });
+        // Dropdown toggle functions
+        const TEXT_SCALES = [1.0, 1.4, 1.8]; // default, +40%, +80%
+        let cardTextScaleIndex = 0; // start at default
+
+        function scaleFrontText() {
+            const textEl = document.querySelector('.card-front-text');
+            if (!textEl) return;
+            const cardFront = textEl.closest('.card-front');
+            const imgEl = cardFront ? cardFront.querySelector('.card-image') : null;
+            if (!cardFront || !imgEl) return;
+
+            const screenWidth = window.innerWidth;
+
+            // Match same size tiers as back-text scaling
+            let maxFontSize, minFontSize;
+            if (screenWidth <= 390)       { maxFontSize = 2.8; minFontSize = 0.7; }
+            else if (screenWidth <= 480)  { maxFontSize = 3.5; minFontSize = 0.8; }
+            else if (screenWidth <= 768)  { maxFontSize = 4.5; minFontSize = 1.0; }
+            else if (screenWidth <= 1024) { maxFontSize = 6.0; minFontSize = 1.2; }
+            else                          { maxFontSize = 7.5; minFontSize = 1.4; }
+
+            const cardWidth = cardFront.offsetWidth - 20;
+
+            // Single-line: scale down until it fits the card width
+            textEl.style.whiteSpace = 'nowrap';
+            textEl.style.fontSize = maxFontSize + 'rem';
+
+            if (textEl.scrollWidth > cardWidth) {
+                let lo = minFontSize, hi = maxFontSize, best = minFontSize;
+                for (let i = 0; i < 12; i++) {
+                    const mid = (lo + hi) / 2;
+                    textEl.style.fontSize = mid + 'rem';
+                    if (textEl.scrollWidth <= cardWidth) { best = mid; lo = mid; }
+                    else { hi = mid; }
+                }
+                textEl.style.fontSize = best + 'rem';
+            }
+
+            // Adjust image height based on text block height
+            requestAnimationFrame(() => {
+                const cardHeight = cardFront.offsetHeight;
+                const textHeight = textEl.offsetHeight + 12;
+                const imgHeight = cardHeight - textHeight - 20;
+                const imgPercent = Math.max(30, Math.min(80, (imgHeight / cardHeight) * 100));
+                imgEl.style.height = imgPercent + '%';
+                imgEl.style.flex = 'none';
+            });
+        }
+
+        function applyCardTextScale() {
+            // Retrigger scaleTextToFit which now incorporates the user scale preference
+            requestAnimationFrame(() => scaleTextToFit());
+        }
+
+        function increaseCardTextSize() {
+            if (cardTextScaleIndex < TEXT_SCALES.length - 1) {
+                cardTextScaleIndex++;
+                delete cachedBackTextSizes[currentIndex];
+                requestAnimationFrame(() => {
+                    scaleTextToFit();
+                    requestAnimationFrame(() => {
+                        const textEl = document.querySelector('.card-text-auto-scale');
+                        const container = textEl?.closest('.card-back');
+                        if (textEl && container) {
+                            const overflowsWidth  = textEl.scrollWidth  > container.offsetWidth  - 10;
+                            const overflowsHeight = textEl.scrollHeight > container.offsetHeight - 10;
+                            if (overflowsWidth || overflowsHeight) {
+                                // Revert — text cannot fit even after scaling attempt
+                                cardTextScaleIndex--;
+                                delete cachedBackTextSizes[currentIndex];
+                                scaleTextToFit();
+                                showToast('⚠️ Text too large to fit the card', 2500);
+                            }
+                        }
+                    });
+                });
+            }
+        }
+
+        function decreaseCardTextSize() {
+            if (cardTextScaleIndex > 0) {
+                cardTextScaleIndex--;
+                delete cachedBackTextSizes[currentIndex];
+                applyCardTextScale();
+            }
+        }
+
+        function toggleTextOnFront() {
+            showTextOnFront = !showTextOnFront;
+            cachedFrontTextSize = null; // reset so it recomputes for this session
+            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+            const btn = document.getElementById('showTextBtn');
+            if (btn) {
+                btn.style.background = showTextOnFront ? '#f0f9f4' : 'white';
+                btn.style.color = showTextOnFront ? '#35654D' : '#333';
+                btn.querySelector('svg').setAttribute('stroke', showTextOnFront ? '#1a4a32' : '#35654D');
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+            renderDisplay();
+        }
+
+        function toggleCharOnCard() {
+            showCharOnCard = !showCharOnCard;
+            const btn = document.getElementById('showCharBtn');
+            if (btn) {
+                btn.style.background = showCharOnCard ? '#f0f9f4' : 'white';
+                const svgRect = btn.querySelector('rect');
+                if (svgRect) svgRect.setAttribute('stroke', showCharOnCard ? '#1a4a32' : '#35654D');
+                const svgText = btn.querySelector('text');
+                if (svgText) svgText.setAttribute('fill', showCharOnCard ? '#1a4a32' : '#35654D');
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+            renderDisplay();
+        }
+
+        let _lockAnimating = false;
+
+        function _updateLockMenuButton(active) {
+            const btn = document.getElementById('lockSideBtn');
+            if (!btn) return;
+            const sideName = active ? 'Back' : '';
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${active ? '#1a4a32' : '#35654D'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${active ? `Lock Side (${sideName})` : 'Lock Side'}`;
+            btn.style.background = active ? '#f0f9f4' : 'white';
+            btn.style.color = active ? '#35654D' : '#333';
+        }
+
+        // Same mechanics as flipCard() — toggles the .flipped class on the
+        // existing card element so the CSS rotateY transition (0.6s) plays
+        // smoothly. Calling renderDisplay() instead would destroy and rebuild
+        // the DOM and kill the animation.
+        function _flipCardCss(targetFlipped) {
+            isFlipped = targetFlipped;
+            const cardEl = document.querySelector('.card');
+            if (cardEl) {
+                if (targetFlipped) cardEl.classList.add('flipped');
+                else cardEl.classList.remove('flipped');
+            }
+            const navHint = document.getElementById('navHintLabel');
+            const navIndex = document.getElementById('navIndexLabel');
+            const labelColor = isFlipped ? 'white' : '#333';
+            if (navHint) { navHint.textContent = 'Tap to flip'; navHint.style.color = labelColor; }
+            if (navIndex) navIndex.style.color = labelColor;
+            if (isFlipped) {
+                const _ft = document.querySelector('.card > .card-back .card-text-auto-scale');
+                if (_ft) _ft.style.visibility = 'hidden';
+                requestAnimationFrame(() => {
+                    scaleTextToFit();
+                    const _ft2 = document.querySelector('.card > .card-back .card-text-auto-scale');
+                    if (_ft2) _ft2.style.visibility = '';
+                });
+            }
+            requestAnimationFrame(() => positionNavOverlay());
+        }
+
+        // Update only the ghost preview cards (card-prev / card-next) when
+        // lockSide changes, without rebuilding the whole DOM (which would kill
+        // the CSS flip animation on the main card).
+        function _updateGhostCards() {
+            const prevEl = document.querySelector('.card-prev');
+            const nextEl = document.querySelector('.card-next');
+            if (!prevEl && !nextEl) return;
+            const textClass = 'card-text card-text-auto-scale';
+            const prevCard = cards[(currentIndex - 1 + cards.length) % cards.length];
+            const nextCard = cards[(currentIndex + 1) % cards.length];
+            if (prevEl && prevCard) {
+                if (lockSide === 'back') {
+                    prevEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}</div>`;
+                } else {
+                    prevEl.innerHTML = `<div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">${showCharOnCard && prevCard.backText ? '<span class="card-char-label">' + prevCard.backText.charAt(0).toUpperCase() + prevCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(prevCard.frontImage)}" class="card-image">${showTextOnFront && prevCard.backText ? '<div class="card-front-text">' + highlightVowelsFront(prevCard.backText) + '</div>' : ''}</div>`;
+                }
+            }
+            if (nextEl && nextCard) {
+                if (lockSide === 'back') {
+                    nextEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}</div>`;
+                } else {
+                    nextEl.innerHTML = `<div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">${showCharOnCard && nextCard.backText ? '<span class="card-char-label">' + nextCard.backText.charAt(0).toUpperCase() + nextCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(nextCard.frontImage)}" class="card-image">${showTextOnFront && nextCard.backText ? '<div class="card-front-text">' + highlightVowelsFront(nextCard.backText) + '</div>' : ''}</div>`;
+                }
+            }
+        }
+
+        function toggleLockSide() {
+            if (_lockAnimating) return;
+            const willLock = (lockSide !== 'back');
+            _lockAnimating = true;
+
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+            _updateLockMenuButton(willLock);
+
+            // Boost changes when lockSide changes — invalidate the size cache
+            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+
+            if (willLock) {
+                // LOCK SEQUENCE:
+                //   1) Flip front->back (CSS transition, 600ms) with the big
+                //      padlock (open shackle) fading in during the flip so the
+                //      padlock is "already there" when the back lands.
+                //   2) Shackle closes (open -> locked, 400ms).
+                //   3) Padlock shrinks to the corner spot, small indicator
+                //      becomes visible there.
+                lockSide = 'back';
+                _updateGhostCards();
+                const lockOverlay = document.getElementById('cardOverlayLock');
+                if (lockOverlay) {
+                    lockOverlay.style.display = 'block';
+                    lockOverlay.style.visibility = 'hidden';
+                }
+                positionNavOverlay();
+                if (!isFlipped) _flipCardCss(true);
+                else requestAnimationFrame(() => scaleTextToFit());
+                playLockAnimation('lock', () => { _lockAnimating = false; });
+            } else {
+                // UNLOCK SEQUENCE:
+                //   1) Hide small indicator; big padlock (locked) appears at
+                //      that spot and grows to card center.
+                //   2) Shackle opens (locked -> open, 400ms).
+                //   3) Card flips back->front while padlock fades out.
+                const lockOverlay = document.getElementById('cardOverlayLock');
+                if (lockOverlay) lockOverlay.style.visibility = 'hidden';
+                playLockAnimation('unlock', () => {
+                    lockSide = false;
+                    _updateGhostCards();
+                    setTimeout(() => {
+                        const ov = document.getElementById('cardOverlayLock');
+                        if (ov) {
+                            ov.style.display = 'none';
+                            ov.style.visibility = '';
+                        }
+                        _lockAnimating = false;
+                    }, 300);
+                });
+            }
+        }
+
+        // Big-padlock animation between card center and the small lock spot.
+        // Includes a shackle open<->closed transition mid-sequence.
+        function playLockAnimation(direction, onComplete) {
+            const cardStack = document.querySelector('.card-stack')
+                          || document.querySelector('.card-container');
+            const smallLock = document.getElementById('cardOverlayLock');
+            if (!cardStack || !smallLock) {
+                if (smallLock) smallLock.style.visibility = '';
+                if (onComplete) onComplete();
+                return;
+            }
+
+            const stackRect = cardStack.getBoundingClientRect();
+            const smallRect = smallLock.getBoundingClientRect();
+            const centerX = stackRect.left + stackRect.width / 2;
+            const centerY = stackRect.top  + stackRect.height / 2;
+            const targetX = smallRect.left + smallRect.width / 2;
+            const targetY = smallRect.top  + smallRect.height / 2;
+
+            const BIG_PX = 200;
+            const SMALL_PX = 24;
+            const scaleSmall = SMALL_PX / BIG_PX;
+
+            // Build the big padlock overlay. The shackle is a separate <path>
+            // with id "lockAnimShackle" so we can rotate it for open/closed
+            // animation. Rotation pivots at (7, 11) — the bottom-left hinge.
+            const big = document.createElement('div');
+            big.style.cssText = [
+                'position:fixed', 'left:0', 'top:0',
+                'width:' + BIG_PX + 'px', 'height:' + BIG_PX + 'px',
+                'pointer-events:none', 'z-index:99999',
+                'transform-origin:center center',
+                'will-change:transform,opacity', 'transition:none',
+                'opacity:0'
+            ].join(';') + ';';
+            // Shackle is split into two pieces so we can do a "vertical lift with
+            // one side still attached" animation (no rotation):
+            //   - <g id="shackleGroup"> wraps the U-shape; this group TRANSLATES
+            //     straight up to "lift" the shackle out of the body.
+            //   - <line id="shackleStem"> is the thin bridge from the lifted
+            //     left foot DOWN to the body — it makes the left side look
+            //     "still attached" while the right side dangles free.
+            //   When closed, the group is at translateY(0) and the stem is
+            //   invisible (opacity 0). When open, the group lifts up and the
+            //   stem fades in to bridge the gap.
+            big.innerHTML =
+                '<svg width="' + BIG_PX + '" height="' + BIG_PX + '" viewBox="0 0 24 24" fill="none" ' +
+                'stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
+                'style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.45));display:block;overflow:visible">' +
+                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' +
+                '<g id="shackleGroup" ' +
+                'style="transition:transform 280ms cubic-bezier(0.4,0.0,0.2,1)">' +
+                '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
+                '</g>' +
+                '<line id="shackleStem" x1="7" y1="8" x2="7" y2="11" ' +
+                'style="opacity:0; transition:opacity 200ms ease-out 80ms"/>' +
+                '</svg>';
+            document.body.appendChild(big);
+
+            const shackleGroup = big.querySelector('#shackleGroup');
+            const shackleStem  = big.querySelector('#shackleStem');
+            function setShackleOpen(open) {
+                // Open: lift the shackle straight up (no rotation, no lean).
+                //       Show the left-side stem so that side stays "attached".
+                // Closed: drop back into the body, hide the stem.
+                if (shackleGroup) {
+                    shackleGroup.style.transform = open ? 'translateY(-3px)' : 'translateY(0)';
+                }
+                if (shackleStem) {
+                    shackleStem.style.opacity = open ? '1' : '0';
+                }
+            }
+
+            function setAt(x, y, scale, opacity) {
+                big.style.transform =
+                    'translate(' + (x - BIG_PX/2) + 'px,' + (y - BIG_PX/2) + 'px) scale(' + scale + ')';
+                big.style.opacity = String(opacity);
+            }
+
+            const eased = 'cubic-bezier(0.4,0.0,0.2,1)';
+
+            if (direction === 'lock') {
+                // LOCK SEQUENCE (visible but not slow)
+                setShackleOpen(true);
+                setAt(centerX, centerY, 1, 0);
+                requestAnimationFrame(() => {
+                    big.style.transition = 'opacity 250ms ease-out';
+                    setAt(centerX, centerY, 1, 0.5);
+                });
+                setTimeout(() => { setShackleOpen(false); }, 320);
+                // Shrink to corner — slower so the motion reads
+                setTimeout(() => {
+                    big.style.transition = 'transform 350ms ' + eased + ', opacity 350ms ease-in';
+                    setAt(targetX, targetY, scaleSmall, 0);
+                }, 650);
+                setTimeout(() => {
+                    big.remove();
+                    const ov = document.getElementById('cardOverlayLock');
+                    if (ov) ov.style.visibility = '';
+                    if (onComplete) onComplete();
+                    cachedFrontTextSize = null;
+                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+                    scaleTextToFit();
+                }, 1050);
+            } else {
+                // UNLOCK SEQUENCE (visible but not slow)
+                setShackleOpen(false);
+                setAt(targetX, targetY, scaleSmall, 0.65);
+                // Grow to center — visible
+                requestAnimationFrame(() => {
+                    big.style.transition = 'transform 350ms ' + eased;
+                    setAt(centerX, centerY, 1, 0.55);
+                });
+                setTimeout(() => { setShackleOpen(true); }, 380);
+                setTimeout(() => {
+                    if (isFlipped) _flipCardCss(false);
+                    big.style.transition = 'opacity 250ms ease-in';
+                    big.style.opacity = '0';
+                }, 700);
+                setTimeout(() => {
+                    big.remove();
+                    if (onComplete) onComplete();
+                    cachedFrontTextSize = null;
+                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+                    scaleFrontText();
+                }, 1000);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('muteBtn');
+            const icon = document.getElementById('muteIcon');
+            if (btn) {
+                btn.style.background = isMuted ? '#f0f9f4' : 'white';
+                btn.style.color      = isMuted ? '#35654D' : '#333';
+                btn.lastChild.textContent = isMuted ? ' Unmute Sounds' : ' Mute Sounds';
+            }
+            if (icon) {
+                icon.setAttribute('stroke', isMuted ? '#1a4a32' : '#35654D');
+                icon.innerHTML = isMuted
+                    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+                    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('muteBtn');
+            const icon = document.getElementById('muteIcon');
+            if (btn) {
+                btn.style.background = isMuted ? '#f0f9f4' : 'white';
+                btn.style.color      = isMuted ? '#35654D' : '#333';
+                btn.lastChild.textContent = isMuted ? 'Unmute Sounds' : 'Mute Sounds';
+            }
+            if (icon) {
+                icon.setAttribute('stroke', isMuted ? '#1a4a32' : '#35654D');
+                icon.innerHTML = isMuted
+                    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+                    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+        }
+
+        function toggleHideUI() {
+            const isHidden = document.body.classList.toggle('hide-ui');
+            const btn = document.getElementById('hideUIBtn');
+            if (btn) {
+                btn.innerHTML = isHidden
+                    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a4a32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show Buttons`
+                    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Hide Buttons`;
+                btn.style.background = isHidden ? '#f0f9f4' : 'white';
+                btn.style.color = isHidden ? '#35654D' : '#333';
+            }
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+        }
+
+        function toggleSettingsMenu() {
+            const menu = document.getElementById('settingsMenu');
+            const btn = menu?.closest('div')?.querySelector('.fullscreen-btn');
+            if (!menu) return;
+            const isOpen = menu.style.display === 'block';
+            menu.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) {
+                setTimeout(() => {
+                    const closeMenu = (e) => {
+                        const menu = document.getElementById('settingsMenu');
+                        // Don't close if clicking/touching the toggle button itself — let the toggle handle it
+                        const toggleBtn = document.querySelector('.fullscreen-btn');
+                        if (toggleBtn && (toggleBtn === e.target || toggleBtn.contains(e.target))) {
+                            document.removeEventListener('click', closeMenu);
+                            document.removeEventListener('touchstart', closeMenu);
+                            return;
+                        }
+                        if (menu && !menu.contains(e.target)) {
+                            menu.style.display = 'none';
+                            document.removeEventListener('click', closeMenu);
+                            document.removeEventListener('touchstart', closeMenu);
+                        }
+                    };
+                    document.addEventListener('click', closeMenu);
+                    document.addEventListener('touchstart', closeMenu);
+                }, 10);
+            }
+        }
+
+        function toggleMoreDropdown() {
+            closeQuickLoadDropdown();
+            const content = document.getElementById('moreDropdownContent');
+            content.classList.toggle('show');
+            const isOpen = content.classList.contains('show');
+            ['navIndexLabel','navHintLabel'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.visibility = isOpen ? 'hidden' : 'visible';
+            });
+        }
+
+        function closeMoreDropdown() {
+            const content = document.getElementById('moreDropdownContent');
+            content.classList.remove('show');
+            ['navIndexLabel','navHintLabel'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.visibility = 'visible';
+            });
+        }
+
+        // Touch event handlers for mobile
+        function handleDropdownTouch(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleMoreDropdown();
+        }
+
+        function handleMenuItemTouch(event, callback) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeMoreDropdown();
+            callback();
+        }
+
+        // Clear all cards with confirmation
+        function confirmClearAllCards() {
+            if (cards.length === 0) {
+                showToast('No cards to clear!', 2000);
+                return;
+            }
+
+            // Show custom confirmation modal
+            const confirmMessage = document.getElementById('confirmMessage');
+            confirmMessage.textContent = `Are you sure you want to clear all ${cards.length} cards? This cannot be undone.`;
+
+            document.body.style.overflow = 'hidden';
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function closeConfirmModal() {
+            document.body.style.overflow = '';
+            document.getElementById('confirmModal').classList.remove('active');
+        }
+
+        function executeClearAll() {
+            // Close modal first
+            closeConfirmModal();
+
+            // Stop any ongoing speech
+            window.speechSynthesis.cancel();
+
+            // Clear all cards and reset all state
+            cards = [];
+            currentIndex = 0;
+            isFlipped = false;
+            loadedUnitIds.clear();
+            currentLoadedUnitId = null;
+            setLoadedFileName('');
+
+            // Clear the image hash cache to prevent false duplicate warnings
+            imageHashCache.clear();
+
+            // Reset any game states
+            if (typeof bombGameState !== 'undefined') {
+                bombGameState = { currentCardIndex: 0, gameCards: [], selectedLetters: [], correctWord: '' };
+            }
+            if (typeof guessGameState !== 'undefined') {
+                guessGameState = { selectedCard: null, currentCardOrder: 0, correctCards: {}, gameCards: [] };
+            }
+            if (typeof spellingGameState !== 'undefined') {
+                spellingGameState = { currentCardIndex: 0, gameCards: [], spelledCards: new Set(), scrambledLetters: [], answerSlots: [], selectedLetter: null, correctWord: '', moveHistory: [] };
+            }
+
+            // Save to sessionStorage using the correct function
+            saveCards();
+
+            // renderDisplay handles the new empty state layout and all button visibility
+            renderDisplay();
+
+            showToast('All cards cleared!', 2000);
+        }
+
+        // Close dropdown when clicking/touching outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                closeMoreDropdown();
+            }
+        });
+
+        document.addEventListener('touchend', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                closeMoreDropdown();
+            }
+        });
+    
+        // Disable all zoom functionality
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gesturechange', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('gestureend', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Prevent Ctrl/Cmd + scroll zoom
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Prevent all pinch zoom on touch devices
+        document.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // Prevent keyboard zoom shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Prevent zoom shortcuts
+            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0' || e.key === '=')) {
+                e.preventDefault();
+            }
+
+            // ---- Spelling game keyboard input ----
+            const spellingOpen = document.getElementById('spellingGameModal')?.style.display === 'flex';
+            if (spellingOpen && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (e.key === 'ArrowRight') { e.preventDefault(); spellingNextCard(); return; }
+                if (e.key === 'ArrowLeft')  { e.preventDefault(); spellingPrevCard(); return; }
+                if (e.key === 'Enter')      { e.preventDefault(); checkSpelling();    return; }
+                if (e.key === 'Backspace')  { e.preventDefault(); undoSpelling();     return; }
+                if (e.key === 'Escape')     { e.preventDefault(); closeSpellingGame(); return; }
+                if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                    e.preventDefault();
+                    const typed = e.key.toUpperCase();
+                    const idx = spellingGameState.scrambledLetters.findIndex(l => l !== null && l.toUpperCase() === typed);
+                    if (idx !== -1) selectLetter(idx);
+                    return;
+                }
+            }
+
+            // Keyboard navigation for main flashcard view only
+            // Check if we're in main view (not in a modal/game)
+            const inModal = document.querySelector('.modal.active');
+            const inDropdown = document.getElementById('quickLoadDropdown')?.style.display === 'block' ||
+                              document.getElementById('moreDropdown')?.querySelector('.dropdown-content.show');
+            const inInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+
+            // Only enable keyboard shortcuts if we're in main flashcard view
+            if (!inModal && !inDropdown && !inInput && cards.length > 0) {
+                // Right Arrow - Next card
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    nextCard();
+                }
+                
+                // Left Arrow - Previous card
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    prevCard();
+                }
+                
+                // Space - Flip card
+                if (e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault();
+                    flipCard();
+                }
+
+                // Delete / Backspace - Delete current card
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    deleteCard();
+                }
+            }
+        }, { passive: false });
+
+        // ==================== CROP IMAGE ====================
+
+        let cropState = {
+            img: null,
+            originalSrc: null,             // stores the original before any crop
+            imgNaturalW: 0, imgNaturalH: 0,
+            displayW: 0, displayH: 0,
+            offsetX: 0, offsetY: 0,
+            scale: 1,
+            crop: { x: 0, y: 0, w: 0, h: 0 },
+            dragging: false,
+            resizing: null,
+            lastX: 0, lastY: 0,
+            cardIndex: -1
+        };
+
+        const HANDLE_SIZE = 22;
+
+        function openCropTool() {
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
+            hideCardOverlays();
+
+            cropState.cardIndex = currentIndex;
+            const card = cards[currentIndex];
+            if (!card?.frontImage) { showToast('⚠️ No image on this card', 2000); return; }
+
+            // Store original only if not already stored (preserve the true original across multiple crops)
+            if (!card.originalFrontImage) {
+                card.originalFrontImage = card.frontImage;
+            }
+            cropState.originalSrc = card.originalFrontImage;
+
+            const overlay = document.getElementById('cropOverlay');
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            // Show revert button only if image has previously been cropped (original differs from current)
+            const revertBtn = document.getElementById('revertCropBtn');
+            if (revertBtn) {
+                revertBtn.style.display = (card.originalFrontImage && card.originalFrontImage !== card.frontImage) ? 'block' : 'none';
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                cropState.img = img;
+                cropState.imgNaturalW = img.naturalWidth;
+                cropState.imgNaturalH = img.naturalHeight;
+                requestAnimationFrame(initCropCanvas);
+            };
+            img.src = gifSrc(card.frontImage);
+        }
+
+        function initCropCanvas() {
+            const canvas = document.getElementById('cropCanvas');
+            const container = document.getElementById('cropCanvasWrap');
+            const cw = container.clientWidth;
+            const ch = container.clientHeight;
+            canvas.width = cw;
+            canvas.height = ch;
+
+            const img = cropState.img;
+            const scaleX = cw / img.naturalWidth;
+            const scaleY = ch / img.naturalHeight;
+            const scale = Math.min(scaleX, scaleY, 1);
+            cropState.scale = scale;
+
+            const dw = img.naturalWidth * scale;
+            const dh = img.naturalHeight * scale;
+            cropState.displayW = dw;
+            cropState.displayH = dh;
+            cropState.offsetX = (cw - dw) / 2;
+            cropState.offsetY = (ch - dh) / 2;
+
+            // Default crop = full image
+            cropState.crop = { x: cropState.offsetX, y: cropState.offsetY, w: dw, h: dh };
+            drawCrop();
+        }
+
+        function drawCrop() {
+            const canvas = document.getElementById('cropCanvas');
+            const ctx = canvas.getContext('2d');
+            const s = cropState;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw image
+            ctx.drawImage(s.img, s.offsetX, s.offsetY, s.displayW, s.displayH);
+
+            // Dark overlay outside crop
+            ctx.fillStyle = 'rgba(0,0,0,0.55)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
+
+            // Redraw image inside crop (so it looks bright)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
+            ctx.clip();
+            ctx.drawImage(s.img, s.offsetX, s.offsetY, s.displayW, s.displayH);
+            ctx.restore();
+
+            // Crop border
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
+
+            // Rule-of-thirds grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(s.crop.x + s.crop.w * i / 3, s.crop.y);
+                ctx.lineTo(s.crop.x + s.crop.w * i / 3, s.crop.y + s.crop.h);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(s.crop.x, s.crop.y + s.crop.h * i / 3);
+                ctx.lineTo(s.crop.x + s.crop.w, s.crop.y + s.crop.h * i / 3);
+                ctx.stroke();
+            }
+
+            // Corner handles
+            const hs = HANDLE_SIZE / 2;
+            const corners = getCropCorners();
+            corners.forEach(({ x, y }) => {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(x, y, hs, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function getCropCorners() {
+            const c = cropState.crop;
+            return [
+                { x: c.x,        y: c.y,        id: 'tl' },
+                { x: c.x + c.w,  y: c.y,        id: 'tr' },
+                { x: c.x,        y: c.y + c.h,  id: 'bl' },
+                { x: c.x + c.w,  y: c.y + c.h,  id: 'br' },
+                { x: c.x + c.w / 2, y: c.y,     id: 'tm' },
+                { x: c.x + c.w / 2, y: c.y + c.h, id: 'bm' },
+                { x: c.x,        y: c.y + c.h / 2, id: 'ml' },
+                { x: c.x + c.w,  y: c.y + c.h / 2, id: 'mr' },
+            ];
+        }
+
+        function getEventPos(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {
+                x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+                y: (touch.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function hitHandle(x, y) {
+            const corners = getCropCorners();
+            for (const c of corners) {
+                if (Math.hypot(x - c.x, y - c.y) < HANDLE_SIZE) return c.id;
+            }
+            return null;
+        }
+
+        function insideCrop(x, y) {
+            const c = cropState.crop;
+            return x > c.x && x < c.x + c.w && y > c.y && y < c.y + c.h;
+        }
+
+        function cropPointerDown(e) {
+            e.preventDefault();
+            const canvas = document.getElementById('cropCanvas');
+            const { x, y } = getEventPos(e, canvas);
+            const handle = hitHandle(x, y);
+            cropState.lastX = x; cropState.lastY = y;
+            if (handle) {
+                cropState.resizing = handle;
+            } else if (insideCrop(x, y)) {
+                cropState.dragging = true;
+            }
+        }
+
+        function cropPointerMove(e) {
+            e.preventDefault();
+            if (!cropState.dragging && !cropState.resizing) return;
+            const canvas = document.getElementById('cropCanvas');
+            const { x, y } = getEventPos(e, canvas);
+            const dx = x - cropState.lastX;
+            const dy = y - cropState.lastY;
+            cropState.lastX = x; cropState.lastY = y;
+
+            const s = cropState;
+            const minSize = 40;
+            // Image bounds in display coords
+            const imgLeft   = s.offsetX;
+            const imgTop    = s.offsetY;
+            const imgRight  = s.offsetX + s.displayW;
+            const imgBottom = s.offsetY + s.displayH;
+
+            if (s.dragging) {
+                s.crop.x = Math.max(imgLeft,  Math.min(s.crop.x + dx, imgRight  - s.crop.w));
+                s.crop.y = Math.max(imgTop,   Math.min(s.crop.y + dy, imgBottom - s.crop.h));
+            } else if (s.resizing) {
+                const r = s.resizing;
+                let { x: cx, y: cy, w: cw, h: ch } = s.crop;
+                let right  = cx + cw;
+                let bottom = cy + ch;
+
+                if (r.includes('r') || r === 'mr') {
+                    right = Math.min(imgRight,  Math.max(cx + minSize, right + dx));
+                }
+                if (r.includes('l') || r === 'ml') {
+                    cx = Math.max(imgLeft,  Math.min(right - minSize, cx + dx));
+                }
+                if (r.includes('b') || r === 'bm') {
+                    bottom = Math.min(imgBottom, Math.max(cy + minSize, bottom + dy));
+                }
+                if (r.includes('t') || r === 'tm') {
+                    cy = Math.max(imgTop,   Math.min(bottom - minSize, cy + dy));
+                }
+
+                s.crop = { x: cx, y: cy, w: right - cx, h: bottom - cy };
+            }
+            drawCrop();
+        }
+
+        function cropPointerUp(e) {
+            cropState.dragging = false;
+            cropState.resizing = null;
+        }
+
+        function applyCrop() {
+            const s = cropState;
+            const canvas = document.createElement('canvas');
+            // Convert display coords back to natural image coords
+            const sx = (s.crop.x - s.offsetX) / s.scale;
+            const sy = (s.crop.y - s.offsetY) / s.scale;
+            const sw = s.crop.w / s.scale;
+            const sh = s.crop.h / s.scale;
+
+            // Check if crop is effectively the full image (no real crop applied)
+            const isFullImage = Math.round(sx) <= 0 && Math.round(sy) <= 0 &&
+                                Math.round(sw) >= s.imgNaturalW && Math.round(sh) >= s.imgNaturalH;
+            if (isFullImage) {
+                closeCropTool();
+                return;
+            }
+
+            canvas.width = Math.round(sw);
+            canvas.height = Math.round(sh);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(s.img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+            const cropped = canvas.toDataURL('image/jpeg', 0.92);
+            cards[s.cardIndex].frontImage = cropped;
+            saveCards();
+            renderDisplay();
+            closeCropTool();
+            showToast('✅ Image cropped!', 2000);
+        }
+
+        function resetCrop() {
+            const s = cropState;
+            s.crop = { x: s.offsetX, y: s.offsetY, w: s.displayW, h: s.displayH };
+            drawCrop();
+        }
+
+        function revertToOriginal() {
+            const card = cards[cropState.cardIndex];
+            if (!card?.originalFrontImage) { showToast('⚠️ No original to revert to', 2000); return; }
+            card.frontImage = card.originalFrontImage;
+            delete card.originalFrontImage;
+            saveCards();
+            renderDisplay();
+            closeCropTool();
+            showToast('↩️ Reverted to original!', 2000);
+        }
+
+        function closeCropTool() {
+            document.getElementById('cropOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+            cropState.img = null;
+            showCardOverlays();
+        }
+
+        // Wire up canvas events on load
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('cropCanvas');
+            if (!canvas) return;
+            // Mouse
+            canvas.addEventListener('mousedown', cropPointerDown);
+            canvas.addEventListener('mousemove', cropPointerMove);
+            canvas.addEventListener('mouseup', cropPointerUp);
+            canvas.addEventListener('mouseleave', cropPointerUp);
+            // Touch
+            canvas.addEventListener('touchstart', cropPointerDown, { passive: false });
+            canvas.addEventListener('touchmove', cropPointerMove, { passive: false });
+            canvas.addEventListener('touchend', cropPointerUp);
+            // Resize
+            window.addEventListener('resize', () => {
+                if (document.getElementById('cropOverlay').style.display === 'flex') {
+                    initCropCanvas();
+                }
+            });
+        });
+
+        // Re-render guess game on resize/rotation, preserving reveal state (keeps ✓/✗ buttons)
+        function rerenderGuessGameForResize() {
+            if (!document.getElementById('guessGameModal')?.classList.contains('active')) return;
+            if (guessGameState.selectedCard !== null && guessGameState.selectedCard !== undefined) {
+                showGuessCardReveal(guessGameState.selectedCard);
+            } else {
+                renderGuessGame();
+            }
+        }
+
+        // Re-render on orientation change so cards don't disappear
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (cards.length > 0) {
+                    renderDisplay();
+                    cachedFrontTextSize = null;
+                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+                    scaleFrontText();
+                    if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
+                        hideCardOverlays();
+                    }
+                }
+                // Re-render match game on rotation
+                if (document.getElementById('matchGameModal')?.style.display === 'flex') {
+                    renderMatchGame();
+                }
+                // Re-render guess game on rotation so grid columns update
+                if (document.getElementById('guessGameModal')?.classList.contains('active')) {
+                    rerenderGuessGameForResize();
+                }
+            }, 300);
+        });
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                positionNavOverlay();
+                if (cards.length > 0) { cachedFrontTextSize = null; Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]); scaleFrontText(); }
+                if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
+                    hideCardOverlays();
+                }
+                // Re-render match game on window resize (PC orientation change)
+                if (document.getElementById('matchGameModal')?.style.display === 'flex') {
+                    renderMatchGame();
+                }
+                // Re-render guess game on window resize so grid columns update
+                if (document.getElementById('guessGameModal')?.classList.contains('active')) {
+                    rerenderGuessGameForResize();
+                }
+            }, 250);
+        });
+
+        // ==================== END CROP IMAGE ====================
+
+        // ==================== SWIPE HINT ONBOARDING ====================
+        const SWIPE_HINT_KEY = 'swipeHintSeen_v4';
+        let _swipeHintDone = false;
+        let _swipeHintArmed = false;
+        let _swipeHintInactivityTimer = null;
+        const SWIPE_HINT_INACTIVITY_MS = 5000; // 5 seconds of inactivity
+
+        /** True when the main deck UI is ready for the swipe demo */
+        function _swipeHintCanShow() {
+            if (!cards || cards.length < 1) return false;
+            // Don't show over create/load/etc. modals or empty home
+            if (document.querySelector('.modal.active')) return false;
+            if (document.querySelector('.empty-state')) return false;
+            const cardEl = document.querySelector('#cardDisplay .card');
+            if (!cardEl) return false;
+            const r = cardEl.getBoundingClientRect();
+            return r.width >= 10 && r.height >= 10;
+        }
+
+        /**
+         * Cancel a pending timer / hide a stray overlay.
+         * Used when the deck becomes empty (import then delete) so the demo
+         * never fires on the opening empty page.
+         */
+        function cancelSwipeHint() {
+            clearTimeout(_swipeHintInactivityTimer);
+            _swipeHintInactivityTimer = null;
+            _swipeHintArmed = false;
+            // Do NOT set _swipeHintDone — user never saw it; can arm again later
+
+            const overlay  = document.getElementById('swipeHintOverlay');
+            const arrowsEl = document.getElementById('swipeHintArrows');
+            if (overlay) overlay.classList.remove('visible');
+            const cardEl = document.querySelector('.card');
+            const cardStack = document.querySelector('.card-stack');
+            if (cardEl) cardEl.classList.remove('swipeHintDrifting');
+            if (cardStack) cardStack.classList.remove('swiping');
+            if (arrowsEl) arrowsEl.classList.remove('drifting');
+        }
+
+        function _armSwipeHintTimer() {
+            clearTimeout(_swipeHintInactivityTimer);
+            _swipeHintInactivityTimer = setTimeout(() => {
+                if (_swipeHintDone) return;
+                _swipeHintArmed = false;
+                // Deck may have been cleared after arming — never show on empty home
+                if (!_swipeHintCanShow()) {
+                    return;
+                }
+                _swipeHintDone = true;
+                _showSwipeHint();
+            }, SWIPE_HINT_INACTIVITY_MS);
+        }
+
+        function _onUserActivity() {
+            if (!_swipeHintArmed || _swipeHintDone) return;
+            // Still need a live deck; otherwise disarm
+            if (!_swipeHintCanShow()) {
+                cancelSwipeHint();
+                return;
+            }
+            _armSwipeHintTimer();
+        }
+
+        // Only reset on deliberate swipe-like gestures — NOT click/tap/scroll
+        // so that simply opening a deck and leaving it idle triggers the hint
+        ['touchmove', 'mousemove'].forEach(evt => {
+            window.addEventListener(evt, _onUserActivity, { passive: true });
+        });
+
+        function maybeShowSwipeHint() {
+            // Already done or armed — skip
+            if (_swipeHintDone || _swipeHintArmed) return;
+            // Already seen in a prior session — skip
+            try { if (localStorage.getItem(SWIPE_HINT_KEY)) return; } catch(e) {}
+            // Need a real deck card (not empty state); swipe demo is for the main viewer
+            if (!_swipeHintCanShow()) return;
+            // Start the 5-second countdown
+            _swipeHintArmed = true;
+            _armSwipeHintTimer();
+        }
+
+        function _showSwipeHint() {
+            if (!_swipeHintCanShow()) {
+                cancelSwipeHint();
+                return;
+            }
+
+            const overlay    = document.getElementById('swipeHintOverlay');
+            const cardHole   = document.getElementById('swipeHintCardHole');
+            const arrowsEl   = document.getElementById('swipeHintArrows');
+            if (!overlay || !cardHole || !arrowsEl) return;
+
+            function positionElements() {
+                if (!_swipeHintCanShow()) return false;
+                const cardEl = document.querySelector('#cardDisplay .card');
+                if (!cardEl) return false;
+                const r = cardEl.getBoundingClientRect();
+                if (r.width < 10) return false;
+
+                const PAD = 8;
+                cardHole.style.left   = (r.left - PAD) + 'px';
+                cardHole.style.top    = (r.top  - PAD) + 'px';
+                cardHole.style.width  = (r.width  + PAD * 2) + 'px';
+                cardHole.style.height = (r.height + PAD * 2) + 'px';
+
+                // Arrows centered on the card
+                const AW = 70, AH = 70;
+                arrowsEl.style.left   = (r.left + r.width/2  - AW) + 'px';
+                arrowsEl.style.top    = (r.top  + r.height/2 - AH) + 'px';
+                arrowsEl.style.width  = (AW * 2) + 'px';
+                arrowsEl.style.height = (AH * 2) + 'px';
+                return true;
+            }
+
+            if (!positionElements()) {
+                // Card not ready — don't flash a full-screen overlay on empty home
+                cancelSwipeHint();
+                _swipeHintDone = false; // allow retry when a deck is actually shown
+                return;
+            }
+
+            overlay.classList.add('visible');
+
+            // Animate the REAL first card: drift it, grey it out, and move
+            // the arrows + finger in perfect sync with it.
+            requestAnimationFrame(() => {
+                if (!_swipeHintCanShow()) {
+                    cancelSwipeHint();
+                    _swipeHintDone = false;
+                    return;
+                }
+                const cardEl = document.querySelector('#cardDisplay .card');
+                const cardStack = document.querySelector('.card-stack');
+                if (cardStack) cardStack.classList.add('swiping'); // reveals card-next/card-prev peeks
+                if (cardEl) cardEl.classList.add('swipeHintDrifting');   // drift + grey filter
+                arrowsEl.classList.add('drifting');                       // arrows move with card
+            });
+
+            function dismissHint() {
+                overlay.classList.remove('visible');
+                const cardEl = document.querySelector('.card');
+                const cardStack = document.querySelector('.card-stack');
+                if (cardEl) cardEl.classList.remove('swipeHintDrifting');
+                if (cardStack) cardStack.classList.remove('swiping');
+                arrowsEl.classList.remove('drifting');
+                _swipeHintDone = true;
+                try { localStorage.setItem(SWIPE_HINT_KEY, '1'); } catch(e) {}
+            }
+
+            // Tap/click anywhere to dismiss (no button needed)
+            document.getElementById('swipeHintBg').addEventListener('click',    () => dismissHint(), { once: true });
+            document.getElementById('swipeHintBg').addEventListener('touchend', (e) => { e.preventDefault(); dismissHint(); }, { once: true });
+        }
+        // ==================== END SWIPE HINT ====================
+
+</script>
+    <!-- Crop Image Overlay -->
+    <div id="cropOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:3000; flex-direction:column;">
+        <!-- Toolbar -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#1a1a1a; flex-shrink:0;">
+            <button onclick="closeCropTool()" style="background:none; border:none; color:white; font-size:16px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.12);">Cancel</button>
+            <span style="color:white; font-size:17px; font-weight:700; letter-spacing:0.3px;">Clip Image</span>
+            <button onclick="resetCrop()" style="background:none; border:none; color:#f0a500; font-size:15px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(240,165,0,0.15);">Reset</button>
+        </div>
+        <!-- Canvas area -->
+        <div id="cropCanvasWrap" style="flex:1; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;">
+            <canvas id="cropCanvas" style="display:block; cursor:crosshair; touch-action:none; max-width:100%; max-height:100%;"></canvas>
+        </div>
+        <!-- Bottom bar -->
+        <div style="display:flex; justify-content:center; align-items:center; gap:12px; padding:16px; background:#1a1a1a; flex-shrink:0;">
+            <button id="revertCropBtn" onclick="revertToOriginal()" style="display:none; background:rgba(255,255,255,0.12); color:white; border:none; border-radius:12px; padding:14px 24px; font-size:15px; font-weight:600; cursor:pointer;">
+                ↩️ Revert to Original
+            </button>
+            <button onclick="applyCrop()" style="background:#35654D; color:white; border:none; border-radius:12px; padding:14px 48px; font-size:17px; font-weight:700; cursor:pointer; letter-spacing:0.3px;">
+                ✓ Done
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Deferred game code: parsed only when Games is first opened -->
+    <script type="text/plain" id="deferredGameCode">
         function openGameMenu() {
             window.speechSynthesis.cancel();
             if (cards.length === 0) {
@@ -13906,1644 +15665,13 @@
             renderGuessGame();
         }
 
-        function renderDisplay() {
-            // Make controls visible now that JS has run (prevents flash of old layout)
-            const topControls = document.getElementById('topControls');
-            const quickLoadDropdownEl = document.getElementById('quickLoadDropdown');
-            if (topControls) topControls.style.visibility = 'visible';
-            if (quickLoadDropdownEl) quickLoadDropdownEl.style.visibility = 'visible';
-
-            // PERFORMANCE FIX: Use cached DOM references
-            const display = domCache.cardDisplay || document.getElementById('cardDisplay');
-            const shuffleBtn = domCache.shuffleBtn || document.getElementById('shuffleBtn');
-            const clearBtn = domCache.clearBtn || document.getElementById('clearBtn');
-            const deleteBtn = domCache.deleteBtn || document.getElementById('deleteBtn');
-            const renameCardBtn = domCache.renameCardBtn || document.getElementById('renameCardBtn');
-            const gameBtn = domCache.gameBtn || document.getElementById('gameBtn');
-            const saveBtn = domCache.saveBtn || document.getElementById('saveBtn');
-            const loadBtn = domCache.loadBtn || document.getElementById('loadBtn');
-            const moreDropdown = domCache.moreDropdown || document.getElementById('moreDropdown');
-            const addBtn = document.getElementById('addBtn');
-            const quickLoadDropdown = document.getElementById('quickLoadDropdown');
-
-            if (cards.length === 0) {
-                // Reset lock side when deck is cleared
-                if (lockSide) {
-                    lockSide = false;
-                    isFlipped = false;
-                    _updateLockMenuButton(false);
-                    const lockOverlay = document.getElementById('cardOverlayLock');
-                    if (lockOverlay) { lockOverlay.style.display = 'none'; lockOverlay.style.visibility = ''; }
-                }
-                display.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-card">
-                            <div class="empty-state-icon">📋</div>
-                            <h3>No Flashcards Yet</h3>
-                            <p>Get started by tapping Add, Load, or Manage<br>or try a sample deck</p>
-                            <div class="empty-action-btn-row" style="display:flex;flex-direction:row;justify-content:center;gap:12px;width:100%;margin-top:28px;">
-                                <button class="empty-action-btn" onclick="openCreateModal()">
-                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="8" x2="12" y2="16"></line>
-                                        <line x1="8" y1="12" x2="16" y2="12"></line>
-                                    </svg>
-                                    <span>Add</span>
-                                </button>
-                                <button class="empty-action-btn" onclick="openLoadOptions()">
-                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                                    </svg>
-                                    <span>Load</span>
-                                </button>
-                                <div style="position:relative; flex:1; max-width:100px; display:flex; flex-direction:column; align-items:center;">
-                                    <button class="empty-action-btn" id="emptyManageBtn" style="width:100%;" onclick="openManageSidePanel()">
-                                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                                        </svg>
-                                        <span>Manage</span>
-                                    </button>
-                                </div>
-                                <button class="empty-action-btn" onclick="openSampleDeck()">
-                                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                                    </svg>
-                                    <span>Samples</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                // Hide ALL top bar controls on empty state
-                if (addBtn) addBtn.style.display = 'none';
-                if (loadBtn) loadBtn.style.display = 'none';
-                if (quickLoadDropdown) quickLoadDropdown.style.display = 'none';
-                if (shuffleBtn) { shuffleBtn.disabled = true; shuffleBtn.style.display = 'none'; }
-                if (clearBtn) { clearBtn.disabled = true; clearBtn.style.display = 'none'; }
-                if (deleteBtn) { deleteBtn.disabled = true; deleteBtn.style.display = 'none'; }
-                if (renameCardBtn) { renameCardBtn.disabled = true; renameCardBtn.style.display = 'none'; }
-                if (gameBtn) { gameBtn.disabled = true; gameBtn.style.display = 'none'; }
-                if (saveBtn) { saveBtn.disabled = true; saveBtn.style.display = 'none'; }
-                if (moreDropdown) moreDropdown.style.display = 'none';
-                const helpBtnEmpty = document.getElementById('toolbarHelpBtn');
-                if (helpBtnEmpty) helpBtnEmpty.style.display = 'none';
-                document.getElementById('cardOverlaySettings').style.display = 'none';
-                document.getElementById('cardOverlayCounter').style.display = 'none';
-                document.getElementById('cardOverlayNav').style.display = 'none';
-                document.getElementById('cardOverlayTTS').style.display = 'none';
-
-                // Import-then-delete (or clear all) must not leave a pending swipe demo
-                // timer that later fires on this empty home screen.
-                if (typeof cancelSwipeHint === 'function') cancelSwipeHint();
-
-                return;
-            }
-
-            if (shuffleBtn) {
-                shuffleBtn.disabled = false;
-                shuffleBtn.style.display = 'flex';
-            }
-            if (deleteBtn) {
-                deleteBtn.disabled = false;
-                deleteBtn.style.display = 'flex';
-            }
-            if (gameBtn) {
-                gameBtn.disabled = false;
-                gameBtn.style.display = 'flex';
-            }
-
-            // Restore Add button and Quick Load when cards are loaded
-            if (addBtn) addBtn.style.display = 'flex';
-            const helpBtnCards = document.getElementById('toolbarHelpBtn');
-            if (helpBtnCards) helpBtnCards.style.display = 'flex';
-            if (quickLoadDropdown) {
-                quickLoadDropdown.style.position = '';
-                quickLoadDropdown.style.top = '';
-                quickLoadDropdown.style.left = '';
-                quickLoadDropdown.style.transform = '';
-                quickLoadDropdown.style.display = 'inline-block';
-                quickLoadDropdown.style.zIndex = '';
-                const qlTriggerBtn = quickLoadDropdown.querySelector('button');
-                if (qlTriggerBtn) qlTriggerBtn.style.display = '';
-            }
-
-            // Show dropdown when cards are loaded
-            if (moreDropdown) {
-                moreDropdown.style.display = 'inline-block';
-            }
-
-            // Hide Load button when cards are loaded (it's now in dropdown)
-            if (loadBtn) {
-                loadBtn.style.display = 'none';
-            }
-
-            const card = cards[currentIndex];
-            const nextCard = cards[(currentIndex + 1) % cards.length]; // Preview next card
-            const prevCard = cards[(currentIndex - 1 + cards.length) % cards.length]; // Preview previous card
-
-            // Auto-scale ALL text to fit within card boundaries
-            const textClass = 'card-text card-text-auto-scale';
-
-            display.innerHTML = `
-                <div class="card-container">
-                    <div class="card-stack">
-                        ${prevCard && cards.length > 1 ? `
-                        <div class="card-prev">
-                            ${lockSide === 'back' ? `
-                            <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
-                                ${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}
-                                ${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}
-                            </div>` : `
-                            <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">
-                                ${showCharOnCard && prevCard.backText ? `<span class="card-char-label">${prevCard.backText.charAt(0).toUpperCase()}${prevCard.backText.charAt(0).toLowerCase()}</span>` : ''}
-                                <img src="${gifSrc(prevCard.frontImage)}" class="card-image">
-                                ${showTextOnFront && prevCard.backText ? `
-                                <div class="card-front-text">${highlightVowelsFront(prevCard.backText)}</div>
-                                ` : ''}
-                            </div>`}
-                        </div>
-                        ` : ''}
-                        <div class="card ${isFlipped ? 'flipped' : ''}" style="cursor: pointer;">
-                            <div class="card-face card-front${showTextOnFront && card.backText ? ' show-text-active' : ''}${showCharOnCard && card.backText ? ' show-char-active' : ''}">
-                                ${showCharOnCard && card.backText ? `<span class="card-char-label">${card.backText.charAt(0).toUpperCase()}${card.backText.charAt(0).toLowerCase()}</span>` : ''}
-                                <img src="${gifSrc(card.frontImage)}" class="card-image">
-                                ${showTextOnFront && card.backText ? `
-                                <div class="card-front-text">${highlightVowelsFront(card.backText)}</div>
-                                ` : ''}
-                            </div>
-                            <div class="card-face card-back">
-                                ${card.backImage ? '<img src="' + gifSrc(card.backImage) + '" class="card-image">' : ''}
-                                ${card.backText ? '<p class="' + textClass + '">' + highlightVowels(card.backText) + '</p>' : ''}
-                            </div>
-                        </div>
-                        ${nextCard && cards.length > 1 ? `
-                        <div class="card-next">
-                            ${lockSide === 'back' ? `
-                            <div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">
-                                ${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}
-                                ${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}
-                            </div>` : `
-                            <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">
-                                ${showCharOnCard && nextCard.backText ? `<span class="card-char-label">${nextCard.backText.charAt(0).toUpperCase()}${nextCard.backText.charAt(0).toLowerCase()}</span>` : ''}
-                                <img src="${gifSrc(nextCard.frontImage)}" class="card-image">
-                                ${showTextOnFront && nextCard.backText ? `
-                                <div class="card-front-text">${highlightVowelsFront(nextCard.backText)}</div>
-                                ` : ''}
-                            </div>`}
-                        </div>
-                        ` : ''}
-
-                        ${cards.length > 1 ? `
-                        <div style="position:absolute;top:10px;left:8px;display:flex;align-items:center;gap:5px;z-index:20;pointer-events:none;">
-                            <button class="nav-btn prev" style="pointer-events:auto;flex-shrink:0;"
-                                onclick="event.stopPropagation();prevCard()"
-                                ontouchend="event.stopPropagation();event.preventDefault();prevCard()">
-                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
-                                    <path d="M14 8L10 12L14 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
-                            <span id="navIndexLabel" style="font-size:0.65rem;opacity:0.75;color:${isFlipped ? 'white' : '#333'};white-space:nowrap;">${currentIndex + 1} / ${cards.length}</span>
-                        </div>
-                        <div style="position:absolute;top:10px;right:8px;display:flex;align-items:center;gap:5px;z-index:20;pointer-events:none;">
-                            <span id="navHintLabel" style="font-size:0.65rem;opacity:0.75;color:${isFlipped ? 'white' : '#333'};white-space:nowrap;">Tap to flip</span>
-                            <button class="nav-btn next" style="pointer-events:auto;flex-shrink:0;"
-                                onclick="event.stopPropagation();nextCard()"
-                                ontouchend="event.stopPropagation();event.preventDefault();nextCard()">
-                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                                    <circle cx="12" cy="12" r="10.5" stroke="#f5a623" stroke-width="2" fill="none"/>
-                                    <path d="M10 8L14 12L10 16" stroke="#f5a623" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </button>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-
-            // Show fixed overlays
-            document.getElementById('cardOverlaySettings').style.display = 'block';
-            document.getElementById('cardOverlayNav').style.display = 'block';
-            document.getElementById('cardOverlayCounter').style.display = 'none';
-            // Lock indicator: only visible when Lock Side is active.
-            // (renderDisplay runs after shuffle/swipe/flip, so this keeps the
-            //  indicator in sync without us touching anything else.)
-            document.getElementById('cardOverlayLock').style.display =
-                (lockSide === 'back') ? 'block' : 'none';
-
-            // Set index and hint labels in nav row
-            const navIndex = document.getElementById('navIndexLabel');
-            const navHint = document.getElementById('navHintLabel');
-            if (navIndex) navIndex.textContent = `${currentIndex + 1} / ${cards.length}`;
-            if (navHint) navHint.textContent = isFlipped ? 'Tap to flip' : 'Tap to flip';
-
-            // Position nav overlay to match card container bounds
-            requestAnimationFrame(() => positionNavOverlay());
-
-            // TTS button — bottom right, same style as settings button
-            const ttsEl = document.getElementById('cardOverlayTTS');
-            if (card.backText) {
-                ttsEl.innerHTML = `<button class="audio-btn" style="color:#35654D;" onclick="event.stopPropagation(); speakText('${card.backText.replace(/'/g, "\\'")}')">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                    </svg>
-                </button>`;
-                ttsEl.style.display = 'block';
-            } else {
-                ttsEl.style.display = 'none';
-            }
-
-            // Hide ALL back-text (main + prev/next peeks) until after the scaler
-            // sets the final size. Without this, the text paints at its 7.5rem
-            // CSS default for one frame, then jumps to the bigger fitted size —
-            // visible as a "small → big" pop on each swipe in Lock Back Side mode.
-            const _pendingTexts = display.querySelectorAll(
-                '.card > .card-back .card-text-auto-scale, ' +
-                '.card-prev .card-text-auto-scale, ' +
-                '.card-next .card-text-auto-scale'
-            );
-            _pendingTexts.forEach(t => { t.style.visibility = 'hidden'; });
-
-            // Auto-scale text to fit on one line if needed - use requestAnimationFrame for proper timing
-            requestAnimationFrame(() => {
-                scaleTextToFit();
-                applyCardTextScale();
-                scaleFrontText();
-                // Reveal the now-sized back text everywhere
-                document.querySelectorAll(
-                    '.card > .card-back .card-text-auto-scale, ' +
-                    '.card-prev .card-text-auto-scale, ' +
-                    '.card-next .card-text-auto-scale'
-                ).forEach(t => { t.style.visibility = ''; });
-            });
-
-            // Show swipe onboarding hint on first-ever open with cards
-            maybeShowSwipeHint();
-        }
-
-        // cachedBackTextSizes[i] = { size: finalRem, max: maxFontSize used when computed }
-        // This lets us rescale proportionally when cardTextScaleIndex changes
-
-        // Internal: fit a single text element to a given card container.
-        // Same logic as scaleTextToFit but operates on any provided element so we
-        // can also size the prev/next peek text (which is identical in dimensions
-        // to the main card and slides into view during swipes — without sizing
-        // it, the peek shows tiny CSS-default text and the user perceives a
-        // "small → big" pop on every swipe in Lock Back Side mode).
-        function _fitOneBackText(textElement, container, cacheKey) {
-            if (!textElement || !container) return;
-            const needsFix = container.offsetWidth === 0;
-            if (needsFix) {
-                container.style.transform = 'none';
-                container.style.backfaceVisibility = 'visible';
-                container.style.webkitBackfaceVisibility = 'visible';
-            }
-            const cardW = container.offsetWidth;
-            const cardH = container.offsetHeight;
-            if (needsFix) {
-                container.style.transform = '';
-                container.style.backfaceVisibility = '';
-                container.style.webkitBackfaceVisibility = '';
-            }
-            if (cardW <= 0 || cardH <= 0) return;
-
-            const cardMin = Math.min(cardW, cardH);
-            const lockBackBoost = (lockSide === 'back') ? 1.35 : 1.0;
-            const basePx = cardMin * 0.22 * lockBackBoost;
-            const baseRem = basePx / 16;
-            const maxFontSize = Math.min(Math.max(baseRem, 1.5), 9 * lockBackBoost);
-            const minFontSize = maxFontSize * 0.2;
-            const containerPadding = cardMin * ((lockSide === 'back') ? 0.06 : 0.08);
-
-            const userScale = TEXT_SCALES[cardTextScaleIndex];
-            const scaledMax = maxFontSize * userScale;
-            const scaledMin = minFontSize * userScale;
-
-            const text = textElement.textContent || textElement.innerText;
-            const trimmed = text.trim();
-            const wordCount = trimmed.split(/\s+/).length;
-            const hasHyphen = text.includes('-');
-            const isSingleWord = wordCount === 1 && !hasHyphen;
-
-            // Orientation-aware single-word length limit:
-            //   landscape → fit up to 14 chars per line; 15+ break-word wrap
-            //   portrait  → fit up to 10 chars per line; 11+ break-word wrap
-            const isLandscape = cardW >= cardH;
-            const singleWordLimit = isLandscape ? 14 : 10;
-            const breakLongWord = isSingleWord && trimmed.length > singleWordLimit;
-
-            const maxWidth  = cardW - containerPadding;
-            const maxHeight = cardH - containerPadding;
-
-            // Font-size cap: choose the largest font where {singleWordLimit} chars
-            // actually fit across the card width. Without this, the binary search
-            // shrinks long words but the FIRST line of a wrapped word can fit
-            // fewer chars than the user wants. (User reported wraps happening at
-            // 8 chars portrait / 10 chars landscape instead of 10 / 14.)
-            //
-            // For short words (≤ limit), we use min(word length, limit) as the
-            // reference so short words can still go BIG — e.g. "cat" isn't capped
-            // by the limit, only by its own length. For long words (> limit) that
-            // will wrap, we use the full limit so each wrapped line carries up to
-            // {limit} characters.
-            //
-            // 0.65em is a generous per-character width estimate for Fredoka
-            // (the font in use). It's deliberately wider than typical so the
-            // limit is honored even on wide-glyph words.
-            let effectiveMax = scaledMax;
-            if (isSingleWord && lockSide === 'back') {
-                const avgCharWidthEm = 0.65;
-                const referenceLen = breakLongWord
-                    ? singleWordLimit
-                    : Math.min(trimmed.length, singleWordLimit);
-                const maxRemFromChars = maxWidth / (referenceLen * avgCharWidthEm * 16);
-                effectiveMax = Math.min(scaledMax, maxRemFromChars);
-            }
-            const startMax = effectiveMax;
-
-            if (isSingleWord && !breakLongWord) {
-                // Short single word — keep on one line
-                textElement.style.whiteSpace = 'nowrap';
-                textElement.style.wordBreak = 'normal';
-                textElement.style.overflowWrap = 'normal';
-            } else if (breakLongWord) {
-                // Long single word — allow it to break across lines
-                textElement.style.whiteSpace = 'normal';
-                textElement.style.wordBreak = 'break-word';
-                textElement.style.overflowWrap = 'break-word';
-            } else {
-                // Multi-word / hyphenated — wrap at natural breaks
-                textElement.style.whiteSpace = 'normal';
-                textElement.style.wordBreak = 'normal';
-                textElement.style.overflowWrap = 'break-word';
-            }
-
-            textElement.style.fontSize = startMax + 'rem';
-            // Short single words must fit on one line (width). Long broken words
-            // and multi-word text are wrapping, so they're constrained by height.
-            const fitsAtMax = (isSingleWord && !breakLongWord)
-                ? textElement.scrollWidth <= maxWidth
-                : textElement.scrollHeight <= maxHeight;
-            if (fitsAtMax) {
-                if (cacheKey !== undefined && cacheKey !== null)
-                    cachedBackTextSizes[cacheKey] = { size: startMax, max: effectiveMax };
-                return;
-            }
-
-            let minSize = isSingleWord ? 0.5 : scaledMin;
-            let maxSize = startMax;
-            let optimalSize = maxSize;
-            while (maxSize - minSize > 0.05) {
-                const testSize = (minSize + maxSize) / 2;
-                textElement.style.fontSize = testSize + 'rem';
-                const fits = (isSingleWord && !breakLongWord)
-                    ? textElement.scrollWidth <= maxWidth * 0.95
-                    : textElement.scrollHeight <= maxHeight * 0.95;
-                if (fits) { optimalSize = testSize; minSize = testSize; }
-                else       { maxSize = testSize; }
-            }
-
-            const finalSize = optimalSize * 0.97;
-            textElement.style.fontSize = finalSize + 'rem';
-            if (cacheKey !== undefined && cacheKey !== null)
-                cachedBackTextSizes[cacheKey] = { size: finalSize, max: effectiveMax };
-        }
-
-        function scaleTextToFit() {
-            // Main card
-            const mainText = document.querySelector('.card > .card-back .card-text-auto-scale');
-            if (mainText) {
-                const mainContainer = mainText.closest('.card-back');
-                _fitOneBackText(mainText, mainContainer, currentIndex);
-            }
-
-            // Prev / next peek text (only present when Lock Back Side is on).
-            // These are physically the same size as the main card but live in
-            // a different DOM structure (.card-prev/.card-next wrap a bare
-            // .card-face, not .card-back). Without sizing these too, the peek
-            // shows tiny default-CSS text during swipe transitions.
-            const peekTexts = document.querySelectorAll('.card-prev .card-text-auto-scale, .card-next .card-text-auto-scale');
-            peekTexts.forEach(t => {
-                const c = t.closest('.card-face');
-                _fitOneBackText(t, c, null); // no cache for peeks
-            });
-        }
-
-        // Event listeners for save modal buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            const saveJSONBtn = document.getElementById('saveJSONBtn');
-            const saveZIPBtn = document.getElementById('saveZIPBtn');
-            const closeSaveBtn = document.getElementById('closeSaveBtn');
-
-            if (saveJSONBtn) {
-                let _saveJsonTouched = false;
-                saveJSONBtn.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    _saveJsonTouched = true;
-                    saveAsJSON();
-                    setTimeout(() => { _saveJsonTouched = false; }, 600);
-                });
-                saveJSONBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (_saveJsonTouched) return; // already handled by touchend
-                    saveAsJSON();
-                });
-            }
-
-            if (saveZIPBtn) {
-                saveZIPBtn.addEventListener('click', function() {
-                    console.log('ZIP button clicked');
-                    saveAsZIP();
-                });
-            }
-
-            if (closeSaveBtn) {
-                closeSaveBtn.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeSaveOptions();
-                });
-                closeSaveBtn.addEventListener('click', function(e) {
-                    closeSaveOptions();
-                });
-            }
-        });
-        // Dropdown toggle functions
-        const TEXT_SCALES = [1.0, 1.4, 1.8]; // default, +40%, +80%
-        let cardTextScaleIndex = 0; // start at default
-
-        function scaleFrontText() {
-            const textEl = document.querySelector('.card-front-text');
-            if (!textEl) return;
-            const cardFront = textEl.closest('.card-front');
-            const imgEl = cardFront ? cardFront.querySelector('.card-image') : null;
-            if (!cardFront || !imgEl) return;
-
-            const screenWidth = window.innerWidth;
-
-            // Match same size tiers as back-text scaling
-            let maxFontSize, minFontSize;
-            if (screenWidth <= 390)       { maxFontSize = 2.8; minFontSize = 0.7; }
-            else if (screenWidth <= 480)  { maxFontSize = 3.5; minFontSize = 0.8; }
-            else if (screenWidth <= 768)  { maxFontSize = 4.5; minFontSize = 1.0; }
-            else if (screenWidth <= 1024) { maxFontSize = 6.0; minFontSize = 1.2; }
-            else                          { maxFontSize = 7.5; minFontSize = 1.4; }
-
-            const cardWidth = cardFront.offsetWidth - 20;
-
-            // Single-line: scale down until it fits the card width
-            textEl.style.whiteSpace = 'nowrap';
-            textEl.style.fontSize = maxFontSize + 'rem';
-
-            if (textEl.scrollWidth > cardWidth) {
-                let lo = minFontSize, hi = maxFontSize, best = minFontSize;
-                for (let i = 0; i < 12; i++) {
-                    const mid = (lo + hi) / 2;
-                    textEl.style.fontSize = mid + 'rem';
-                    if (textEl.scrollWidth <= cardWidth) { best = mid; lo = mid; }
-                    else { hi = mid; }
-                }
-                textEl.style.fontSize = best + 'rem';
-            }
-
-            // Adjust image height based on text block height
-            requestAnimationFrame(() => {
-                const cardHeight = cardFront.offsetHeight;
-                const textHeight = textEl.offsetHeight + 12;
-                const imgHeight = cardHeight - textHeight - 20;
-                const imgPercent = Math.max(30, Math.min(80, (imgHeight / cardHeight) * 100));
-                imgEl.style.height = imgPercent + '%';
-                imgEl.style.flex = 'none';
-            });
-        }
-
-        function applyCardTextScale() {
-            // Retrigger scaleTextToFit which now incorporates the user scale preference
-            requestAnimationFrame(() => scaleTextToFit());
-        }
-
-        function increaseCardTextSize() {
-            if (cardTextScaleIndex < TEXT_SCALES.length - 1) {
-                cardTextScaleIndex++;
-                delete cachedBackTextSizes[currentIndex];
-                requestAnimationFrame(() => {
-                    scaleTextToFit();
-                    requestAnimationFrame(() => {
-                        const textEl = document.querySelector('.card-text-auto-scale');
-                        const container = textEl?.closest('.card-back');
-                        if (textEl && container) {
-                            const overflowsWidth  = textEl.scrollWidth  > container.offsetWidth  - 10;
-                            const overflowsHeight = textEl.scrollHeight > container.offsetHeight - 10;
-                            if (overflowsWidth || overflowsHeight) {
-                                // Revert — text cannot fit even after scaling attempt
-                                cardTextScaleIndex--;
-                                delete cachedBackTextSizes[currentIndex];
-                                scaleTextToFit();
-                                showToast('⚠️ Text too large to fit the card', 2500);
-                            }
-                        }
-                    });
-                });
-            }
-        }
-
-        function decreaseCardTextSize() {
-            if (cardTextScaleIndex > 0) {
-                cardTextScaleIndex--;
-                delete cachedBackTextSizes[currentIndex];
-                applyCardTextScale();
-            }
-        }
-
-        function toggleTextOnFront() {
-            showTextOnFront = !showTextOnFront;
-            cachedFrontTextSize = null; // reset so it recomputes for this session
-            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-            const btn = document.getElementById('showTextBtn');
-            if (btn) {
-                btn.style.background = showTextOnFront ? '#f0f9f4' : 'white';
-                btn.style.color = showTextOnFront ? '#35654D' : '#333';
-                btn.querySelector('svg').setAttribute('stroke', showTextOnFront ? '#1a4a32' : '#35654D');
-            }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
-            renderDisplay();
-        }
-
-        function toggleCharOnCard() {
-            showCharOnCard = !showCharOnCard;
-            const btn = document.getElementById('showCharBtn');
-            if (btn) {
-                btn.style.background = showCharOnCard ? '#f0f9f4' : 'white';
-                const svgRect = btn.querySelector('rect');
-                if (svgRect) svgRect.setAttribute('stroke', showCharOnCard ? '#1a4a32' : '#35654D');
-                const svgText = btn.querySelector('text');
-                if (svgText) svgText.setAttribute('fill', showCharOnCard ? '#1a4a32' : '#35654D');
-            }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
-            renderDisplay();
-        }
-
-        let _lockAnimating = false;
-
-        function _updateLockMenuButton(active) {
-            const btn = document.getElementById('lockSideBtn');
-            if (!btn) return;
-            const sideName = active ? 'Back' : '';
-            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${active ? '#1a4a32' : '#35654D'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${active ? `Lock Side (${sideName})` : 'Lock Side'}`;
-            btn.style.background = active ? '#f0f9f4' : 'white';
-            btn.style.color = active ? '#35654D' : '#333';
-        }
-
-        // Same mechanics as flipCard() — toggles the .flipped class on the
-        // existing card element so the CSS rotateY transition (0.6s) plays
-        // smoothly. Calling renderDisplay() instead would destroy and rebuild
-        // the DOM and kill the animation.
-        function _flipCardCss(targetFlipped) {
-            isFlipped = targetFlipped;
-            const cardEl = document.querySelector('.card');
-            if (cardEl) {
-                if (targetFlipped) cardEl.classList.add('flipped');
-                else cardEl.classList.remove('flipped');
-            }
-            const navHint = document.getElementById('navHintLabel');
-            const navIndex = document.getElementById('navIndexLabel');
-            const labelColor = isFlipped ? 'white' : '#333';
-            if (navHint) { navHint.textContent = 'Tap to flip'; navHint.style.color = labelColor; }
-            if (navIndex) navIndex.style.color = labelColor;
-            if (isFlipped) {
-                const _ft = document.querySelector('.card > .card-back .card-text-auto-scale');
-                if (_ft) _ft.style.visibility = 'hidden';
-                requestAnimationFrame(() => {
-                    scaleTextToFit();
-                    const _ft2 = document.querySelector('.card > .card-back .card-text-auto-scale');
-                    if (_ft2) _ft2.style.visibility = '';
-                });
-            }
-            requestAnimationFrame(() => positionNavOverlay());
-        }
-
-        // Update only the ghost preview cards (card-prev / card-next) when
-        // lockSide changes, without rebuilding the whole DOM (which would kill
-        // the CSS flip animation on the main card).
-        function _updateGhostCards() {
-            const prevEl = document.querySelector('.card-prev');
-            const nextEl = document.querySelector('.card-next');
-            if (!prevEl && !nextEl) return;
-            const textClass = 'card-text card-text-auto-scale';
-            const prevCard = cards[(currentIndex - 1 + cards.length) % cards.length];
-            const nextCard = cards[(currentIndex + 1) % cards.length];
-            if (prevEl && prevCard) {
-                if (lockSide === 'back') {
-                    prevEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}</div>`;
-                } else {
-                    prevEl.innerHTML = `<div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">${showCharOnCard && prevCard.backText ? '<span class="card-char-label">' + prevCard.backText.charAt(0).toUpperCase() + prevCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(prevCard.frontImage)}" class="card-image">${showTextOnFront && prevCard.backText ? '<div class="card-front-text">' + highlightVowelsFront(prevCard.backText) + '</div>' : ''}</div>`;
-                }
-            }
-            if (nextEl && nextCard) {
-                if (lockSide === 'back') {
-                    nextEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}</div>`;
-                } else {
-                    nextEl.innerHTML = `<div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">${showCharOnCard && nextCard.backText ? '<span class="card-char-label">' + nextCard.backText.charAt(0).toUpperCase() + nextCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(nextCard.frontImage)}" class="card-image">${showTextOnFront && nextCard.backText ? '<div class="card-front-text">' + highlightVowelsFront(nextCard.backText) + '</div>' : ''}</div>`;
-                }
-            }
-        }
-
-        function toggleLockSide() {
-            if (_lockAnimating) return;
-            const willLock = (lockSide !== 'back');
-            _lockAnimating = true;
-
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
-            _updateLockMenuButton(willLock);
-
-            // Boost changes when lockSide changes — invalidate the size cache
-            Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-
-            if (willLock) {
-                // LOCK SEQUENCE:
-                //   1) Flip front->back (CSS transition, 600ms) with the big
-                //      padlock (open shackle) fading in during the flip so the
-                //      padlock is "already there" when the back lands.
-                //   2) Shackle closes (open -> locked, 400ms).
-                //   3) Padlock shrinks to the corner spot, small indicator
-                //      becomes visible there.
-                lockSide = 'back';
-                _updateGhostCards();
-                const lockOverlay = document.getElementById('cardOverlayLock');
-                if (lockOverlay) {
-                    lockOverlay.style.display = 'block';
-                    lockOverlay.style.visibility = 'hidden';
-                }
-                positionNavOverlay();
-                if (!isFlipped) _flipCardCss(true);
-                else requestAnimationFrame(() => scaleTextToFit());
-                playLockAnimation('lock', () => { _lockAnimating = false; });
-            } else {
-                // UNLOCK SEQUENCE:
-                //   1) Hide small indicator; big padlock (locked) appears at
-                //      that spot and grows to card center.
-                //   2) Shackle opens (locked -> open, 400ms).
-                //   3) Card flips back->front while padlock fades out.
-                const lockOverlay = document.getElementById('cardOverlayLock');
-                if (lockOverlay) lockOverlay.style.visibility = 'hidden';
-                playLockAnimation('unlock', () => {
-                    lockSide = false;
-                    _updateGhostCards();
-                    setTimeout(() => {
-                        const ov = document.getElementById('cardOverlayLock');
-                        if (ov) {
-                            ov.style.display = 'none';
-                            ov.style.visibility = '';
-                        }
-                        _lockAnimating = false;
-                    }, 300);
-                });
-            }
-        }
-
-        // Big-padlock animation between card center and the small lock spot.
-        // Includes a shackle open<->closed transition mid-sequence.
-        function playLockAnimation(direction, onComplete) {
-            const cardStack = document.querySelector('.card-stack')
-                          || document.querySelector('.card-container');
-            const smallLock = document.getElementById('cardOverlayLock');
-            if (!cardStack || !smallLock) {
-                if (smallLock) smallLock.style.visibility = '';
-                if (onComplete) onComplete();
-                return;
-            }
-
-            const stackRect = cardStack.getBoundingClientRect();
-            const smallRect = smallLock.getBoundingClientRect();
-            const centerX = stackRect.left + stackRect.width / 2;
-            const centerY = stackRect.top  + stackRect.height / 2;
-            const targetX = smallRect.left + smallRect.width / 2;
-            const targetY = smallRect.top  + smallRect.height / 2;
-
-            const BIG_PX = 200;
-            const SMALL_PX = 24;
-            const scaleSmall = SMALL_PX / BIG_PX;
-
-            // Build the big padlock overlay. The shackle is a separate <path>
-            // with id "lockAnimShackle" so we can rotate it for open/closed
-            // animation. Rotation pivots at (7, 11) — the bottom-left hinge.
-            const big = document.createElement('div');
-            big.style.cssText = [
-                'position:fixed', 'left:0', 'top:0',
-                'width:' + BIG_PX + 'px', 'height:' + BIG_PX + 'px',
-                'pointer-events:none', 'z-index:99999',
-                'transform-origin:center center',
-                'will-change:transform,opacity', 'transition:none',
-                'opacity:0'
-            ].join(';') + ';';
-            // Shackle is split into two pieces so we can do a "vertical lift with
-            // one side still attached" animation (no rotation):
-            //   - <g id="shackleGroup"> wraps the U-shape; this group TRANSLATES
-            //     straight up to "lift" the shackle out of the body.
-            //   - <line id="shackleStem"> is the thin bridge from the lifted
-            //     left foot DOWN to the body — it makes the left side look
-            //     "still attached" while the right side dangles free.
-            //   When closed, the group is at translateY(0) and the stem is
-            //   invisible (opacity 0). When open, the group lifts up and the
-            //   stem fades in to bridge the gap.
-            big.innerHTML =
-                '<svg width="' + BIG_PX + '" height="' + BIG_PX + '" viewBox="0 0 24 24" fill="none" ' +
-                'stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
-                'style="filter:drop-shadow(0 6px 16px rgba(0,0,0,0.45));display:block;overflow:visible">' +
-                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' +
-                '<g id="shackleGroup" ' +
-                'style="transition:transform 280ms cubic-bezier(0.4,0.0,0.2,1)">' +
-                '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>' +
-                '</g>' +
-                '<line id="shackleStem" x1="7" y1="8" x2="7" y2="11" ' +
-                'style="opacity:0; transition:opacity 200ms ease-out 80ms"/>' +
-                '</svg>';
-            document.body.appendChild(big);
-
-            const shackleGroup = big.querySelector('#shackleGroup');
-            const shackleStem  = big.querySelector('#shackleStem');
-            function setShackleOpen(open) {
-                // Open: lift the shackle straight up (no rotation, no lean).
-                //       Show the left-side stem so that side stays "attached".
-                // Closed: drop back into the body, hide the stem.
-                if (shackleGroup) {
-                    shackleGroup.style.transform = open ? 'translateY(-3px)' : 'translateY(0)';
-                }
-                if (shackleStem) {
-                    shackleStem.style.opacity = open ? '1' : '0';
-                }
-            }
-
-            function setAt(x, y, scale, opacity) {
-                big.style.transform =
-                    'translate(' + (x - BIG_PX/2) + 'px,' + (y - BIG_PX/2) + 'px) scale(' + scale + ')';
-                big.style.opacity = String(opacity);
-            }
-
-            const eased = 'cubic-bezier(0.4,0.0,0.2,1)';
-
-            if (direction === 'lock') {
-                // LOCK SEQUENCE (visible but not slow)
-                setShackleOpen(true);
-                setAt(centerX, centerY, 1, 0);
-                requestAnimationFrame(() => {
-                    big.style.transition = 'opacity 250ms ease-out';
-                    setAt(centerX, centerY, 1, 0.5);
-                });
-                setTimeout(() => { setShackleOpen(false); }, 320);
-                // Shrink to corner — slower so the motion reads
-                setTimeout(() => {
-                    big.style.transition = 'transform 350ms ' + eased + ', opacity 350ms ease-in';
-                    setAt(targetX, targetY, scaleSmall, 0);
-                }, 650);
-                setTimeout(() => {
-                    big.remove();
-                    const ov = document.getElementById('cardOverlayLock');
-                    if (ov) ov.style.visibility = '';
-                    if (onComplete) onComplete();
-                    cachedFrontTextSize = null;
-                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-                    scaleTextToFit();
-                }, 1050);
-            } else {
-                // UNLOCK SEQUENCE (visible but not slow)
-                setShackleOpen(false);
-                setAt(targetX, targetY, scaleSmall, 0.65);
-                // Grow to center — visible
-                requestAnimationFrame(() => {
-                    big.style.transition = 'transform 350ms ' + eased;
-                    setAt(centerX, centerY, 1, 0.55);
-                });
-                setTimeout(() => { setShackleOpen(true); }, 380);
-                setTimeout(() => {
-                    if (isFlipped) _flipCardCss(false);
-                    big.style.transition = 'opacity 250ms ease-in';
-                    big.style.opacity = '0';
-                }, 700);
-                setTimeout(() => {
-                    big.remove();
-                    if (onComplete) onComplete();
-                    cachedFrontTextSize = null;
-                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-                    scaleFrontText();
-                }, 1000);
-            }
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            const btn = document.getElementById('muteBtn');
-            const icon = document.getElementById('muteIcon');
-            if (btn) {
-                btn.style.background = isMuted ? '#f0f9f4' : 'white';
-                btn.style.color      = isMuted ? '#35654D' : '#333';
-                btn.lastChild.textContent = isMuted ? ' Unmute Sounds' : ' Mute Sounds';
-            }
-            if (icon) {
-                icon.setAttribute('stroke', isMuted ? '#1a4a32' : '#35654D');
-                icon.innerHTML = isMuted
-                    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
-                    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
-            }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            const btn = document.getElementById('muteBtn');
-            const icon = document.getElementById('muteIcon');
-            if (btn) {
-                btn.style.background = isMuted ? '#f0f9f4' : 'white';
-                btn.style.color      = isMuted ? '#35654D' : '#333';
-                btn.lastChild.textContent = isMuted ? 'Unmute Sounds' : 'Mute Sounds';
-            }
-            if (icon) {
-                icon.setAttribute('stroke', isMuted ? '#1a4a32' : '#35654D');
-                icon.innerHTML = isMuted
-                    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
-                    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
-            }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
-        }
-
-        function toggleHideUI() {
-            const isHidden = document.body.classList.toggle('hide-ui');
-            const btn = document.getElementById('hideUIBtn');
-            if (btn) {
-                btn.innerHTML = isHidden
-                    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a4a32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show Buttons`
-                    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Hide Buttons`;
-                btn.style.background = isHidden ? '#f0f9f4' : 'white';
-                btn.style.color = isHidden ? '#35654D' : '#333';
-            }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
-        }
-
-        function toggleSettingsMenu() {
-            const menu = document.getElementById('settingsMenu');
-            const btn = menu?.closest('div')?.querySelector('.fullscreen-btn');
-            if (!menu) return;
-            const isOpen = menu.style.display === 'block';
-            menu.style.display = isOpen ? 'none' : 'block';
-            if (!isOpen) {
-                setTimeout(() => {
-                    const closeMenu = (e) => {
-                        const menu = document.getElementById('settingsMenu');
-                        // Don't close if clicking/touching the toggle button itself — let the toggle handle it
-                        const toggleBtn = document.querySelector('.fullscreen-btn');
-                        if (toggleBtn && (toggleBtn === e.target || toggleBtn.contains(e.target))) {
-                            document.removeEventListener('click', closeMenu);
-                            document.removeEventListener('touchstart', closeMenu);
-                            return;
-                        }
-                        if (menu && !menu.contains(e.target)) {
-                            menu.style.display = 'none';
-                            document.removeEventListener('click', closeMenu);
-                            document.removeEventListener('touchstart', closeMenu);
-                        }
-                    };
-                    document.addEventListener('click', closeMenu);
-                    document.addEventListener('touchstart', closeMenu);
-                }, 10);
-            }
-        }
-
-        function toggleMoreDropdown() {
-            closeQuickLoadDropdown();
-            const content = document.getElementById('moreDropdownContent');
-            content.classList.toggle('show');
-            const isOpen = content.classList.contains('show');
-            ['navIndexLabel','navHintLabel'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.visibility = isOpen ? 'hidden' : 'visible';
-            });
-        }
-
-        function closeMoreDropdown() {
-            const content = document.getElementById('moreDropdownContent');
-            content.classList.remove('show');
-            ['navIndexLabel','navHintLabel'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.visibility = 'visible';
-            });
-        }
-
-        // Touch event handlers for mobile
-        function handleDropdownTouch(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            toggleMoreDropdown();
-        }
-
-        function handleMenuItemTouch(event, callback) {
-            event.preventDefault();
-            event.stopPropagation();
-            closeMoreDropdown();
-            callback();
-        }
-
-        // Clear all cards with confirmation
-        function confirmClearAllCards() {
-            if (cards.length === 0) {
-                showToast('No cards to clear!', 2000);
-                return;
-            }
-
-            // Show custom confirmation modal
-            const confirmMessage = document.getElementById('confirmMessage');
-            confirmMessage.textContent = `Are you sure you want to clear all ${cards.length} cards? This cannot be undone.`;
-
-            document.body.style.overflow = 'hidden';
-            document.getElementById('confirmModal').classList.add('active');
-        }
-
-        function closeConfirmModal() {
-            document.body.style.overflow = '';
-            document.getElementById('confirmModal').classList.remove('active');
-        }
-
-        function executeClearAll() {
-            // Close modal first
-            closeConfirmModal();
-
-            // Stop any ongoing speech
-            window.speechSynthesis.cancel();
-
-            // Clear all cards and reset all state
-            cards = [];
-            currentIndex = 0;
-            isFlipped = false;
-            loadedUnitIds.clear();
-            currentLoadedUnitId = null;
-            setLoadedFileName('');
-
-            // Clear the image hash cache to prevent false duplicate warnings
-            imageHashCache.clear();
-
-            // Reset any game states
-            if (typeof bombGameState !== 'undefined') {
-                bombGameState = { currentCardIndex: 0, gameCards: [], selectedLetters: [], correctWord: '' };
-            }
-            if (typeof guessGameState !== 'undefined') {
-                guessGameState = { selectedCard: null, currentCardOrder: 0, correctCards: {}, gameCards: [] };
-            }
-            if (typeof spellingGameState !== 'undefined') {
-                spellingGameState = { currentCardIndex: 0, gameCards: [], spelledCards: new Set(), scrambledLetters: [], answerSlots: [], selectedLetter: null, correctWord: '', moveHistory: [] };
-            }
-
-            // Save to sessionStorage using the correct function
-            saveCards();
-
-            // renderDisplay handles the new empty state layout and all button visibility
-            renderDisplay();
-
-            showToast('All cards cleared!', 2000);
-        }
-
-        // Close dropdown when clicking/touching outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.dropdown')) {
-                closeMoreDropdown();
-            }
-        });
-
-        document.addEventListener('touchend', function(event) {
-            if (!event.target.closest('.dropdown')) {
-                closeMoreDropdown();
-            }
-        });
-    
-        // Disable all zoom functionality
-        document.addEventListener('gesturestart', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        document.addEventListener('gesturechange', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        document.addEventListener('gestureend', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        // Prevent Ctrl/Cmd + scroll zoom
-        document.addEventListener('wheel', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // Prevent all pinch zoom on touch devices
-        document.addEventListener('touchmove', function(e) {
-            if (e.touches.length > 1) e.preventDefault();
-        }, { passive: false });
-
-        // Prevent keyboard zoom shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Prevent zoom shortcuts
-            if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0' || e.key === '=')) {
-                e.preventDefault();
-            }
-
-            // ---- Spelling game keyboard input ----
-            const spellingOpen = document.getElementById('spellingGameModal')?.style.display === 'flex';
-            if (spellingOpen && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                if (e.key === 'ArrowRight') { e.preventDefault(); spellingNextCard(); return; }
-                if (e.key === 'ArrowLeft')  { e.preventDefault(); spellingPrevCard(); return; }
-                if (e.key === 'Enter')      { e.preventDefault(); checkSpelling();    return; }
-                if (e.key === 'Backspace')  { e.preventDefault(); undoSpelling();     return; }
-                if (e.key === 'Escape')     { e.preventDefault(); closeSpellingGame(); return; }
-                if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-                    e.preventDefault();
-                    const typed = e.key.toUpperCase();
-                    const idx = spellingGameState.scrambledLetters.findIndex(l => l !== null && l.toUpperCase() === typed);
-                    if (idx !== -1) selectLetter(idx);
-                    return;
-                }
-            }
-
-            // Keyboard navigation for main flashcard view only
-            // Check if we're in main view (not in a modal/game)
-            const inModal = document.querySelector('.modal.active');
-            const inDropdown = document.getElementById('quickLoadDropdown')?.style.display === 'block' ||
-                              document.getElementById('moreDropdown')?.querySelector('.dropdown-content.show');
-            const inInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
-
-            // Only enable keyboard shortcuts if we're in main flashcard view
-            if (!inModal && !inDropdown && !inInput && cards.length > 0) {
-                // Right Arrow - Next card
-                if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    nextCard();
-                }
-                
-                // Left Arrow - Previous card
-                if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    prevCard();
-                }
-                
-                // Space - Flip card
-                if (e.key === ' ' || e.key === 'Spacebar') {
-                    e.preventDefault();
-                    flipCard();
-                }
-
-                // Delete / Backspace - Delete current card
-                if (e.key === 'Delete' || e.key === 'Backspace') {
-                    e.preventDefault();
-                    deleteCard();
-                }
-            }
-        }, { passive: false });
-
-        // ==================== CROP IMAGE ====================
-
-        let cropState = {
-            img: null,
-            originalSrc: null,             // stores the original before any crop
-            imgNaturalW: 0, imgNaturalH: 0,
-            displayW: 0, displayH: 0,
-            offsetX: 0, offsetY: 0,
-            scale: 1,
-            crop: { x: 0, y: 0, w: 0, h: 0 },
-            dragging: false,
-            resizing: null,
-            lastX: 0, lastY: 0,
-            cardIndex: -1
-        };
-
-        const HANDLE_SIZE = 22;
-
-        function openCropTool() {
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
-            hideCardOverlays();
-
-            cropState.cardIndex = currentIndex;
-            const card = cards[currentIndex];
-            if (!card?.frontImage) { showToast('⚠️ No image on this card', 2000); return; }
-
-            // Store original only if not already stored (preserve the true original across multiple crops)
-            if (!card.originalFrontImage) {
-                card.originalFrontImage = card.frontImage;
-            }
-            cropState.originalSrc = card.originalFrontImage;
-
-            const overlay = document.getElementById('cropOverlay');
-            overlay.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-
-            // Show revert button only if image has previously been cropped (original differs from current)
-            const revertBtn = document.getElementById('revertCropBtn');
-            if (revertBtn) {
-                revertBtn.style.display = (card.originalFrontImage && card.originalFrontImage !== card.frontImage) ? 'block' : 'none';
-            }
-
-            const img = new Image();
-            img.onload = () => {
-                cropState.img = img;
-                cropState.imgNaturalW = img.naturalWidth;
-                cropState.imgNaturalH = img.naturalHeight;
-                requestAnimationFrame(initCropCanvas);
-            };
-            img.src = gifSrc(card.frontImage);
-        }
-
-        function initCropCanvas() {
-            const canvas = document.getElementById('cropCanvas');
-            const container = document.getElementById('cropCanvasWrap');
-            const cw = container.clientWidth;
-            const ch = container.clientHeight;
-            canvas.width = cw;
-            canvas.height = ch;
-
-            const img = cropState.img;
-            const scaleX = cw / img.naturalWidth;
-            const scaleY = ch / img.naturalHeight;
-            const scale = Math.min(scaleX, scaleY, 1);
-            cropState.scale = scale;
-
-            const dw = img.naturalWidth * scale;
-            const dh = img.naturalHeight * scale;
-            cropState.displayW = dw;
-            cropState.displayH = dh;
-            cropState.offsetX = (cw - dw) / 2;
-            cropState.offsetY = (ch - dh) / 2;
-
-            // Default crop = full image
-            cropState.crop = { x: cropState.offsetX, y: cropState.offsetY, w: dw, h: dh };
-            drawCrop();
-        }
-
-        function drawCrop() {
-            const canvas = document.getElementById('cropCanvas');
-            const ctx = canvas.getContext('2d');
-            const s = cropState;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw image
-            ctx.drawImage(s.img, s.offsetX, s.offsetY, s.displayW, s.displayH);
-
-            // Dark overlay outside crop
-            ctx.fillStyle = 'rgba(0,0,0,0.55)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.clearRect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
-
-            // Redraw image inside crop (so it looks bright)
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
-            ctx.clip();
-            ctx.drawImage(s.img, s.offsetX, s.offsetY, s.displayW, s.displayH);
-            ctx.restore();
-
-            // Crop border
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(s.crop.x, s.crop.y, s.crop.w, s.crop.h);
-
-            // Rule-of-thirds grid
-            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-            ctx.lineWidth = 1;
-            for (let i = 1; i < 3; i++) {
-                ctx.beginPath();
-                ctx.moveTo(s.crop.x + s.crop.w * i / 3, s.crop.y);
-                ctx.lineTo(s.crop.x + s.crop.w * i / 3, s.crop.y + s.crop.h);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(s.crop.x, s.crop.y + s.crop.h * i / 3);
-                ctx.lineTo(s.crop.x + s.crop.w, s.crop.y + s.crop.h * i / 3);
-                ctx.stroke();
-            }
-
-            // Corner handles
-            const hs = HANDLE_SIZE / 2;
-            const corners = getCropCorners();
-            corners.forEach(({ x, y }) => {
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(x, y, hs, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        function getCropCorners() {
-            const c = cropState.crop;
-            return [
-                { x: c.x,        y: c.y,        id: 'tl' },
-                { x: c.x + c.w,  y: c.y,        id: 'tr' },
-                { x: c.x,        y: c.y + c.h,  id: 'bl' },
-                { x: c.x + c.w,  y: c.y + c.h,  id: 'br' },
-                { x: c.x + c.w / 2, y: c.y,     id: 'tm' },
-                { x: c.x + c.w / 2, y: c.y + c.h, id: 'bm' },
-                { x: c.x,        y: c.y + c.h / 2, id: 'ml' },
-                { x: c.x + c.w,  y: c.y + c.h / 2, id: 'mr' },
-            ];
-        }
-
-        function getEventPos(e, canvas) {
-            const rect = canvas.getBoundingClientRect();
-            const touch = e.touches ? e.touches[0] : e;
-            return {
-                x: (touch.clientX - rect.left) * (canvas.width / rect.width),
-                y: (touch.clientY - rect.top) * (canvas.height / rect.height)
-            };
-        }
-
-        function hitHandle(x, y) {
-            const corners = getCropCorners();
-            for (const c of corners) {
-                if (Math.hypot(x - c.x, y - c.y) < HANDLE_SIZE) return c.id;
-            }
-            return null;
-        }
-
-        function insideCrop(x, y) {
-            const c = cropState.crop;
-            return x > c.x && x < c.x + c.w && y > c.y && y < c.y + c.h;
-        }
-
-        function cropPointerDown(e) {
-            e.preventDefault();
-            const canvas = document.getElementById('cropCanvas');
-            const { x, y } = getEventPos(e, canvas);
-            const handle = hitHandle(x, y);
-            cropState.lastX = x; cropState.lastY = y;
-            if (handle) {
-                cropState.resizing = handle;
-            } else if (insideCrop(x, y)) {
-                cropState.dragging = true;
-            }
-        }
-
-        function cropPointerMove(e) {
-            e.preventDefault();
-            if (!cropState.dragging && !cropState.resizing) return;
-            const canvas = document.getElementById('cropCanvas');
-            const { x, y } = getEventPos(e, canvas);
-            const dx = x - cropState.lastX;
-            const dy = y - cropState.lastY;
-            cropState.lastX = x; cropState.lastY = y;
-
-            const s = cropState;
-            const minSize = 40;
-            // Image bounds in display coords
-            const imgLeft   = s.offsetX;
-            const imgTop    = s.offsetY;
-            const imgRight  = s.offsetX + s.displayW;
-            const imgBottom = s.offsetY + s.displayH;
-
-            if (s.dragging) {
-                s.crop.x = Math.max(imgLeft,  Math.min(s.crop.x + dx, imgRight  - s.crop.w));
-                s.crop.y = Math.max(imgTop,   Math.min(s.crop.y + dy, imgBottom - s.crop.h));
-            } else if (s.resizing) {
-                const r = s.resizing;
-                let { x: cx, y: cy, w: cw, h: ch } = s.crop;
-                let right  = cx + cw;
-                let bottom = cy + ch;
-
-                if (r.includes('r') || r === 'mr') {
-                    right = Math.min(imgRight,  Math.max(cx + minSize, right + dx));
-                }
-                if (r.includes('l') || r === 'ml') {
-                    cx = Math.max(imgLeft,  Math.min(right - minSize, cx + dx));
-                }
-                if (r.includes('b') || r === 'bm') {
-                    bottom = Math.min(imgBottom, Math.max(cy + minSize, bottom + dy));
-                }
-                if (r.includes('t') || r === 'tm') {
-                    cy = Math.max(imgTop,   Math.min(bottom - minSize, cy + dy));
-                }
-
-                s.crop = { x: cx, y: cy, w: right - cx, h: bottom - cy };
-            }
-            drawCrop();
-        }
-
-        function cropPointerUp(e) {
-            cropState.dragging = false;
-            cropState.resizing = null;
-        }
-
-        function applyCrop() {
-            const s = cropState;
-            const canvas = document.createElement('canvas');
-            // Convert display coords back to natural image coords
-            const sx = (s.crop.x - s.offsetX) / s.scale;
-            const sy = (s.crop.y - s.offsetY) / s.scale;
-            const sw = s.crop.w / s.scale;
-            const sh = s.crop.h / s.scale;
-
-            // Check if crop is effectively the full image (no real crop applied)
-            const isFullImage = Math.round(sx) <= 0 && Math.round(sy) <= 0 &&
-                                Math.round(sw) >= s.imgNaturalW && Math.round(sh) >= s.imgNaturalH;
-            if (isFullImage) {
-                closeCropTool();
-                return;
-            }
-
-            canvas.width = Math.round(sw);
-            canvas.height = Math.round(sh);
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(s.img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-            const cropped = canvas.toDataURL('image/jpeg', 0.92);
-            cards[s.cardIndex].frontImage = cropped;
-            saveCards();
-            renderDisplay();
-            closeCropTool();
-            showToast('✅ Image cropped!', 2000);
-        }
-
-        function resetCrop() {
-            const s = cropState;
-            s.crop = { x: s.offsetX, y: s.offsetY, w: s.displayW, h: s.displayH };
-            drawCrop();
-        }
-
-        function revertToOriginal() {
-            const card = cards[cropState.cardIndex];
-            if (!card?.originalFrontImage) { showToast('⚠️ No original to revert to', 2000); return; }
-            card.frontImage = card.originalFrontImage;
-            delete card.originalFrontImage;
-            saveCards();
-            renderDisplay();
-            closeCropTool();
-            showToast('↩️ Reverted to original!', 2000);
-        }
-
-        function closeCropTool() {
-            document.getElementById('cropOverlay').style.display = 'none';
-            document.body.style.overflow = '';
-            cropState.img = null;
-            showCardOverlays();
-        }
-
-        // Wire up canvas events on load
-        window.addEventListener('load', () => {
-            const canvas = document.getElementById('cropCanvas');
-            if (!canvas) return;
-            // Mouse
-            canvas.addEventListener('mousedown', cropPointerDown);
-            canvas.addEventListener('mousemove', cropPointerMove);
-            canvas.addEventListener('mouseup', cropPointerUp);
-            canvas.addEventListener('mouseleave', cropPointerUp);
-            // Touch
-            canvas.addEventListener('touchstart', cropPointerDown, { passive: false });
-            canvas.addEventListener('touchmove', cropPointerMove, { passive: false });
-            canvas.addEventListener('touchend', cropPointerUp);
-            // Resize
-            window.addEventListener('resize', () => {
-                if (document.getElementById('cropOverlay').style.display === 'flex') {
-                    initCropCanvas();
-                }
-            });
-        });
-
-        // Re-render guess game on resize/rotation, preserving reveal state (keeps ✓/✗ buttons)
-        function rerenderGuessGameForResize() {
-            if (!document.getElementById('guessGameModal')?.classList.contains('active')) return;
-            if (guessGameState.selectedCard !== null && guessGameState.selectedCard !== undefined) {
-                showGuessCardReveal(guessGameState.selectedCard);
-            } else {
-                renderGuessGame();
-            }
-        }
-
-        // Re-render on orientation change so cards don't disappear
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                if (cards.length > 0) {
-                    renderDisplay();
-                    cachedFrontTextSize = null;
-                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-                    scaleFrontText();
-                    if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
-                        hideCardOverlays();
-                    }
-                }
-                // Re-render match game on rotation
-                if (document.getElementById('matchGameModal')?.style.display === 'flex') {
-                    renderMatchGame();
-                }
-                // Re-render guess game on rotation so grid columns update
-                if (document.getElementById('guessGameModal')?.classList.contains('active')) {
-                    rerenderGuessGameForResize();
-                }
-            }, 300);
-        });
-        let resizeTimer;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                positionNavOverlay();
-                if (cards.length > 0) { cachedFrontTextSize = null; Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]); scaleFrontText(); }
-                if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
-                    hideCardOverlays();
-                }
-                // Re-render match game on window resize (PC orientation change)
-                if (document.getElementById('matchGameModal')?.style.display === 'flex') {
-                    renderMatchGame();
-                }
-                // Re-render guess game on window resize so grid columns update
-                if (document.getElementById('guessGameModal')?.classList.contains('active')) {
-                    rerenderGuessGameForResize();
-                }
-            }, 250);
-        });
-
-        // ==================== END CROP IMAGE ====================
-
-        // ==================== SWIPE HINT ONBOARDING ====================
-        const SWIPE_HINT_KEY = 'swipeHintSeen_v4';
-        let _swipeHintDone = false;
-        let _swipeHintArmed = false;
-        let _swipeHintInactivityTimer = null;
-        const SWIPE_HINT_INACTIVITY_MS = 5000; // 5 seconds of inactivity
-
-        /** True when the main deck UI is ready for the swipe demo */
-        function _swipeHintCanShow() {
-            if (!cards || cards.length < 1) return false;
-            // Don't show over create/load/etc. modals or empty home
-            if (document.querySelector('.modal.active')) return false;
-            if (document.querySelector('.empty-state')) return false;
-            const cardEl = document.querySelector('#cardDisplay .card');
-            if (!cardEl) return false;
-            const r = cardEl.getBoundingClientRect();
-            return r.width >= 10 && r.height >= 10;
-        }
-
-        /**
-         * Cancel a pending timer / hide a stray overlay.
-         * Used when the deck becomes empty (import then delete) so the demo
-         * never fires on the opening empty page.
-         */
-        function cancelSwipeHint() {
-            clearTimeout(_swipeHintInactivityTimer);
-            _swipeHintInactivityTimer = null;
-            _swipeHintArmed = false;
-            // Do NOT set _swipeHintDone — user never saw it; can arm again later
-
-            const overlay  = document.getElementById('swipeHintOverlay');
-            const arrowsEl = document.getElementById('swipeHintArrows');
-            if (overlay) overlay.classList.remove('visible');
-            const cardEl = document.querySelector('.card');
-            const cardStack = document.querySelector('.card-stack');
-            if (cardEl) cardEl.classList.remove('swipeHintDrifting');
-            if (cardStack) cardStack.classList.remove('swiping');
-            if (arrowsEl) arrowsEl.classList.remove('drifting');
-        }
-
-        function _armSwipeHintTimer() {
-            clearTimeout(_swipeHintInactivityTimer);
-            _swipeHintInactivityTimer = setTimeout(() => {
-                if (_swipeHintDone) return;
-                _swipeHintArmed = false;
-                // Deck may have been cleared after arming — never show on empty home
-                if (!_swipeHintCanShow()) {
-                    return;
-                }
-                _swipeHintDone = true;
-                _showSwipeHint();
-            }, SWIPE_HINT_INACTIVITY_MS);
-        }
-
-        function _onUserActivity() {
-            if (!_swipeHintArmed || _swipeHintDone) return;
-            // Still need a live deck; otherwise disarm
-            if (!_swipeHintCanShow()) {
-                cancelSwipeHint();
-                return;
-            }
-            _armSwipeHintTimer();
-        }
-
-        // Only reset on deliberate swipe-like gestures — NOT click/tap/scroll
-        // so that simply opening a deck and leaving it idle triggers the hint
-        ['touchmove', 'mousemove'].forEach(evt => {
-            window.addEventListener(evt, _onUserActivity, { passive: true });
-        });
-
-        function maybeShowSwipeHint() {
-            // Already done or armed — skip
-            if (_swipeHintDone || _swipeHintArmed) return;
-            // Already seen in a prior session — skip
-            try { if (localStorage.getItem(SWIPE_HINT_KEY)) return; } catch(e) {}
-            // Need a real deck card (not empty state); swipe demo is for the main viewer
-            if (!_swipeHintCanShow()) return;
-            // Start the 5-second countdown
-            _swipeHintArmed = true;
-            _armSwipeHintTimer();
-        }
-
-        function _showSwipeHint() {
-            if (!_swipeHintCanShow()) {
-                cancelSwipeHint();
-                return;
-            }
-
-            const overlay    = document.getElementById('swipeHintOverlay');
-            const cardHole   = document.getElementById('swipeHintCardHole');
-            const arrowsEl   = document.getElementById('swipeHintArrows');
-            if (!overlay || !cardHole || !arrowsEl) return;
-
-            function positionElements() {
-                if (!_swipeHintCanShow()) return false;
-                const cardEl = document.querySelector('#cardDisplay .card');
-                if (!cardEl) return false;
-                const r = cardEl.getBoundingClientRect();
-                if (r.width < 10) return false;
-
-                const PAD = 8;
-                cardHole.style.left   = (r.left - PAD) + 'px';
-                cardHole.style.top    = (r.top  - PAD) + 'px';
-                cardHole.style.width  = (r.width  + PAD * 2) + 'px';
-                cardHole.style.height = (r.height + PAD * 2) + 'px';
-
-                // Arrows centered on the card
-                const AW = 70, AH = 70;
-                arrowsEl.style.left   = (r.left + r.width/2  - AW) + 'px';
-                arrowsEl.style.top    = (r.top  + r.height/2 - AH) + 'px';
-                arrowsEl.style.width  = (AW * 2) + 'px';
-                arrowsEl.style.height = (AH * 2) + 'px';
-                return true;
-            }
-
-            if (!positionElements()) {
-                // Card not ready — don't flash a full-screen overlay on empty home
-                cancelSwipeHint();
-                _swipeHintDone = false; // allow retry when a deck is actually shown
-                return;
-            }
-
-            overlay.classList.add('visible');
-
-            // Animate the REAL first card: drift it, grey it out, and move
-            // the arrows + finger in perfect sync with it.
-            requestAnimationFrame(() => {
-                if (!_swipeHintCanShow()) {
-                    cancelSwipeHint();
-                    _swipeHintDone = false;
-                    return;
-                }
-                const cardEl = document.querySelector('#cardDisplay .card');
-                const cardStack = document.querySelector('.card-stack');
-                if (cardStack) cardStack.classList.add('swiping'); // reveals card-next/card-prev peeks
-                if (cardEl) cardEl.classList.add('swipeHintDrifting');   // drift + grey filter
-                arrowsEl.classList.add('drifting');                       // arrows move with card
-            });
-
-            function dismissHint() {
-                overlay.classList.remove('visible');
-                const cardEl = document.querySelector('.card');
-                const cardStack = document.querySelector('.card-stack');
-                if (cardEl) cardEl.classList.remove('swipeHintDrifting');
-                if (cardStack) cardStack.classList.remove('swiping');
-                arrowsEl.classList.remove('drifting');
-                _swipeHintDone = true;
-                try { localStorage.setItem(SWIPE_HINT_KEY, '1'); } catch(e) {}
-            }
-
-            // Tap/click anywhere to dismiss (no button needed)
-            document.getElementById('swipeHintBg').addEventListener('click',    () => dismissHint(), { once: true });
-            document.getElementById('swipeHintBg').addEventListener('touchend', (e) => { e.preventDefault(); dismissHint(); }, { once: true });
-        }
-        // ==================== END SWIPE HINT ====================
-
-</script>
-    <!-- Crop Image Overlay -->
-    <div id="cropOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:3000; flex-direction:column;">
-        <!-- Toolbar -->
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#1a1a1a; flex-shrink:0;">
-            <button onclick="closeCropTool()" style="background:none; border:none; color:white; font-size:16px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.12);">Cancel</button>
-            <span style="color:white; font-size:17px; font-weight:700; letter-spacing:0.3px;">Clip Image</span>
-            <button onclick="resetCrop()" style="background:none; border:none; color:#f0a500; font-size:15px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(240,165,0,0.15);">Reset</button>
-        </div>
-        <!-- Canvas area -->
-        <div id="cropCanvasWrap" style="flex:1; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;">
-            <canvas id="cropCanvas" style="display:block; cursor:crosshair; touch-action:none; max-width:100%; max-height:100%;"></canvas>
-        </div>
-        <!-- Bottom bar -->
-        <div style="display:flex; justify-content:center; align-items:center; gap:12px; padding:16px; background:#1a1a1a; flex-shrink:0;">
-            <button id="revertCropBtn" onclick="revertToOriginal()" style="display:none; background:rgba(255,255,255,0.12); color:white; border:none; border-radius:12px; padding:14px 24px; font-size:15px; font-weight:600; cursor:pointer;">
-                ↩️ Revert to Original
-            </button>
-            <button onclick="applyCrop()" style="background:#35654D; color:white; border:none; border-radius:12px; padding:14px 48px; font-size:17px; font-weight:700; cursor:pointer; letter-spacing:0.3px;">
-                ✓ Done
-            </button>
-        </div>
-    </div>
+        // Register entry points for lazy loader stubs in main script
+        window._openGameMenu = openGameMenu;
+        window._startGame = startGame;
+        window._closeGameMenu = closeGameMenu;
+        window._gamesCodeReady = true;
+
+    </script>
 
 </body>
 </html>
