@@ -1630,8 +1630,30 @@
             gap: 8px;
             padding: 6px 12px;
             border-bottom: 1px solid #f0f0f0;
+            transition: background 0.12s ease;
         }
         .rename-name-row:last-child { border-bottom: none; }
+        .rename-name-row.rename-row-focused {
+            background: #eef4ff;
+        }
+        .rename-name-row.rename-row-focused .rename-name-input {
+            background: #fff;
+        }
+        /* Option A: thumbnail per name row */
+        .rename-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #eef1f4;
+            border: 1.5px solid #e0e0e0;
+            cursor: pointer;
+        }
+        .rename-name-row.rename-row-focused .rename-thumb {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
+        }
         .rename-index-badge {
             font-size: 0.78rem;
             font-weight: 700;
@@ -1654,6 +1676,7 @@
             border-radius: 6px;
             -webkit-user-select: text;
             user-select: text;
+            min-width: 0;
         }
         .rename-name-input:focus { background: #f0f4ff; }
 
@@ -1796,6 +1819,7 @@
         #createModal.wizard-step-1 .card-name-group {
             display: none !important;
         }
+        /* Names step: row thumbs only — hide the big image gallery */
         #createModal.wizard-step-2 .image-upload-group {
             display: none !important;
         }
@@ -1805,6 +1829,7 @@
             max-height: none !important;
             min-height: 0 !important;
         }
+
         /* Combined import+reorder: subtle arrange affordance when images present */
         #createModal.wizard-step-1.reorder-mode-on .image-upload-group .upload-area.has-image {
             border-style: solid;
@@ -1947,6 +1972,7 @@
             flex: 1 1 auto !important;
             min-height: 0 !important;
             max-height: none !important;
+            overflow-x: hidden !important;
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch;
         }
@@ -2173,23 +2199,72 @@
             background: #f0f0f0;
         }
 
+        /* Preview tiles: always equal squares, independent of how many images */
         .preview-image-container {
             position: relative;
+            width: 100%;
+            min-width: 0;
+            min-height: 0;
+            aspect-ratio: 1 / 1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #eef1f4;
             cursor: pointer;
             user-select: none;
             -webkit-user-drag: none;
+            /* Scale number badges with tile size */
+            container-type: size;
+            container-name: preview-tile;
         }
 
-        .preview-image-container img {
+        .preview-image-container img,
+        .preview-image-container .preview-img-slot {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            display: block;
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-sizing: border-box;
             user-select: none;
             -webkit-user-drag: none;
             pointer-events: none;
+            background: #eef1f4;
+        }
+
+        .preview-card-num {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* Fallback then scale with tile size (same look for 5 or 15 images) */
+            font-size: 1.6rem;
+            font-size: clamp(0.95rem, 32cqmin, 2.35rem);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            color: rgba(100, 100, 100, 0.4);
+            text-shadow: none;
+            pointer-events: none;
+            z-index: 2;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .preview-image-container.has-preview-img .preview-card-num {
+            color: rgba(255, 255, 255, 0.65);
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.5);
         }
 
         .preview-image-container.selected {
             outline: 3px solid #667eea;
             outline-offset: 2px;
             border-radius: 8px;
+            z-index: 2;
         }
 
         /* ===== Drag-to-reorder styles ===== */
@@ -2198,12 +2273,14 @@
             outline: 2px dashed #8b5cf6;
             outline-offset: 2px;
             border-radius: 8px;
+            overflow: visible; /* allow outline + delete btn outside square */
             transition: transform 0.15s ease, box-shadow 0.15s ease;
             /* Prevent browser scroll/gesture takeover when grabbing a card */
             touch-action: none;
             -ms-touch-action: none;
             -webkit-touch-action: none;
             will-change: transform;
+            z-index: 1;
         }
         .preview-image-container.reorder-enabled:hover {
             transform: scale(1.03);
@@ -2344,15 +2421,32 @@
             background: #10b981;
         }
 
-        /* Responsive grid for image previews: 3-5 columns */
+        /*
+         * Preview grid: fixed column track sizing so 10 and 15 images
+         * share the same tile size, gap, and number style. Extra space
+         * stays at the bottom (align-content: start) — tiles never stretch.
+         */
+        #createModal #imagePreviewGrid.responsive-grid,
         .responsive-grid {
-            grid-template-columns: repeat(3, 1fr); /* Default: 3 columns */
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-auto-rows: auto;
+            grid-auto-flow: row;
+            align-content: start;
+            justify-items: stretch;
+            align-items: start;
+            gap: 10px;
+            padding: 4px;
+            box-sizing: border-box;
+            width: 100%;
         }
 
-        /* 4 columns on screens 800px and wider */
+        /* 4 equal columns on wider create-modal */
         @media (min-width: 800px) {
+            #createModal #imagePreviewGrid.responsive-grid,
             .responsive-grid {
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 12px;
             }
         }
 
@@ -3347,7 +3441,7 @@
                         <div class="upload-icon"><img src="data:image/webp;base64,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" alt="Add Image" style="width: 80px; height: 80px;"></div>
                         <p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p>
                         <p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p>
-                        <p style="font-size: 0.95rem; color: #4caf50; margin-top: 10px; font-weight: 600;">✅ Images automatically compressed to 500KB each</p>
+                        <p style="font-size: 0.9rem; color: #35654D; margin-top: 10px; font-weight: 600; line-height: 1.45;">Max 30 images · Photos ≤15MB auto-compress to 500KB · GIFs ≤3MB</p>
                     </div>
                 </div>
                     </div>
@@ -3371,10 +3465,10 @@
                     <!-- Helper text -->
                     <div class="ipad-helper-text" id="ipadHelperText" style="display: none;">
                         <div class="card-names">Card names = Image filenames</div>
-                        <div class="max-warning">⚠️ Maximum 30 images (15MB each)</div>
+                        <div class="max-warning">Max 30 · Photos ≤15MB → 500KB · GIFs ≤3MB</div>
                     </div>
                 </div>
-                <input type="file" id="frontImage" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/heic,image/heif,image/avif" multiple title="Select up to 30 images (auto-compressed to 500KB)" onchange="handleImageUpload('front', this)">
+                <input type="file" id="frontImage" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/heic,image/heif,image/avif" multiple title="Max 30 · Photos ≤15MB auto-compress to 500KB · GIFs ≤3MB" onchange="handleImageUpload('front', this)">
             </div>
 
             <div class="form-group card-name-group">
@@ -4505,7 +4599,7 @@
         }
         // Remember which side each card was last on
         const cardFlipStates = {};
-        let newCard = { frontImage: null, backText: '', backImage: null, editedNames: null };
+        let newCard = { frontImage: null, backText: '', backImage: null, editedNames: null, previewThumbs: null };
         let clearAllClickCount = 0;
         let clearAllTimeout = null;
         let renameTimeout = null;
@@ -5605,6 +5699,8 @@
             newCard.frontImage = null;
             newCard.backText = '';
             newCard.editedNames = null;
+            newCard.previewThumbs = null;
+            if (typeof _revokeRenameThumbUrls === 'function') _revokeRenameThumbUrls();
 
             if (typeof clearPastePreview === 'function') clearPastePreview();
 
@@ -5619,7 +5715,7 @@
                 fp.innerHTML =
                     '<p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p>' +
                     '<p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p>' +
-                    '<p style="font-size: 0.95rem; color: #4caf50; margin-top: 10px; font-weight: 600;">✅ Images automatically compressed to 500KB each</p>';
+                    '<p style="font-size: 0.9rem; color: #35654D; margin-top: 10px; font-weight: 600; line-height: 1.45;">' + imageImportLimitsSummary() + '</p>';
             }
 
             const bt = document.getElementById('backText');
@@ -5680,6 +5776,45 @@
             } finally {
                 _wizardSyncing = false;
             }
+        }
+
+        /**
+         * Snapshot card names from the Names UI without changing any visible UI.
+         * Used on Finish so we never flash the "exit rename" layout (textarea +
+         * image re-render) while compression still runs with the modal open.
+         * Keeps blank names (empty strings) so cards are not dropped.
+         */
+        function captureCreateNamesQuietly() {
+            let names = null;
+            if (_renameUIActive && typeof _readRenameStructuredList === 'function') {
+                names = _readRenameStructuredList();
+            }
+            if ((!names || !names.length) && newCard.editedNames && newCard.editedNames.length) {
+                names = newCard.editedNames.slice();
+            }
+            if ((!names || !names.length)) {
+                const bt = document.getElementById('backText');
+                if (bt && bt.value) {
+                    names = [];
+                    bt.value.split('\n').forEach(function(line) {
+                        if (line.includes('Edit names') || line.includes('Card names preview')) return;
+                        const m = line.match(/^(\d+)\.\s*(.*)$/);
+                        if (m) names.push(m[2]); // keep raw (may be blank)
+                    });
+                }
+            }
+            if (names && names.length) {
+                newCard.editedNames = names.slice();
+            }
+            // Do NOT toggle UI, re-render previews, or filter empty names here.
+            return newCard.editedNames;
+        }
+
+        /** Hide create modal without resetForm (call resetForm after work is done). */
+        function hideCreateModalImmediate() {
+            const modal = document.getElementById('createModal');
+            if (modal) modal.classList.remove('active');
+            document.body.style.overflow = '';
         }
 
         function createWizardEnterNames() {
@@ -5756,7 +5891,7 @@
             } else {
                 if (title) title.textContent = 'Card Names';
                 if (label) label.textContent = 'Names';
-                if (hint) hint.textContent = 'Edit names, then finish';
+                if (hint) hint.textContent = 'Thumbnails match each name · edit, then finish';
             }
 
             // Card Name header count — Names page only (e.g. "Card Name  (12)")
@@ -5796,7 +5931,7 @@
                 if (el) el.style.display = 'none';
             });
 
-            // Step 1 = import (optional Reorder & Remove); Step 2 = names
+            // Step 1 = import (optional Reorder & Remove); Step 2 = names (row thumbs only)
             if (createWizardStep === 1) {
                 if (_renameUIActive && !_wizardSyncing) createWizardCommitNames();
                 // Do NOT auto-enable arrange mode — user toggles via toolbar button
@@ -6088,7 +6223,8 @@
         }
 
         function resetForm() {
-            newCard = { frontImage: null, backText: '', backImage: null, multipleFiles: null, editingIndex: null, editedNames: null };
+            if (typeof _revokeRenameThumbUrls === 'function') _revokeRenameThumbUrls();
+            newCard = { frontImage: null, backText: '', backImage: null, multipleFiles: null, editingIndex: null, editedNames: null, previewThumbs: null };
             if (typeof clearPastePreview === 'function') clearPastePreview();
 
             // Reset rename mode flags
@@ -6120,7 +6256,7 @@
                 handleUploadAreaClick(event);
             };
 
-            document.getElementById('frontPreview').innerHTML = '<div class="upload-icon"><img src="data:image/webp;base64,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" alt="Add Image" style="width: 80px; height: 80px;"></div><p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p><p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p><p style="font-size: 0.95rem; color: #ff6b6b; margin-top: 10px; font-weight: 600;">⚠️ Maximum 30 images (15MB each)</p>';
+            document.getElementById('frontPreview').innerHTML = '<div class="upload-icon"><img src="data:image/webp;base64,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" alt="Add Image" style="width: 80px; height: 80px;"></div><p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p><p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p><p style="font-size: 0.9rem; color: #35654D; margin-top: 10px; font-weight: 600; line-height: 1.45;">' + imageImportLimitsSummary() + '</p>';
 
             const backTextElement = document.getElementById('backText');
             backTextElement.value = '';
@@ -6368,7 +6504,7 @@
                 previewHTML += '</div>';
             }
 
-            previewHTML += '<div id="imagePreviewGrid" class="responsive-grid" style="display: grid; gap: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 5px;"></div>';
+            previewHTML += '<div id="imagePreviewGrid" class="responsive-grid"></div>';
             previewHTML += '</div>';
 
             document.getElementById('frontPreview').innerHTML = previewHTML;
@@ -6416,60 +6552,118 @@
             // Create mini previews for ALL images (compressed)
             const grid = document.getElementById('imagePreviewGrid');
 
-            // Create placeholder containers in order first
+            // Bump generation so stale async compress results from an older render never write back
+            window._previewRenderGen = (window._previewRenderGen || 0) + 1;
+            const renderGen = window._previewRenderGen;
+            if (!newCard.previewThumbs) newCard.previewThumbs = [];
+
+            // Create equal square placeholders in file order FIRST so the grid
+            // never jumps as faster files finish before large photos.
             const containers = [];
             for (let i = 0; i < files.length; i++) {
                 const container = document.createElement('div');
                 container.className = 'preview-image-container';
-                container.dataset.index = i;
-                container.dataset.origIndex = i; // stable file identity until next full re-render
-                container.style.minHeight = '100px'; // Prevent layout shift
+                container.dataset.index = String(i);
+                container.dataset.origIndex = String(i); // stable file identity until next full re-render
+
+                // ✕ only in Reorder & Remove mode
+                const deleteButton = (isRenameMode || !isDragReorderMode)
+                    ? ''
+                    : '<div class="preview-image-delete" title="Remove" onclick="event.preventDefault(); event.stopPropagation(); deletePreviewImage(parseInt(this.parentElement.dataset.index,10));" onpointerdown="event.stopPropagation();">✕</div>';
+
+                container.innerHTML =
+                    '<div class="preview-img-slot" aria-hidden="true"></div>' +
+                    '<div class="preview-card-num">' + (i + 1) + '</div>' +
+                    deleteButton;
+
+                // Wire interactions immediately (don't wait for compress)
+                if (isDragReorderMode) {
+                    container.classList.add('reorder-enabled');
+                    container.onclick = null;
+                    container.ondragstart = function(e) { e.preventDefault(); return false; };
+                    if (files.length >= 2 && typeof _attachReorderPointerEvents === 'function') {
+                        _attachReorderPointerEvents(container);
+                    }
+                } else {
+                    (function(idx) {
+                        container.onclick = function(event) {
+                            if (!event.target.classList.contains('preview-image-delete')) {
+                                toggleImageSelection(idx);
+                            }
+                        };
+                    })(i);
+                    container.ondragstart = function(e) {
+                        e.preventDefault();
+                        return false;
+                    };
+                }
+
                 containers.push(container);
                 grid.appendChild(container);
             }
 
-            // Then compress and fill them asynchronously
+            // Fill images asynchronously; only swap the image slot — never reshuffle containers
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const container = containers[i];
+                const slotIndex = i;
 
-                // Use compressed image for preview
-                compressImage(file, 500).then(compressedData => {
-                    // ✕ only in Reorder & Remove mode — use dataset.index so order stays correct after live reorder
-                    const deleteButton = (isRenameMode || !isDragReorderMode)
-                        ? ''
-                        : '<div class="preview-image-delete" title="Remove" onclick="event.preventDefault(); event.stopPropagation(); deletePreviewImage(parseInt(this.parentElement.dataset.index,10));" onpointerdown="event.stopPropagation();">✕</div>';
+                // Reuse cached thumb if available (also feeds Names-step row thumbs)
+                const cached = newCard.previewThumbs[i];
+                const fillFromData = function(compressedData) {
+                    if (renderGen !== window._previewRenderGen) return;
+                    if (!container.isConnected) return;
 
-                    container.innerHTML = `
-                        <img src="${compressedData}" style="width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px;" draggable="false">
-                        <div class="preview-card-num" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; font-weight: bold; color: rgba(255, 255, 255, 0.6); text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7), 0 0 3px rgba(0, 0, 0, 0.5); pointer-events: none;">
-                            ${i + 1}
-                        </div>
-                        ${deleteButton}
-                    `;
+                    newCard.previewThumbs[slotIndex] = compressedData;
 
-                    // Reorder & Remove mode: dotted outline + drag (2+) + ✕
-                    if (isDragReorderMode) {
-                        container.classList.add('reorder-enabled');
-                        container.onclick = null;
-                        container.ondragstart = function(e) { e.preventDefault(); return false; };
-                        if (files.length >= 2) {
-                            _attachReorderPointerEvents(container, i);
-                        }
+                    // Keep row thumbs in sync if rename list is open
+                    const rowThumb = document.querySelector('.rename-name-row[data-rename-index="' + slotIndex + '"] .rename-thumb');
+                    if (rowThumb) rowThumb.src = compressedData;
+
+                    const slot = container.querySelector('.preview-img-slot');
+                    const numEl = container.querySelector('.preview-card-num');
+                    const displayNum = (parseInt(container.dataset.index, 10) + 1) || (slotIndex + 1);
+
+                    const img = document.createElement('img');
+                    img.src = compressedData;
+                    img.alt = '';
+                    img.draggable = false;
+
+                    if (slot) {
+                        slot.replaceWith(img);
                     } else {
-                        container.onclick = function(event) {
-                            if (!event.target.classList.contains('preview-image-delete')) {
-                                toggleImageSelection(i);
-                            }
-                        };
-                        container.ondragstart = function(e) {
-                            e.preventDefault();
-                            return false;
-                        };
+                        const existing = container.querySelector('img');
+                        if (existing) existing.src = compressedData;
+                        else container.insertBefore(img, container.firstChild);
                     }
-                }).catch(err => {
-                    console.error('Preview compression failed:', err);
-                });
+
+                    container.classList.add('has-preview-img');
+                    if (numEl) numEl.textContent = String(displayNum);
+                };
+
+                if (cached) {
+                    fillFromData(cached);
+                } else {
+                    compressImage(file).then(fillFromData).catch(err => {
+                        if (renderGen !== window._previewRenderGen) return;
+                        if (!container.isConnected) return;
+                        console.error('Preview compression failed:', err);
+                        const msg = (err && err.message) ? String(err.message) : '';
+                        const slot = container.querySelector('.preview-img-slot');
+                        const fail = document.createElement('div');
+                        fail.className = 'preview-img-slot';
+                        fail.style.cssText = 'display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:600;text-align:center;padding:6px;' +
+                            (/too large/i.test(msg)
+                                ? 'background:#fdecea;color:#c62828;'
+                                : 'background:#f0f0f0;color:#999;');
+                        fail.textContent = /too large/i.test(msg) ? 'Too large' : 'Failed';
+                        if (slot) slot.replaceWith(fail);
+                        else container.insertBefore(fail, container.firstChild);
+                        if (/too large/i.test(msg) && typeof showImageSizeLimitRejected === 'function') {
+                            showImageSizeLimitRejected([{ name: file.name || 'image', sizeMB: formatFileSizeMB(file.size) }]);
+                        }
+                    });
+                }
             }
         }
 
@@ -6525,13 +6719,19 @@
             // Re-render previews
             renderImagePreviews();
 
-            // If rename editor is open, remove that row and renumber
+            // If structured rename list is open, remove that row and renumber badges
             if (_renameUIActive) {
-                const editor = document.getElementById('renameEditor');
-                if (editor) {
-                    const nameRows = Array.from(editor.querySelectorAll('div')).filter(d => d.querySelector('.re-name'));
-                    if (nameRows[index]) nameRows[index].remove();
-                    _renumberEditor();
+                const body = document.getElementById('renameNamesBody');
+                if (body) {
+                    const rows = body.querySelectorAll('.rename-name-row');
+                    if (rows[index]) rows[index].remove();
+                    Array.from(body.querySelectorAll('.rename-name-row')).forEach(function(row, i) {
+                        row.dataset.renameIndex = String(i);
+                        const badge = row.querySelector('.rename-index-badge');
+                        if (badge) badge.textContent = (i + 1) + '.';
+                        const input = row.querySelector('.rename-name-input');
+                        if (input) input.dataset.renameIndex = String(i);
+                    });
                 }
             }
 
@@ -6648,6 +6848,33 @@
         // Each name lives in its own <input>; the index "1." is a separate
         // read-only <span> outside the input, so it can't be selected, edited,
         // or deleted. Indexes always stay in sync with row position.
+        // Option A: each row includes a thumbnail of that card's image.
+        let _renameThumbObjectUrls = [];
+
+        function _revokeRenameThumbUrls() {
+            (_renameThumbObjectUrls || []).forEach(function(u) {
+                try { URL.revokeObjectURL(u); } catch (e) { /* ignore */ }
+            });
+            _renameThumbObjectUrls = [];
+        }
+
+        function _getRenameThumbSrc(idx) {
+            // Prefer already-compressed preview cache from step 1
+            if (newCard && newCard.previewThumbs && newCard.previewThumbs[idx]) {
+                return newCard.previewThumbs[idx];
+            }
+            // Fallback: object URL from the File (fast; works for most formats)
+            const files = newCard && newCard.multipleFiles;
+            if (files && files[idx]) {
+                try {
+                    const url = URL.createObjectURL(files[idx]);
+                    _renameThumbObjectUrls.push(url);
+                    return url;
+                } catch (e) { /* ignore */ }
+            }
+            return '';
+        }
+
         function _buildRenameStructuredList(text) {
             const body = document.getElementById('renameNamesBody');
             if (!body) return;
@@ -6656,10 +6883,26 @@
                 const m = line.match(/^(\d+)\.\s?(.*)$/);
                 if (m) names.push(m[2]);
             });
+            _revokeRenameThumbUrls();
             body.innerHTML = '';
             names.forEach((name, idx) => {
                 const row = document.createElement('div');
                 row.className = 'rename-name-row';
+                row.dataset.renameIndex = String(idx);
+
+                // Option A: thumbnail
+                const thumb = document.createElement('img');
+                thumb.className = 'rename-thumb';
+                thumb.alt = '';
+                thumb.draggable = false;
+                const src = _getRenameThumbSrc(idx);
+                if (src) thumb.src = src;
+                thumb.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const input = row.querySelector('.rename-name-input');
+                    if (input) input.focus();
+                });
+
                 const badge = document.createElement('span');
                 badge.className = 'rename-index-badge';
                 badge.textContent = (idx + 1) + '.';
@@ -6670,12 +6913,40 @@
                 input.spellcheck = false;
                 input.autocomplete = 'off';
                 input.autocapitalize = 'off';
+                input.dataset.renameIndex = String(idx);
                 input.addEventListener('keydown', _renameInputKeydown);
                 input.addEventListener('focus', _renameInputFocus);
+                input.addEventListener('blur', _renameInputBlur);
+
+                row.appendChild(thumb);
                 row.appendChild(badge);
                 row.appendChild(input);
                 body.appendChild(row);
+
+                // If no cached thumb, try async compress for HEIC/etc.
+                if (!src && newCard && newCard.multipleFiles && newCard.multipleFiles[idx]) {
+                    const file = newCard.multipleFiles[idx];
+                    compressImage(file).then(function(data) {
+                        if (!newCard.previewThumbs) newCard.previewThumbs = [];
+                        newCard.previewThumbs[idx] = data;
+                        if (thumb.isConnected) thumb.src = data;
+                    }).catch(function() { /* leave empty placeholder */ });
+                }
             });
+        }
+
+        /** Highlight the active name row (and its little thumbnail) */
+        function _setRenameFocusIndex(idx) {
+            document.querySelectorAll('.rename-name-row').forEach(function(row) {
+                row.classList.toggle('rename-row-focused', parseInt(row.dataset.renameIndex, 10) === idx);
+            });
+            // Scroll focused name row into view inside the list
+            const row = document.querySelector('.rename-name-row[data-rename-index="' + idx + '"]');
+            if (row && row.scrollIntoView) {
+                try { row.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {
+                    row.scrollIntoView(false);
+                }
+            }
         }
 
         function _readRenameStructuredList() {
@@ -6704,6 +6975,8 @@
         // frame as well.
         function _renameInputFocus(e) {
             const input = e.target;
+            const idx = parseInt(input.dataset.renameIndex, 10);
+            if (!isNaN(idx)) _setRenameFocusIndex(idx);
             const selectAll = () => {
                 try { input.setSelectionRange(0, (input.value || '').length); } catch (err) {}
             };
@@ -6712,191 +6985,17 @@
             setTimeout(selectAll, 0);
         }
 
-        function _buildRenameEditor(text) {
-            const editor = document.getElementById('renameEditor');
-            const lines = text.split('\n');
-            editor.innerHTML = lines.map(line => {
-                if (line.includes('Edit names') || line.includes('Card names preview')) {
-                    return '<div><span class="re-locked" contenteditable="false">' + _esc(line) + '</span></div>';
+        function _renameInputBlur(e) {
+            // Keep highlight briefly; clear only if focus left the rename list
+            setTimeout(function() {
+                const active = document.activeElement;
+                if (!active || !active.classList || !active.classList.contains('rename-name-input')) {
+                    document.querySelectorAll('.rename-name-row').forEach(function(row) {
+                        row.classList.remove('rename-row-focused');
+                    });
                 }
-                const match = line.match(/^(\d+\.\s)/);
-                if (match) {
-                    const name = line.slice(match[1].length);
-                    // Use zero-width space as placeholder so empty spans have a text node for caret placement
-                    const nameContent = name || '​';
-                    return '<div><span class="re-locked" contenteditable="false">' + _esc(match[1]) + '</span>' +
-                           '<span class="re-name">' + _esc(nameContent) + '</span></div>';
-                }
-                return '<div>' + (line === '' ? '<br>' : _esc(line)) + '</div>';
-            }).join('');
+            }, 80);
         }
-
-        function _readRenameEditorNames() {
-            const editor = document.getElementById('renameEditor');
-            const names = [];
-            editor.querySelectorAll('div').forEach(row => {
-                const nameSpan = row.querySelector('.re-name');
-                if (nameSpan) names.push(nameSpan.textContent.replace(/\u200b/g, '').trim());
-            });
-            return names;
-        }
-
-        function _renameEditorKeydown(e) {
-            const editor = document.getElementById('renameEditor');
-            const sel = window.getSelection();
-            if (!sel || sel.rangeCount === 0) return;
-
-            const range = sel.getRangeAt(0);
-            const isCollapsed = range.collapsed;
-
-            // Tab — move to next/previous re-name span
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const editor = document.getElementById('renameEditor');
-                const nameSpans = Array.from(editor.querySelectorAll('.re-name'));
-                const sel = window.getSelection();
-                if (!sel || sel.rangeCount === 0) return;
-                const currentNode = sel.getRangeAt(0).startContainer;
-                const currentSpan = (currentNode.nodeType === 3 ? currentNode.parentElement : currentNode).closest('.re-name');
-                const currentIndex = nameSpans.indexOf(currentSpan);
-                const nextSpan = e.shiftKey
-                    ? nameSpans[currentIndex - 1]
-                    : nameSpans[currentIndex + 1];
-                if (nextSpan) {
-                    const r = document.createRange();
-                    r.setStart(nextSpan.firstChild || nextSpan, 0);
-                    r.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(r);
-                    nextSpan.scrollIntoView({ block: 'nearest' });
-                }
-                return;
-            }
-
-            // Enter — move to next re-name span (same as Tab)
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const editor = document.getElementById('renameEditor');
-                const nameSpans = Array.from(editor.querySelectorAll('.re-name'));
-                const sel = window.getSelection();
-                if (!sel || sel.rangeCount === 0) return;
-                const currentNode = sel.getRangeAt(0).startContainer;
-                const currentSpan = (currentNode.nodeType === 3 ? currentNode.parentElement : currentNode).closest('.re-name');
-                const nextSpan = nameSpans[nameSpans.indexOf(currentSpan) + 1];
-                if (nextSpan) {
-                    _focusNameSpan(nextSpan);
-                    nextSpan.scrollIntoView({ block: 'nearest' });
-                }
-                return;
-            }
-
-            if (e.key === 'Backspace' || e.key === 'Delete') {
-                const startNode = range.startContainer;
-                const endNode   = range.endContainer;
-
-                // --- Multi-line selection: delete entire affected rows ---
-                if (!isCollapsed) {
-                    const startRow = (startNode.nodeType === 3 ? startNode.parentElement : startNode).closest('div');
-                    const endRow   = (endNode.nodeType === 3   ? endNode.parentElement   : endNode).closest('div');
-
-                    if (startRow && endRow && startRow !== endRow) {
-                        e.preventDefault();
-                        // Collect all rows between start and end (inclusive)
-                        const allRows = Array.from(editor.querySelectorAll('div'));
-                        const si = allRows.indexOf(startRow);
-                        const ei = allRows.indexOf(endRow);
-                        allRows.slice(Math.min(si, ei), Math.max(si, ei) + 1).forEach(row => {
-                            const nameSpan = row.querySelector('.re-name');
-                            if (nameSpan) nameSpan.textContent = '';
-                        });
-                        return;
-                    }
-
-                    // Single-row selection: if it touches a locked span, just clear the name of that row
-                    const startLocked = (startNode.nodeType === 3 ? startNode.parentElement : startNode).closest('[contenteditable="false"]');
-                    const endLocked   = (endNode.nodeType === 3   ? endNode.parentElement   : endNode).closest('[contenteditable="false"]');
-                    if (startLocked || endLocked) {
-                        e.preventDefault();
-                        const row = (startLocked || endLocked).closest('div');
-                        const nameSpan = row?.querySelector('.re-name');
-                        if (nameSpan) nameSpan.textContent = '';
-                        return;
-                    }
-                }
-
-                // --- Collapsed caret: block if inside a locked span ---
-                if (isCollapsed) {
-                    const node = range.startContainer;
-                    const inLocked = (node.nodeType === 3 ? node.parentElement : node).closest('[contenteditable="false"]');
-                    if (inLocked) { e.preventDefault(); return; }
-
-                    // Block Backspace at position 0 of a re-name span (would merge into locked prefix)
-                    if (e.key === 'Backspace') {
-                        const inName = (node.nodeType === 3 ? node.parentElement : node).closest('.re-name');
-                        if (inName && range.startOffset === 0 &&
-                            (range.startContainer === inName || range.startContainer === inName.firstChild)) {
-                            e.preventDefault(); return;
-                        }
-                    }
-                }
-            }
-        }
-
-        function _renameEditorMousedown(e) {
-            // Mouse only — redirect clicks on locked spans to the re-name span
-            const locked = e.target.closest('[contenteditable="false"]');
-            if (locked) {
-                e.preventDefault();
-                const nameSpan = locked.closest('div')?.querySelector('.re-name');
-                if (nameSpan) _focusNameSpan(nameSpan);
-            }
-        }
-
-        function _renameEditorTouchStart(e) {
-            // Touch only — redirect taps on locked spans to the re-name span
-            const touch = e.changedTouches[0];
-            const target = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (!target) return;
-            const locked = target.closest('[contenteditable="false"]');
-            if (locked) {
-                e.preventDefault();
-                const nameSpan = locked.closest('div')?.querySelector('.re-name');
-                if (nameSpan) _focusNameSpan(nameSpan);
-            }
-        }
-
-        function _focusNameSpan(nameSpan) {
-            if (!nameSpan.firstChild || nameSpan.firstChild.nodeType !== 3) {
-                nameSpan.appendChild(document.createTextNode(''));
-            }
-            const r = document.createRange();
-            const textNode = nameSpan.firstChild;
-            r.setStart(textNode, textNode.length);
-            r.collapse(true);
-            const s = window.getSelection();
-            s.removeAllRanges();
-            s.addRange(r);
-        }
-
-        function _renumberEditor() {
-            const editor = document.getElementById('renameEditor');
-            let count = 1;
-            editor.querySelectorAll('div').forEach(row => {
-                const locked = row.querySelector('.re-locked');
-                if (locked && row.querySelector('.re-name')) {
-                    locked.textContent = count++ + '. ';
-                }
-            });
-        }
-
-        function _esc(str) {
-            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
-
-        function _commitRenameEdits() {}
-        function _buildRenameOverlay() {}
-        function _onRenameTextareaInput() {}
-        function _syncRenameOverlay() {}
 
         let clickCount = 0;
         let clickTimer = null;
@@ -7139,6 +7238,9 @@
                 }
             }
 
+            const oldThumbs = (newCard.previewThumbs && newCard.previewThumbs.length) ? newCard.previewThumbs.slice() : null;
+            const newThumbs = oldThumbs ? [] : null;
+
             nodes.forEach(function(node, i) {
                 let orig = parseInt(node.dataset.origIndex, 10);
                 if (isNaN(orig) || orig < 0 || orig >= oldFiles.length) {
@@ -7147,6 +7249,7 @@
                 if (isNaN(orig) || orig < 0 || orig >= oldFiles.length) orig = i;
                 newFiles.push(oldFiles[orig]);
                 if (hadNames) newNames.push(newCard.editedNames[orig]);
+                if (newThumbs) newThumbs.push(oldThumbs[orig] || null);
                 node.dataset.origIndex = String(i);
                 node.dataset.index = String(i);
                 const num = node.querySelector('.preview-card-num');
@@ -7161,6 +7264,7 @@
                 newCard.multipleFiles = newFiles;
             }
             if (hadNames) newCard.editedNames = newNames;
+            if (newThumbs) newCard.previewThumbs = newThumbs;
 
             // Keep name preview textarea in sync if visible (no structured rename open)
             if (!_renameUIActive && !isRenameMode) {
@@ -7174,52 +7278,6 @@
                     }).join('\n');
                 }
             }
-        }
-
-        // Move the file at `fromIdx` so it lands at `toIdx` (insertion semantics).
-        // Prefer silent DOM+data update; optional full re-render only if grid missing.
-        function reorderPreviewImages(fromIdx, toIdx) {
-            if (!newCard.multipleFiles) return;
-            const filesArr = Array.from(newCard.multipleFiles);
-            if (fromIdx < 0 || fromIdx >= filesArr.length) return;
-            if (toIdx   < 0 || toIdx   >= filesArr.length) return;
-            if (fromIdx === toIdx) return;
-
-            const grid = document.getElementById('imagePreviewGrid');
-            if (grid && grid.querySelectorAll('.preview-image-container').length === filesArr.length) {
-                // Data already matches DOM after live reorder — just commit
-                commitPreviewOrderFromDom();
-                return;
-            }
-
-            const [movedFile] = filesArr.splice(fromIdx, 1);
-            filesArr.splice(toIdx, 0, movedFile);
-
-            if (newCard.editedNames && newCard.editedNames.length > 0) {
-                const orig = Array.from(newCard.multipleFiles);
-                while (newCard.editedNames.length < orig.length) {
-                    const idx = newCard.editedNames.length;
-                    newCard.editedNames.push(orig[idx].name.replace(/\.[^/.]+$/, ''));
-                }
-                const [movedName] = newCard.editedNames.splice(fromIdx, 1);
-                newCard.editedNames.splice(toIdx, 0, movedName);
-            }
-
-            try {
-                const dt = new DataTransfer();
-                filesArr.forEach(f => dt.items.add(f));
-                newCard.multipleFiles = dt.files;
-            } catch (e) {
-                newCard.multipleFiles = filesArr;
-            }
-
-            // Fallback only: full re-render
-            const scrollTop = grid ? grid.scrollTop : 0;
-            renderImagePreviews();
-            setTimeout(function() {
-                const g2 = document.getElementById('imagePreviewGrid');
-                if (g2) g2.scrollTop = scrollTop;
-            }, 0);
         }
 
         // ===== Pointer drag engine — live iPhone-style shift (no image refresh) =====
@@ -7670,7 +7728,7 @@
             tempInput.onchange = function(e) {
                 const newFiles = Array.from(e.target.files);
 
-                // Sort new files
+                // Sort only the newly picked files (append order among new ones)
                 newFiles.sort((a, b) => {
                     return a.name.localeCompare(b.name, undefined, {
                         numeric: true,
@@ -7684,25 +7742,18 @@
                     const filesToAdd = newFiles.slice(0, remainingSlots);
                     showToastWithButton('⚠️ Maximum exceeded<br>Only ' + filesToAdd.length + ' added');
 
-                    // Combine existing files with the limited new files
+                    // Keep existing order; append new files at the end (do not re-sort whole deck)
                     const existingFiles = Array.from(newCard.multipleFiles || []);
                     const combinedFiles = existingFiles.concat(filesToAdd);
-
-                    // Sort combined files
-                    combinedFiles.sort((a, b) => {
-                        return a.name.localeCompare(b.name, undefined, {
-                            numeric: true,
-                            sensitivity: 'base'
-                        });
-                    });
 
                     // Create a new FileList-like object
                     const dataTransfer = new DataTransfer();
                     combinedFiles.forEach(file => dataTransfer.items.add(file));
 
-                    // Create a fake input with combined files
+                    // skipSort: preserve current preview order when adding more
                     const fakeInput = {
-                        files: dataTransfer.files
+                        files: dataTransfer.files,
+                        skipSort: true
                     };
 
                     // Call handleImageUpload with the combined files
@@ -7710,25 +7761,18 @@
                     return;
                 }
 
-                // Combine existing files with new files
+                // Keep existing order; append new files at the end
                 const existingFiles = Array.from(newCard.multipleFiles || []);
                 const combinedFiles = existingFiles.concat(newFiles);
-
-                // Sort combined files
-                combinedFiles.sort((a, b) => {
-                    return a.name.localeCompare(b.name, undefined, {
-                        numeric: true,
-                        sensitivity: 'base'
-                    });
-                });
 
                 // Create a new FileList-like object
                 const dataTransfer = new DataTransfer();
                 combinedFiles.forEach(file => dataTransfer.items.add(file));
 
-                // Create a fake input with combined files
+                // skipSort: preserve current preview order when adding more
                 const fakeInput = {
-                    files: dataTransfer.files
+                    files: dataTransfer.files,
+                    skipSort: true
                 };
 
                 // Call handleImageUpload with the combined files
@@ -7757,25 +7801,100 @@
             }
         }
 
-        async function compressImage(file, maxSizeKB = 500) {
+        // ── Image import limits (one coherent procedure) ──────────────────
+        // Photos ≤15MB each → auto-compress to ~500KB
+        // GIFs ≤3MB each (cannot compress without killing animation)
+        // Max 30 images per deck
+        const IMAGE_IMPORT_LIMITS = {
+            maxCount: 30,
+            maxPhotoBytes: 15 * 1024 * 1024,
+            maxGifBytes: 3 * 1024 * 1024,
+            compressToKB: 500,
+            summaryText: 'Max 30 images · Photos ≤15MB auto-compress to 500KB · GIFs ≤3MB'
+        };
+
+        function isGifFile(file) {
+            const type = (file && file.type || '').toLowerCase();
+            if (type === 'image/gif') return true;
+            return /\.gif$/i.test((file && file.name) || '');
+        }
+
+        function formatFileSizeMB(bytes) {
+            return (bytes / (1024 * 1024)).toFixed(1);
+        }
+
+        function getImageSizeLimitBytes(file) {
+            return isGifFile(file)
+                ? IMAGE_IMPORT_LIMITS.maxGifBytes
+                : IMAGE_IMPORT_LIMITS.maxPhotoBytes;
+        }
+
+        /** Shared copy for empty-state UI (and any JS that needs the same line) */
+        function imageImportLimitsSummary() {
+            return IMAGE_IMPORT_LIMITS.summaryText;
+        }
+
+        /**
+         * Validate size before import.
+         * Returns { ok:true } or { ok:false, reason, sizeMB, limitMB, isGif }.
+         */
+        function checkImageImportSize(file) {
+            const limit = getImageSizeLimitBytes(file);
+            if (file.size > limit) {
+                return {
+                    ok: false,
+                    reason: 'too_large',
+                    sizeMB: formatFileSizeMB(file.size),
+                    limitMB: formatFileSizeMB(limit),
+                    isGif: isGifFile(file)
+                };
+            }
+            return { ok: true };
+        }
+
+        /**
+         * Short toast when oversized files are blocked.
+         * Full size limits already appear on the drop zone.
+         * @param {Array} rejected - oversized files
+         * @param {number} [addedCount=0] - how many files still passed into the import
+         */
+        function showImageSizeLimitRejected(rejected, addedCount) {
+            if (!rejected || !rejected.length) return;
+            const skipped = rejected.length;
+            const added = (typeof addedCount === 'number' && addedCount > 0) ? addedCount : 0;
+
+            let msg;
+            if (added > 0) {
+                // Mixed batch: some went through, some blocked
+                const addedWord = added === 1 ? '1 added' : (added + ' added');
+                const skippedWord = skipped === 1 ? '1 was skipped' : (skipped + ' were skipped');
+                msg = '⚠️ ' + addedWord + ', ' + skippedWord + '<br>Too large to add';
+            } else if (skipped === 1) {
+                msg = '⚠️ File too large — not added';
+            } else {
+                msg = '⚠️ ' + skipped + ' files too large — not added';
+            }
+
+            if (typeof showToastWithButton === 'function') {
+                showToastWithButton(msg);
+            } else {
+                alert(msg.replace(/<br>/g, '\n'));
+            }
+        }
+
+        async function compressImage(file, maxSizeKB = IMAGE_IMPORT_LIMITS.compressToKB) {
             return new Promise((resolve, reject) => {
+                // Safety net: hard size limits (primary check is in handleImageUpload)
+                const sizeCheck = checkImageImportSize(file);
+                if (!sizeCheck.ok) {
+                    const kind = sizeCheck.isGif ? 'GIF' : 'Image';
+                    reject(new Error(kind + ' too large (' + sizeCheck.sizeMB + 'MB)'));
+                    return;
+                }
+
                 // GIFs must bypass canvas compression — canvas only captures the
                 // first frame, which kills the animation. Pass GIFs through as-is.
-                if ((file.type || '').toLowerCase() === 'image/gif') {
-                    const sizeKB = file.size / 1024;
-                    const sizeMB = (sizeKB / 1024).toFixed(1);
-
-                    // Hard reject above 3MB
-                    if (file.size > 3 * 1024 * 1024) {
-                        reject(new Error(`GIF too large (${sizeMB}MB). GIFs must be under 3MB to keep the app running smoothly.`));
-                        return;
-                    }
-
-                    // Warn between 2MB and 3MB but still allow
-                    if (file.size > 2 * 1024 * 1024) {
-                        alert(`⚠️ Large GIF (${sizeMB}MB)\n\nThis GIF is quite large and may slow down saving and loading. Consider using a smaller GIF (under 2MB) for best performance.`);
-                    }
-
+                if (isGifFile(file)) {
                     const gifReader = new FileReader();
                     gifReader.onload = function(e) { resolve(e.target.result); };
                     gifReader.onerror = function() { reject(new Error('Failed to read GIF')); };
@@ -7859,30 +7978,48 @@
             let files = input.files;
             if (files.length === 0) return;
 
-            // Validate file types (no size check - will compress)
+            // Validate type + size before any import / compression
+            // Photos ≤15MB → later auto-compress to 500KB; GIFs ≤3MB (kept as-is)
             const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml', 'image/heic', 'image/heif', 'image/avif'];
 
             const validFiles = [];
-            const rejectedFiles = [];
+            const rejectedType = [];
+            const rejectedSize = [];
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
 
                 // Check file type
-                if (!validTypes.includes(file.type.toLowerCase())) {
-                    rejectedFiles.push(file.name);
+                if (!validTypes.includes((file.type || '').toLowerCase())) {
+                    rejectedType.push(file.name);
+                    continue;
+                }
+
+                // Check size limits — oversized files never enter the import pipeline
+                const sizeCheck = checkImageImportSize(file);
+                if (!sizeCheck.ok) {
+                    rejectedSize.push({
+                        name: file.name || 'image',
+                        sizeMB: sizeCheck.sizeMB,
+                        isGif: sizeCheck.isGif
+                    });
                     continue;
                 }
 
                 validFiles.push(file);
             }
 
-            // Show notifications for rejected files
-            if (rejectedFiles.length > 0) {
-                showToastWithButton('⚠️ ' + rejectedFiles.length + ' file(s) rejected<br>Only image files allowed');
+            // Oversized: short toast (limits already on drop zone); report added vs skipped
+            if (rejectedSize.length > 0) {
+                showImageSizeLimitRejected(rejectedSize, validFiles.length);
             }
 
-            // If no valid files, exit
+            // Wrong type
+            if (rejectedType.length > 0) {
+                showToastWithButton('⚠️ ' + rejectedType.length + ' file(s) rejected<br>Only image files allowed');
+            }
+
+            // If every selected file was rejected, abort the whole import
             if (validFiles.length === 0) {
                 if (input.value) {
                     input.value = '';
@@ -7890,26 +8027,22 @@
                 return;
             }
 
-            // Replace files with valid files only
-            try {
-                const dataTransfer = new DataTransfer();
-                // Sort files by name using natural/numeric sort
+            // Replace files with valid files only.
+            // Natural-sort by default so first imports match filename order.
+            // skipSort: used by Add More so an already-arranged deck is not reshuffled.
+            if (!input.skipSort) {
                 validFiles.sort((a, b) => {
                     return a.name.localeCompare(b.name, undefined, {
                         numeric: true,
                         sensitivity: 'base'
                     });
                 });
+            }
+            try {
+                const dataTransfer = new DataTransfer();
                 validFiles.forEach(file => dataTransfer.items.add(file));
                 files = dataTransfer.files;
             } catch (e) {
-                // Sort even in fallback
-                validFiles.sort((a, b) => {
-                    return a.name.localeCompare(b.name, undefined, {
-                        numeric: true,
-                        sensitivity: 'base'
-                    });
-                });
                 files = validFiles;
             }
 
@@ -7978,6 +8111,25 @@
                 // Store files temporarily
                 newCard.multipleFiles = files;
                 newCard.frontImage = null;
+                if (input.skipSort && newCard.editedNames && newCard.editedNames.length) {
+                    // Add More: keep existing names; fill any new slots from filenames
+                    const arr = Array.from(files);
+                    while (newCard.editedNames.length < arr.length) {
+                        const idx = newCard.editedNames.length;
+                        newCard.editedNames.push(arr[idx].name.replace(/\.[^/.]+$/, ''));
+                    }
+                    if (newCard.editedNames.length > arr.length) {
+                        newCard.editedNames = newCard.editedNames.slice(0, arr.length);
+                    }
+                    // Keep existing thumbs; new indices fill during renderImagePreviews
+                    if (newCard.previewThumbs && newCard.previewThumbs.length > arr.length) {
+                        newCard.previewThumbs = newCard.previewThumbs.slice(0, arr.length);
+                    }
+                } else {
+                    // Fresh import: drop stale names/thumbs so they can't map to a previous order
+                    newCard.editedNames = null;
+                    newCard.previewThumbs = null;
+                }
 
                 // Show preview of all images
                 renderImagePreviews();
@@ -7993,8 +8145,22 @@
         }
 
         function addCard() {
-            // Wizard: commit open name edits before creating
-            if (typeof createWizardStep !== 'undefined' && createWizardStep === 2 && _renameUIActive) {
+            // Wizard Finish (new multi-import): snapshot names quietly.
+            // Do NOT call createWizardCommitNames/toggleRenameMode — that hides the
+            // structured name list, shows the textarea, and re-renders image
+            // previews while the modal stays open during compression (desktop flash).
+            const isNewMultiImport = !!(
+                typeof createWizardStep !== 'undefined'
+                && createWizardStep === 2
+                && newCard.multipleFiles
+                && newCard.multipleFiles.length >= 1
+                && (newCard.editingIndex === undefined || newCard.editingIndex === null)
+                && !isMultiRenameMode
+            );
+            if (isNewMultiImport) {
+                captureCreateNamesQuietly();
+                _renameUIActive = false;
+            } else if (typeof createWizardStep !== 'undefined' && createWizardStep === 2 && _renameUIActive) {
                 createWizardCommitNames();
             }
 
@@ -8058,38 +8224,31 @@
 
             // Handle multiple files (new import) — wizard supports 1+ images
             if (newCard.multipleFiles && newCard.multipleFiles.length >= 1) {
+                // Snapshot files + names BEFORE hiding/resetting the modal
                 const files = Array.from(newCard.multipleFiles);
-
-                // Parse edited names from textarea - DO NOT filter blank lines
-                const backTextContent = document.getElementById('backText').value;
-                const lines = backTextContent.split('\n');
                 const namesByIndex = {};
 
-                // Extract names with their original indices (including blank names)
-                for (let line of lines) {
-                    // Skip header lines
-                    if (line.includes('Card names preview') || line.includes('Edit names')) continue;
-
-                    // Match pattern like "1. filename" or just "1." for blank
-                    const match = line.match(/^(\d+)\.\s*(.*)$/);
-                    if (match) {
-                        const index = parseInt(match[1]) - 1; // Convert to 0-based index
-                        const name = match[2].trim();
-                        // Store name even if empty/blank
-                        namesByIndex[index] = name;
-                    }
-                }
-
-                // Prefer structured editedNames when present
+                // Prefer quiet snapshot (structured rename list) when present
                 if (newCard.editedNames && newCard.editedNames.length) {
                     for (let i = 0; i < files.length; i++) {
                         if (newCard.editedNames[i] !== undefined && newCard.editedNames[i] !== null) {
                             namesByIndex[i] = String(newCard.editedNames[i]);
                         }
                     }
+                } else {
+                    // Fallback: parse textarea (legacy path)
+                    const backTextContent = document.getElementById('backText').value;
+                    const lines = backTextContent.split('\n');
+                    for (let line of lines) {
+                        if (line.includes('Card names preview') || line.includes('Edit names')) continue;
+                        const match = line.match(/^(\d+)\.\s*(.*)$/);
+                        if (match) {
+                            const index = parseInt(match[1]) - 1;
+                            namesByIndex[index] = match[2].trim();
+                        }
+                    }
                 }
 
-                // Process ALL files with their corresponding names (including blank)
                 const filesToProcess = [];
                 const namesToProcess = [];
 
@@ -8098,22 +8257,25 @@
                     if (namesByIndex.hasOwnProperty(i)) {
                         namesToProcess.push(namesByIndex[i]); // can be blank
                     } else {
-                        // Fallback to filename stem
-                        let n = files[i].name.replace(/\.[^/.]+$/, '');
-                        namesToProcess.push(n);
+                        namesToProcess.push(files[i].name.replace(/\.[^/.]+$/, ''));
                     }
                 }
 
-                // If no files to process at all
                 if (filesToProcess.length === 0) {
                     showToastWithButton('⚠️ No cards to create!');
                     return;
                 }
 
+                // Hide modal immediately so user never sees intermediate wizard UI
+                // while images compress (that flash was especially visible on desktop).
+                hideCreateModalImmediate();
+                showToast('⏳ Creating cards…', 1500);
+
                 let processed = 0;
                 let added = 0;
                 let duplicates = [];
                 const totalFiles = filesToProcess.length;
+                window._sizeRejectShownThisBatch = false;
 
                 // PERFORMANCE FIX: Batch file processing to avoid memory spikes
                 // Process 5 files at a time instead of all 30 simultaneously
@@ -8129,10 +8291,9 @@
                         const file = filesToProcess[i];
                         const fileName = namesToProcess[i];
 
-                        const promise = compressImage(file, 500).then(imageData => {
-                            // Check for duplicate
+                        const promise = compressImage(file).then(imageData => {
                             if (isDuplicateImage(imageData)) {
-                                duplicates.push(fileName || `Card ${i + 1}`);
+                                duplicates.push(fileName || ('Card ' + (i + 1)));
                             } else {
                                 const card = {
                                     id: Date.now() + i + Math.random(),
@@ -8141,54 +8302,57 @@
                                     backImage: null
                                 };
                                 cards.push(card);
-                                // Update hash cache
                                 imageHashCache.set(fastHash(imageData), imageData);
                                 added++;
                             }
                             processed++;
                         }).catch(err => {
                             console.error('Image compression failed:', err);
+                            const msg = (err && err.message) ? String(err.message) : '';
+                            if (/too large/i.test(msg)) {
+                                if (!window._sizeRejectShownThisBatch) {
+                                    window._sizeRejectShownThisBatch = true;
+                                    showImageSizeLimitRejected([{ name: fileName || file.name || 'image', sizeMB: formatFileSizeMB(file.size) }]);
+                                }
+                            }
                             processed++;
                         });
 
                         promises.push(promise);
                     }
 
-                    // Wait for batch to complete before starting next batch
                     Promise.all(promises).then(() => {
                         currentBatch++;
 
                         if (currentBatch * batchSize < totalFiles) {
-                            // Process next batch
                             processBatch();
                         } else {
-                            // All files processed
+                            // All files processed — reset form while modal is already hidden
                             saveCards();
-                            closeCreateModal();
+                            resetForm();
 
                             if (added > 0) {
                                 currentIndex = cards.length - added;
                                 isFlipped = false;
-                                
-                                // Reset guess game state to prevent continuing with old cards
+
                                 guessGameState.gameCards = [];
                                 guessGameState.currentRoundCards = null;
                                 guessGameState.correctCards = {};
                                 guessGameState.selectedCard = null;
                                 guessGameState.currentCardOrder = 0;
-                                
+
                                 renderDisplay();
                             }
 
-                            // Show summary with toast notification
                             if (duplicates.length > 0) {
                                 showToastWithButton('⚠️ ' + duplicates.length + ' duplicate' + (duplicates.length === 1 ? '' : 's') + ' detected<br>Skipped');
+                            } else if (added > 0) {
+                                showToast('✅ ' + added + ' card' + (added === 1 ? '' : 's') + ' created', 2000);
                             }
                         }
                     });
                 }
 
-                // Start processing first batch
                 processBatch();
                 return;
             }
@@ -13995,99 +14159,6 @@
             });
         }
 
-        function _legacyScaleTextToFitUnused() {
-            const textElement = document.querySelector('.card > .card-back .card-text-auto-scale')
-                             || document.querySelector('.card-text-auto-scale');
-            if (!textElement) return;
-            const container = textElement.closest('.card-back');
-            if (!container) return;
-
-            // Measure actual card dimensions (unrotate if needed)
-            const needsFix = container.offsetWidth === 0;
-            if (needsFix) {
-                container.style.transform = 'none';
-                container.style.backfaceVisibility = 'visible';
-                container.style.webkitBackfaceVisibility = 'visible';
-            }
-            const cardW = container.offsetWidth;
-            const cardH = container.offsetHeight;
-            if (needsFix) {
-                container.style.transform = '';
-                container.style.backfaceVisibility = '';
-                container.style.webkitBackfaceVisibility = '';
-            }
-            if (cardW <= 0 || cardH <= 0) return;
-
-            // Max font size = ratio of card's shorter dimension — consistent on all devices/orientations
-            const cardMin = Math.min(cardW, cardH);
-            const basePx = cardMin * 0.22;
-            const baseRem = basePx / 16;
-            const maxFontSize = Math.min(Math.max(baseRem, 1.5), 9);
-            const minFontSize = maxFontSize * 0.2;
-            const containerPadding = cardMin * 0.08;
-
-            const userScale = TEXT_SCALES[cardTextScaleIndex];
-            const scaledMax = maxFontSize * userScale;
-            const scaledMin = minFontSize * userScale;
-
-            const text = textElement.textContent || textElement.innerText;
-            const wordCount = text.trim().split(/\s+/).length;
-            // Hyphenated words (e.g. "self-control") wrap at the hyphen
-            const hasHyphen = text.includes('-');
-            const isSingleWord = wordCount === 1 && !hasHyphen;
-
-            // Always START at the user's selected max — no pre-shrink for
-            // word count, and don't lower it based on the per-card cache.
-            // We only shrink below this if (a) a single word can't fit on one
-            // line, or (b) wrapped multi-word text overflows the card height.
-            const effectiveMax = scaledMax;
-            const startMax = effectiveMax;
-
-            const maxWidth  = cardW - containerPadding;
-            const maxHeight = cardH - containerPadding;
-
-            if (isSingleWord) {
-                textElement.style.whiteSpace = 'nowrap';
-                textElement.style.wordBreak = 'normal';
-                textElement.style.overflowWrap = 'normal';
-            } else {
-                // Multi-word: allow normal wrapping to the next line
-                textElement.style.whiteSpace = 'normal';
-                textElement.style.wordBreak = 'normal';
-                textElement.style.overflowWrap = 'break-word';
-            }
-
-            textElement.style.fontSize = startMax + 'rem';
-            // Single word: fits only if it sits on one line within card width.
-            // Multi-word: fits if wrapped text doesn't overflow card height
-            // (width is handled by wrapping, so we don't require width fit).
-            const fitsAtMax = isSingleWord
-                ? textElement.scrollWidth <= maxWidth
-                : textElement.scrollHeight <= maxHeight;
-            if (fitsAtMax) {
-                cachedBackTextSizes[currentIndex] = { size: startMax, max: effectiveMax };
-                return;
-            }
-
-            // Binary-search for the largest size that fits.
-            let minSize = isSingleWord ? 0.5 : scaledMin;
-            let maxSize = startMax;
-            let optimalSize = maxSize;
-            while (maxSize - minSize > 0.05) {
-                const testSize = (minSize + maxSize) / 2;
-                textElement.style.fontSize = testSize + 'rem';
-                const fits = (isSingleWord && !breakLongWord)
-                    ? textElement.scrollWidth <= maxWidth * 0.95
-                    : textElement.scrollHeight <= maxHeight * 0.95;
-                if (fits) { optimalSize = testSize; minSize = testSize; }
-                else       { maxSize = testSize; }
-            }
-
-            // Tiny safety nudge so the text doesn't kiss the card edges.
-            const finalSize = optimalSize * 0.97;
-            textElement.style.fontSize = finalSize + 'rem';
-            cachedBackTextSizes[currentIndex] = { size: finalSize, max: effectiveMax };
-        }
         // Event listeners for save modal buttons
         document.addEventListener('DOMContentLoaded', function() {
             const saveJSONBtn = document.getElementById('saveJSONBtn');
