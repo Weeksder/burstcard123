@@ -52,15 +52,10 @@
                 // something clearly non-Fredoka still appears if Google Fonts is blocked.
                 window.SPELL_LETTER_FONT = 'Fredoka, "Chalkboard SE", "Marker Felt", Arial, sans-serif';
                 window.SPELL_LETTER_WEIGHT = '400';
-                window.SPELL_LETTER_LABEL = isIOS ? 'EDGE iPad: Fredoka' : 'EDGE: Fredoka';
             } else {
                 window.SPELL_LETTER_FONT = 'Comic Neue, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif';
                 window.SPELL_LETTER_WEIGHT = '700';
-                window.SPELL_LETTER_LABEL = isIOS ? 'OTHER iPad: Comic Neue' : 'OTHER: Comic Neue';
             }
-            try {
-                console.log('[Spell Me font]', window.SPELL_LETTER_LABEL, '| Edge?', isEdge, '| iOS?', isIOS, '|', ua.slice(0, 140));
-            } catch (e) {}
         })();
 
         /** Force font on every spelling letter node (CSS alone is unreliable). */
@@ -73,17 +68,6 @@
                     el.style.setProperty('font-family', font, 'important');
                     el.style.setProperty('font-weight', weight, 'important');
                 });
-                // Temporary on-screen proof (remove once you are happy)
-                var badge = document.getElementById('spellFontBadge');
-                if (!badge) {
-                    badge = document.createElement('div');
-                    badge.id = 'spellFontBadge';
-                    badge.style.cssText = 'position:fixed;top:8px;left:8px;z-index:999999;background:#000;color:#0f0;padding:8px 12px;font:13px/1.35 -apple-system,monospace;border-radius:8px;pointer-events:none;max-width:90vw;';
-                    document.body.appendChild(badge);
-                }
-                badge.textContent = window.SPELL_LETTER_LABEL || font;
-                var modal = document.getElementById('spellingGameModal');
-                badge.style.display = (modal && modal.style.display === 'flex') ? 'block' : 'none';
             } catch (e) {
                 try { console.error('applySpellLetterFonts', e); } catch (e2) {}
             }
@@ -107,6 +91,65 @@
         html.is-other-browser #spellingGameModal #checkBtn {
             font-family: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif !important;
             font-weight: 700 !important;
+        }
+
+        /* Spell Me: per-button frosted glass + answer-slot states */
+        #spellingGameModal #spellingBtnPanel {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+        #spellingGameModal .spell-glass-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            padding: 0;
+            margin: 0;
+            border: 0.5px solid rgba(255, 255, 255, 0.75);
+            border-radius: 14px;
+            cursor: pointer;
+            background:
+                linear-gradient(155deg,
+                    rgba(255, 255, 255, 0.82) 0%,
+                    rgba(230, 236, 244, 0.58) 48%,
+                    rgba(255, 255, 255, 0.72) 100%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            backdrop-filter: blur(24px) saturate(180%);
+            box-shadow:
+                0 4px 14px rgba(15, 23, 42, 0.14),
+                0 1px 3px rgba(15, 23, 42, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.95),
+                inset 0 -1px 0 rgba(100, 116, 139, 0.1),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+        }
+        #spellingGameModal .spell-glass-btn svg {
+            position: relative;
+            z-index: 1;
+            display: block;
+            pointer-events: none;
+            filter: drop-shadow(0 0.5px 0 rgba(255,255,255,0.4));
+        }
+        #spellingGameModal .spell-glass-btn:active {
+            transform: translateZ(0) scale(0.94);
+            opacity: 0.92;
+        }
+        #spellingGameModal .answer-slot.spell-drop-hover {
+            background: #e8f5e9 !important;
+            box-shadow: inset 0 0 0 2px rgba(53, 101, 77, 0.35);
+        }
+        #spellingGameModal .answer-slot.spell-slot-filled {
+            background: #f0f8f3 !important;
+            box-shadow: none;
+            border-radius: 10px;
         }
 
         * {
@@ -669,12 +712,23 @@
             background: white;
         }
 
+        /*
+         * Bottom padding only (no text-fit JS changes): keep card text above the
+         * gear (left) and TTS (right) overlays. Buttons are ~50px tall.
+         */
+        :root {
+            /* Gear + TTS are ~50px; lighter strip so text sits closer without covering icons */
+            --card-btn-clearance: 40px;
+        }
+
         /* When show-text is active, card-front becomes a column layout */
         .card-front.show-text-active {
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 10px 8px;
+            padding: 6px 10px;
+            padding-bottom: var(--card-btn-clearance);
+            box-sizing: border-box;
         }
 
         .card-front.show-text-active .card-image {
@@ -767,7 +821,8 @@
             transform: rotateY(180deg);
             -webkit-transform: rotateY(180deg);
             box-shadow: inset 0 0 0 3px white, 0 10px 40px rgba(0,0,0,0.3);
-            padding: 20px;
+            /* Bottom only: clear gear + TTS; CSS only — no text-resize JS */
+            padding: 20px 20px var(--card-btn-clearance) 20px;
             box-sizing: border-box;
             overflow: hidden;
         }
@@ -4837,13 +4892,37 @@
         let spellingGameState = {
             currentCardIndex: 0,
             gameCards: [],
-            spelledCards: new Set(),  // indices of correctly spelled cards
+            spelledCards: new Set(),   // completed → green dots
+            skippedCards: new Set(),   // forward-skipped → red dots
             scrambledLetters: [],
             answerSlots: [],
-            selectedLetter: null,
-            correctWord: '',
-            moveHistory: []
+            correctWord: ''
         };
+
+        const SPELL_GLYPH_LIFT = 'translateY(-0.08em)';
+        const SPELL_FILL_BG = '#f0f8f3';
+        const SPELL_DRAG_THRESHOLD = 8;
+        const SPELL_CARD_SWIPE_MIN = 60;
+
+        function isSpellLetter(v) {
+            return v !== null && v !== undefined && v !== 'SPACE' && v !== 'HYPHEN';
+        }
+        function isSpellSeparator(v) {
+            return v === 'SPACE' || v === 'HYPHEN';
+        }
+        function spellLetterColor(ch) {
+            if (!ch) return '#1a1a1a';
+            return /[AEIOUaeiou]/.test(ch) ? '#ff9500' : '#35654D';
+        }
+        function resetSpellingProgress() {
+            spellingGameState.currentCardIndex = 0;
+            spellingGameState.spelledCards = new Set();
+            spellingGameState.skippedCards = new Set();
+        }
+        function ensureSpellSets() {
+            if (!(spellingGameState.spelledCards instanceof Set)) spellingGameState.spelledCards = new Set();
+            if (!(spellingGameState.skippedCards instanceof Set)) spellingGameState.skippedCards = new Set();
+        }
 
         let matchGameState = {
             questions: [],       // [{card, wrongOptions:[]}]
@@ -5165,6 +5244,8 @@
                 const anyOpen = document.querySelector('.modal.active') !== null;
                 if (anyOpen) {
                     overlayIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+                    // Opening any modal means user is in menus — never pop swipe demo later
+                    if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
                 } else if (cards.length > 0) {
                     // Restore — re-run renderDisplay logic for overlays only
                     document.getElementById('cardOverlaySettings').style.display = 'block';
@@ -5827,6 +5908,7 @@
                 return;
             }
 
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             window.speechSynthesis.cancel();
             document.body.style.overflow = 'hidden'; // Disable background scrolling
             document.getElementById('createModal').classList.add('active');
@@ -8585,6 +8667,7 @@
                                 guessGameState.selectedCard = null;
                                 guessGameState.currentCardOrder = 0;
 
+                                if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
                                 renderDisplay();
                             }
 
@@ -8640,6 +8723,7 @@
 
             currentIndex = cards.length - 1;
             isFlipped = false;
+            if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
             renderDisplay();
         }
 
@@ -8699,6 +8783,7 @@
         }
 
         function shuffleCards() {
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             window.speechSynthesis.cancel();
             if (cards.length === 0) return;
             if (isShuffling) return;
@@ -8879,6 +8964,7 @@
 
         function nextCard() {
             if (isShuffling) return;
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
             cardFlipStates[currentIndex] = isFlipped; // save current card's side
@@ -8889,6 +8975,7 @@
 
         function prevCard() {
             if (isShuffling) return;
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
             cardFlipStates[currentIndex] = isFlipped; // save current card's side
@@ -8903,6 +8990,7 @@
             const now = Date.now();
             if (now - lastFlipTime < 400) return;
             lastFlipTime = now;
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
             if (document.getElementById('matchGameModal')?.style.display !== 'flex') playSound('flipSound');
@@ -9332,6 +9420,7 @@
         let previewMode = 'overlay';
 
         function openLoadOptions() {
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             document.body.style.overflow = 'hidden';
             document.getElementById('loadOptionsModal').classList.add('active');
             // Reset file input and info
@@ -9527,6 +9616,7 @@
             guessGameState.currentCardOrder = 0;
             saveCards();
             closeSampleDeck();
+            if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
             renderDisplay();
             showToast(`✅ Loaded ${cardCount} sample cards!`, 2000);
         }
@@ -9685,6 +9775,7 @@
 
                 saveCards();
                 closeLoadOptions();
+                if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
                 renderDisplay();
                 if (mode !== 'replace' || (loadedSessionData && loadedSessionData.cards && loadedSessionData.cards.length <= 30)) {
                     showToast(`✅ Loaded ${cardCount} cards!`, 2000);
@@ -10089,6 +10180,7 @@
                     guessGameState.currentCardOrder = 0;
 
                     saveCards();
+                    if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
                     renderDisplay();
 
                     let msg = `✅ Added ${deduped.length} cards! Total: ${cards.length}`;
@@ -10112,6 +10204,7 @@
                     guessGameState.currentCardOrder = 0;
 
                     saveCards();
+                    if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
                     renderDisplay();
                     if (discarded > 0) {
                         showToast(`⚠️ ${incoming.length} cards imported — ${discarded} discarded (30 max)`, 4000);
@@ -11558,6 +11651,7 @@
 
         /** Stub: load game code then open the real menu */
         function openGameMenu() {
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             window.speechSynthesis && window.speechSynthesis.cancel();
             if (typeof cards !== 'undefined' && cards.length === 0) {
                 alert('Please add some cards first!');
@@ -11567,7 +11661,7 @@
                 window._openGameMenu();
                 return;
             }
-            if (typeof showToast === 'function') showToast('⏳ Loading games…', 1200);
+            // Load deferred game code quietly (no “Loading games…” toast)
             ensureGameCode().then(function() {
                 if (typeof window._openGameMenu === 'function') window._openGameMenu();
                 else alert('Could not load games.');
@@ -11692,8 +11786,8 @@
                 document.getElementById('cardOverlayNav').style.display = 'none';
                 document.getElementById('cardOverlayTTS').style.display = 'none';
 
-                // Import-then-delete (or clear all) must not leave a pending swipe demo
-                // timer that later fires on this empty home screen.
+                // Empty deck: stop any pending/visible swipe demo (soft — a future
+                // import can request it again this session if never seen forever)
                 if (typeof cancelSwipeHint === 'function') cancelSwipeHint();
 
                 return;
@@ -11879,8 +11973,8 @@
                 ).forEach(t => { t.style.visibility = ''; });
             });
 
-            // Show swipe onboarding hint on first-ever open with cards
-            maybeShowSwipeHint();
+            // Only complete a swipe-hint request from a fresh import (not every re-render)
+            if (typeof maybeShowSwipeHint === 'function') maybeShowSwipeHint();
         }
 
         // cachedBackTextSizes[i] = { size: finalRem, max: maxFontSize used when computed }
@@ -12496,6 +12590,7 @@
             const isOpen = menu.style.display === 'block';
             menu.style.display = isOpen ? 'none' : 'block';
             if (!isOpen) {
+                if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
                 setTimeout(() => {
                     const closeMenu = (e) => {
                         const menu = document.getElementById('settingsMenu');
@@ -12523,6 +12618,7 @@
             const content = document.getElementById('moreDropdownContent');
             content.classList.toggle('show');
             const isOpen = content.classList.contains('show');
+            if (isOpen && typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             ['navIndexLabel','navHintLabel'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.visibility = isOpen ? 'hidden' : 'visible';
@@ -12598,7 +12694,7 @@
                 guessGameState = { selectedCard: null, currentCardOrder: 0, correctCards: {}, gameCards: [] };
             }
             if (typeof spellingGameState !== 'undefined') {
-                spellingGameState = { currentCardIndex: 0, gameCards: [], spelledCards: new Set(), scrambledLetters: [], answerSlots: [], selectedLetter: null, correctWord: '', moveHistory: [] };
+                spellingGameState = { currentCardIndex: 0, gameCards: [], spelledCards: new Set(), skippedCards: new Set(), scrambledLetters: [], answerSlots: [], correctWord: '' };
             }
 
             // Save to sessionStorage using the correct function
@@ -12661,7 +12757,9 @@
                 if (e.key === 'ArrowRight') { e.preventDefault(); spellingNextCard(); return; }
                 if (e.key === 'ArrowLeft')  { e.preventDefault(); spellingPrevCard(); return; }
                 if (e.key === 'Enter')      { e.preventDefault(); checkSpelling();    return; }
-                if (e.key === 'Backspace')  { e.preventDefault(); undoSpelling();     return; }
+                // Backspace = remove one letter; Delete = clear-all (undo button)
+                if (e.key === 'Backspace')  { e.preventDefault(); backspaceSpellingLetter(); return; }
+                if (e.key === 'Delete')     { e.preventDefault(); clearSpellingAnswer(); return; }
                 if (e.key === 'Escape')     { e.preventDefault(); closeSpellingGame(); return; }
                 if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
                     e.preventDefault();
@@ -13065,18 +13163,48 @@
         // ==================== END CROP IMAGE ====================
 
         // ==================== SWIPE HINT ONBOARDING ====================
+        // Shows once after a fresh card import, only if the user leaves the
+        // main deck idle ~5s. Must NOT reappear later after menus/settings/play.
         const SWIPE_HINT_KEY = 'swipeHintSeen_v4';
-        let _swipeHintDone = false;
-        let _swipeHintArmed = false;
+        let _swipeHintDone = false;          // session: never show again this page load
+        let _swipeHintArmed = false;         // countdown running
+        let _swipeHintPending = false;       // import requested; wait for clean deck UI
+        let _swipeHintVisible = false;       // overlay currently up
         let _swipeHintInactivityTimer = null;
-        const SWIPE_HINT_INACTIVITY_MS = 5000; // 5 seconds of inactivity
+        let _swipeHintDismissBound = false;   // avoid stacking dismiss listeners
+        const SWIPE_HINT_INACTIVITY_MS = 5000;
+
+        function _swipeHintAlreadySeen() {
+            try { return !!localStorage.getItem(SWIPE_HINT_KEY); } catch (e) { return false; }
+        }
+
+        function _swipeHintMarkSeenForever() {
+            _swipeHintDone = true;
+            try { localStorage.setItem(SWIPE_HINT_KEY, '1'); } catch (e) {}
+        }
 
         /** True when the main deck UI is ready for the swipe demo */
         function _swipeHintCanShow() {
             if (!cards || cards.length < 1) return false;
-            // Don't show over create/load/etc. modals or empty home
+            // Don't show over create/load/games/settings modals or empty home
             if (document.querySelector('.modal.active')) return false;
             if (document.querySelector('.empty-state')) return false;
+            // Other full-screen UIs that are not .modal
+            const overlayIds = ['previewOverlayModal', 'cropOverlay', 'mspPanel'];
+            for (let i = 0; i < overlayIds.length; i++) {
+                const el = document.getElementById(overlayIds[i]);
+                if (!el) continue;
+                const d = (el.style && el.style.display) || '';
+                if (d && d !== 'none') return false;
+            }
+            // More / quick-load menus open = user already exploring UI
+            const more = document.getElementById('moreDropdownContent');
+            if (more && more.classList.contains('show')) return false;
+            const ql = document.getElementById('quickLoadDropdownContent');
+            if (ql && ql.classList.contains('show')) return false;
+            const settings = document.getElementById('settingsMenu');
+            if (settings && settings.style.display && settings.style.display !== 'none') return false;
+
             const cardEl = document.querySelector('#cardDisplay .card');
             if (!cardEl) return false;
             const r = cardEl.getBoundingClientRect();
@@ -13084,24 +13212,46 @@
         }
 
         /**
-         * Cancel a pending timer / hide a stray overlay.
-         * Used when the deck becomes empty (import then delete) so the demo
-         * never fires on the opening empty page.
+         * Cancel pending timer / hide overlay.
+         * @param {object} [opts]
+         * @param {boolean} [opts.permanent=false] - end this session's chance (no re-arm)
+         * @param {boolean} [opts.forever=false] - also write localStorage (user saw or used app)
          */
-        function cancelSwipeHint() {
+        function cancelSwipeHint(opts) {
+            const permanent = !!(opts && opts.permanent);
+            const forever = !!(opts && opts.forever);
+
             clearTimeout(_swipeHintInactivityTimer);
             _swipeHintInactivityTimer = null;
             _swipeHintArmed = false;
-            // Do NOT set _swipeHintDone — user never saw it; can arm again later
+            _swipeHintPending = false;
 
             const overlay  = document.getElementById('swipeHintOverlay');
             const arrowsEl = document.getElementById('swipeHintArrows');
             if (overlay) overlay.classList.remove('visible');
-            const cardEl = document.querySelector('.card');
+            const cardEl = document.querySelector('#cardDisplay .card') || document.querySelector('.card');
             const cardStack = document.querySelector('.card-stack');
             if (cardEl) cardEl.classList.remove('swipeHintDrifting');
             if (cardStack) cardStack.classList.remove('swiping');
             if (arrowsEl) arrowsEl.classList.remove('drifting');
+            _swipeHintVisible = false;
+
+            if (forever) {
+                _swipeHintMarkSeenForever();
+            } else if (permanent) {
+                _swipeHintDone = true;
+            }
+        }
+
+        /**
+         * Call after a successful NEW import / load that puts cards on screen.
+         * Does nothing if already seen forever or session already finished.
+         */
+        function requestSwipeHintAfterImport() {
+            if (_swipeHintDone || _swipeHintAlreadySeen()) return;
+            _swipeHintPending = true;
+            // Arm now if the deck is already painted; else renderDisplay will try.
+            maybeShowSwipeHint();
         }
 
         function _armSwipeHintTimer() {
@@ -13109,53 +13259,75 @@
             _swipeHintInactivityTimer = setTimeout(() => {
                 if (_swipeHintDone) return;
                 _swipeHintArmed = false;
-                // Deck may have been cleared after arming — never show on empty home
+                // Missed the clean window (menu open, empty, etc.) — do NOT re-arm later
                 if (!_swipeHintCanShow()) {
+                    cancelSwipeHint({ permanent: true });
                     return;
                 }
-                _swipeHintDone = true;
                 _showSwipeHint();
             }, SWIPE_HINT_INACTIVITY_MS);
         }
 
-        function _onUserActivity() {
-            if (!_swipeHintArmed || _swipeHintDone) return;
-            // Still need a live deck; otherwise disarm
+        /** Pure pointer motion only delays the idle timer (not a "used the app" signal). */
+        function _onSwipeHintIdleMotion() {
+            if (!_swipeHintArmed || _swipeHintDone || _swipeHintVisible) return;
             if (!_swipeHintCanShow()) {
-                cancelSwipeHint();
+                // User opened something that blocks the demo — end this chance
+                cancelSwipeHint({ permanent: true });
                 return;
             }
             _armSwipeHintTimer();
         }
 
-        // Only reset on deliberate swipe-like gestures — NOT click/tap/scroll
-        // so that simply opening a deck and leaving it idle triggers the hint
         ['touchmove', 'mousemove'].forEach(evt => {
-            window.addEventListener(evt, _onUserActivity, { passive: true });
+            window.addEventListener(evt, _onSwipeHintIdleMotion, { passive: true });
         });
 
+        /**
+         * User engaged with chrome (menus, settings, nav, games). If a hint was
+         * waiting or showing, kill it for this session so it never pops up later.
+         */
+        function noteSwipeHintUserEngaged() {
+            if (_swipeHintDone) return;
+            if (_swipeHintArmed || _swipeHintPending || _swipeHintVisible) {
+                // They already used the app — no need for the tutorial later
+                cancelSwipeHint({ permanent: true, forever: true });
+            }
+        }
+
         function maybeShowSwipeHint() {
-            // Already done or armed — skip
-            if (_swipeHintDone || _swipeHintArmed) return;
-            // Already seen in a prior session — skip
-            try { if (localStorage.getItem(SWIPE_HINT_KEY)) return; } catch(e) {}
-            // Need a real deck card (not empty state); swipe demo is for the main viewer
+            if (_swipeHintDone || _swipeHintArmed || _swipeHintVisible) return;
+            if (_swipeHintAlreadySeen()) {
+                _swipeHintDone = true;
+                _swipeHintPending = false;
+                return;
+            }
+            // Only after an explicit import request — never free-arm on every render
+            if (!_swipeHintPending) return;
             if (!_swipeHintCanShow()) return;
-            // Start the 5-second countdown
+
+            _swipeHintPending = false;
             _swipeHintArmed = true;
             _armSwipeHintTimer();
         }
 
         function _showSwipeHint() {
+            if (_swipeHintDone || _swipeHintAlreadySeen()) {
+                cancelSwipeHint({ permanent: true });
+                return;
+            }
             if (!_swipeHintCanShow()) {
-                cancelSwipeHint();
+                cancelSwipeHint({ permanent: true });
                 return;
             }
 
             const overlay    = document.getElementById('swipeHintOverlay');
             const cardHole   = document.getElementById('swipeHintCardHole');
             const arrowsEl   = document.getElementById('swipeHintArrows');
-            if (!overlay || !cardHole || !arrowsEl) return;
+            if (!overlay || !cardHole || !arrowsEl) {
+                cancelSwipeHint({ permanent: true });
+                return;
+            }
 
             function positionElements() {
                 if (!_swipeHintCanShow()) return false;
@@ -13170,53 +13342,66 @@
                 cardHole.style.width  = (r.width  + PAD * 2) + 'px';
                 cardHole.style.height = (r.height + PAD * 2) + 'px';
 
-                // Arrows centered on the card
                 const AW = 70, AH = 70;
-                arrowsEl.style.left   = (r.left + r.width/2  - AW) + 'px';
-                arrowsEl.style.top    = (r.top  + r.height/2 - AH) + 'px';
+                arrowsEl.style.left   = (r.left + r.width / 2 - AW) + 'px';
+                arrowsEl.style.top    = (r.top + r.height / 2 - AH) + 'px';
                 arrowsEl.style.width  = (AW * 2) + 'px';
                 arrowsEl.style.height = (AH * 2) + 'px';
                 return true;
             }
 
             if (!positionElements()) {
-                // Card not ready — don't flash a full-screen overlay on empty home
-                cancelSwipeHint();
-                _swipeHintDone = false; // allow retry when a deck is actually shown
+                // Card not laid out yet — one short retry, then give up (no random later)
+                setTimeout(() => {
+                    if (_swipeHintDone || _swipeHintVisible) return;
+                    if (!positionElements() || !_swipeHintCanShow()) {
+                        cancelSwipeHint({ permanent: true });
+                        return;
+                    }
+                    _startSwipeHintVisual(overlay, arrowsEl);
+                }, 120);
                 return;
             }
 
+            _startSwipeHintVisual(overlay, arrowsEl);
+        }
+
+        function _startSwipeHintVisual(overlay, arrowsEl) {
+            if (_swipeHintDone || !_swipeHintCanShow()) {
+                cancelSwipeHint({ permanent: true });
+                return;
+            }
+            _swipeHintVisible = true;
+            _swipeHintArmed = false;
             overlay.classList.add('visible');
 
-            // Animate the REAL first card: drift it, grey it out, and move
-            // the arrows + finger in perfect sync with it.
             requestAnimationFrame(() => {
-                if (!_swipeHintCanShow()) {
-                    cancelSwipeHint();
-                    _swipeHintDone = false;
+                if (!_swipeHintCanShow() || _swipeHintDone) {
+                    cancelSwipeHint({ permanent: true });
                     return;
                 }
                 const cardEl = document.querySelector('#cardDisplay .card');
                 const cardStack = document.querySelector('.card-stack');
-                if (cardStack) cardStack.classList.add('swiping'); // reveals card-next/card-prev peeks
-                if (cardEl) cardEl.classList.add('swipeHintDrifting');   // drift + grey filter
-                arrowsEl.classList.add('drifting');                       // arrows move with card
+                if (cardStack) cardStack.classList.add('swiping');
+                if (cardEl) cardEl.classList.add('swipeHintDrifting');
+                if (arrowsEl) arrowsEl.classList.add('drifting');
             });
 
             function dismissHint() {
-                overlay.classList.remove('visible');
-                const cardEl = document.querySelector('.card');
-                const cardStack = document.querySelector('.card-stack');
-                if (cardEl) cardEl.classList.remove('swipeHintDrifting');
-                if (cardStack) cardStack.classList.remove('swiping');
-                arrowsEl.classList.remove('drifting');
-                _swipeHintDone = true;
-                try { localStorage.setItem(SWIPE_HINT_KEY, '1'); } catch(e) {}
+                if (!_swipeHintVisible && !document.getElementById('swipeHintOverlay')?.classList.contains('visible')) {
+                    return;
+                }
+                cancelSwipeHint({ forever: true });
             }
 
-            // Tap/click anywhere to dismiss (no button needed)
-            document.getElementById('swipeHintBg').addEventListener('click',    () => dismissHint(), { once: true });
-            document.getElementById('swipeHintBg').addEventListener('touchend', (e) => { e.preventDefault(); dismissHint(); }, { once: true });
+            if (!_swipeHintDismissBound) {
+                _swipeHintDismissBound = true;
+                const bg = document.getElementById('swipeHintBg');
+                if (bg) {
+                    bg.addEventListener('click', () => dismissHint());
+                    bg.addEventListener('touchend', (e) => { e.preventDefault(); dismissHint(); }, { passive: false });
+                }
+            }
         }
         // ==================== END SWIPE HINT ====================
 
@@ -13416,8 +13601,7 @@
 
                 // Shuffle cards
                 spellingGameState.gameCards = fisherYatesShuffle(cardsWithText);
-                spellingGameState.currentCardIndex = 0;
-                spellingGameState.spelledCards = new Set();
+                resetSpellingProgress();
 
                 document.body.style.overflow = 'hidden';
                 document.getElementById('spellingGameModal').style.display = 'flex';
@@ -14918,37 +15102,72 @@
 
         function closeSpellingGame() {
             document.getElementById('spellingGameModal').style.display = 'none';
-            var _sfb = document.getElementById('spellFontBadge');
-            if (_sfb) _sfb.style.display = 'none';
             openGameMenu();
         }
 
         function startNewSpellingGame() {
-            spellingGameState.currentCardIndex = 0;
-            spellingGameState.spelledCards = new Set();
+            resetSpellingProgress();
             spellingGameState.gameCards = fisherYatesShuffle(spellingGameState.gameCards);
             renderSpellingGame();
         }
 
+        // Dots: grey default · larger grey = current · green = done · red = forward-skipped
+        function spellingDotColor(i) {
+            ensureSpellSets();
+            if (spellingGameState.spelledCards.has(i)) return '#2ecc71';
+            if (spellingGameState.skippedCards.has(i)) return '#e53935';
+            return '#ccc';
+        }
+
+        function markSpellingSkippedIfIncomplete(fromIndex) {
+            ensureSpellSets();
+            if (spellingGameState.spelledCards.has(fromIndex)) {
+                spellingGameState.skippedCards.delete(fromIndex);
+                return;
+            }
+            spellingGameState.skippedCards.add(fromIndex);
+        }
+
+        function clearSpellingSkipOnVisit(idx) {
+            ensureSpellSets();
+            spellingGameState.skippedCards.delete(idx);
+        }
+
+        function goToSpellingCard(idx, { markSkipFrom } = {}) {
+            if (markSkipFrom !== undefined) markSpellingSkippedIfIncomplete(markSkipFrom);
+            clearSpellingSkipOnVisit(idx);
+            spellingGameState.currentCardIndex = idx;
+            renderSpellingGame();
+        }
+
         function spellingNextCard() {
-            const { gameCards, spelledCards } = spellingGameState;
+            ensureSpellSets();
+            const { gameCards, spelledCards, currentCardIndex } = spellingGameState;
             const total = gameCards.length;
-            // Check if all cards are now spelled
             if (spelledCards.size >= total) {
                 showSpellingComplete();
                 return;
             }
-            // Find next unspelled card, wrapping around
             for (let i = 1; i <= total; i++) {
-                const idx = (spellingGameState.currentCardIndex + i) % total;
+                const idx = (currentCardIndex + i) % total;
                 if (!spelledCards.has(idx)) {
-                    spellingGameState.currentCardIndex = idx;
-                    renderSpellingGame();
+                    goToSpellingCard(idx, { markSkipFrom: currentCardIndex });
                     return;
                 }
             }
-            // Fallback — all spelled
             showSpellingComplete();
+        }
+
+        function spellingPrevCard() {
+            ensureSpellSets();
+            const { spelledCards, currentCardIndex } = spellingGameState;
+            // No wrap: last word only via next (swipe left)
+            for (let idx = currentCardIndex - 1; idx >= 0; idx--) {
+                if (!spelledCards.has(idx)) {
+                    goToSpellingCard(idx);
+                    return;
+                }
+            }
         }
 
         function showSpellingComplete() {
@@ -14962,19 +15181,6 @@
                 </div>`;
         }
 
-        function spellingPrevCard() {
-            const { gameCards, spelledCards } = spellingGameState;
-            const total = gameCards.length;
-            for (let i = 1; i <= total; i++) {
-                const idx = (spellingGameState.currentCardIndex - i + total) % total;
-                if (!spelledCards.has(idx)) {
-                    spellingGameState.currentCardIndex = idx;
-                    renderSpellingGame();
-                    return;
-                }
-            }
-        }
-
         function renderSpellingGame() {
             const content = document.getElementById('spellingGameContent');
             const { currentCardIndex, gameCards, spelledCards } = spellingGameState;
@@ -14983,48 +15189,40 @@
             const word = currentCard.backText.trim();
             spellingGameState.correctWord = word;
 
-            // Split on spaces AND hyphens for word grouping
             const words = word.split(/[\s-]/);
-            const separators = []; // track what separator follows each word: ' ' or '-'
-            word.split('').forEach(ch => { if (ch === ' ' || ch === '-') separators.push(ch); });
             const isMultiWord = words.length > 1;
-            const totalChars = word.replace(/[\s-]/g, '').length;
-
-            // Scramble only actual letters (no spaces or hyphens)
-            const lettersWithoutSpaces = word.split('').filter(l => l !== ' ' && l !== '-');
+            const lettersOnly = word.split('').filter(l => l !== ' ' && l !== '-');
             let scrambled;
-            do { scrambled = fisherYatesShuffle([...lettersWithoutSpaces]); }
-            while (scrambled.join('') === lettersWithoutSpaces.join('') && totalChars > 1);
+            do { scrambled = fisherYatesShuffle([...lettersOnly]); }
+            while (scrambled.join('') === lettersOnly.join('') && lettersOnly.length > 1);
 
             const answerSlotsArray = [];
             const scrambledArray = [];
             let si = 0;
             word.split('').forEach(char => {
-                if (char === ' ')  { answerSlotsArray.push('SPACE'); }
-                else if (char === '-') { answerSlotsArray.push('HYPHEN'); }
+                if (char === ' ') answerSlotsArray.push('SPACE');
+                else if (char === '-') answerSlotsArray.push('HYPHEN');
                 else { answerSlotsArray.push(null); scrambledArray.push(scrambled[si++]); }
             });
 
             spellingGameState.scrambledLetters = scrambledArray;
             spellingGameState.answerSlots = answerSlotsArray;
-            spellingGameState.selectedLetter = null;
-            spellingGameState.moveHistory = [];
 
-            // Fixed word size — image adjusts to remaining space
-            // Responsive sizing — scales with screen width
-            const _vw = window.innerWidth;
-            const _fsPx = Math.round(Math.min(Math.max(_vw * 0.075, 36), 72));
-            const lineH = _fsPx + 'px';
+            const _fsPx = Math.round(Math.min(Math.max(window.innerWidth * 0.075, 36), 72));
             const lineFS = _fsPx + 'px';
+            // Taller tiles + shared glyph lift for optical center (descenders)
+            const tileH = Math.round(_fsPx * 1.55);
+            const tileW = Math.round(_fsPx * 1.08);
+            const underInset = Math.round(tileW * 0.12);
+            const glyphLift = SPELL_GLYPH_LIFT;
 
             const makeSlot = (idx) => {
                 if (answerSlotsArray[idx] === 'HYPHEN') {
-                    return `<div class="answer-hyphen" style="min-width:18px;display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-end;height:${lineH};padding:0 2px;user-select:none;">
+                    return `<div class="answer-hyphen" style="min-width:18px;display:inline-flex;align-items:center;justify-content:center;height:${tileH}px;padding:0 2px;user-select:none;">
                         <span class="answer-hyphen" style="font-size:${lineFS};font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Impact, Arial Black, sans-serif'};color:#35654D;line-height:1;">-</span>
-                        <span style="width:100%;height:3px;background:transparent;margin-top:2px;"></span>
                     </div>`;
                 }
-                // Letter sits above the green underscore line
+                // Empty = green underline. Filled = box. Same outer size either way.
                 return `<div onclick="selectAnswerSlot(${idx})" class="answer-slot" data-index="${idx}"
                 draggable="true"
                 ondragstart="spellingDragStart(event,${idx},'slot')"
@@ -15032,13 +15230,44 @@
                 ontouchstart="spellingTouchStart(event,${idx},'slot')"
                 ontouchmove="spellingTouchMove(event)"
                 ontouchend="spellingTouchEnd(event)"
-                style="min-width:${Math.round(_fsPx * 0.78)}px;display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-end;
-                       cursor:pointer;overflow:visible;touch-action:none;padding:0 3px;user-select:none;box-sizing:border-box;">
+                style="width:${tileW}px;height:${tileH}px;min-width:${tileW}px;min-height:${tileH}px;
+                       display:inline-flex;align-items:center;justify-content:center;
+                       cursor:pointer;overflow:hidden;touch-action:none;padding:0;
+                       user-select:none;box-sizing:border-box;
+                       background:transparent;border-radius:10px;position:relative;">
                     <span class="answer-letter" style="font-size:${lineFS};line-height:1;font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Impact, Arial Black, sans-serif'};
-                           color:#1a1a1a;min-height:1em;display:flex;align-items:flex-end;justify-content:center;">&nbsp;</span>
-                    <span class="answer-underline" style="width:100%;height:3px;background:#35654D;border-radius:2px;margin-top:3px;flex-shrink:0;"></span>
+                           color:#1a1a1a;display:flex;align-items:center;justify-content:center;
+                           width:100%;height:100%;margin:0;padding:0;box-sizing:border-box;position:relative;z-index:1;
+                           transform:${glyphLift};">&nbsp;</span>
+                    <span class="answer-underline" style="position:absolute;left:${underInset}px;right:${underInset}px;bottom:${Math.round(tileH * 0.16)}px;height:3px;background:#35654D;border-radius:2px;z-index:0;"></span>
                 </div>`;
             };
+
+            // Clear icon: letter scale, icon only. Sits in a right-side grid cell so the
+            // blanks stay truly centered (button space is mirrored on the left).
+            const clearIconSz = Math.round(_fsPx * 0.72);
+            const clearColW = tileW + 4; // reserved column width (matches letter footprint)
+            const clearBtnHTML = `<button type="button" id="spellClearBtn" onclick="event.stopPropagation();clearSpellingAnswer()"
+                title="Clear all letters"
+                style="display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;
+                       width:${tileW}px;height:${tileH}px;padding:0;margin:0;
+                       background:transparent;border:none;border-radius:0;box-shadow:none;
+                       cursor:pointer;touch-action:manipulation;color:#888;box-sizing:border-box;
+                       visibility:hidden;opacity:0;pointer-events:none;">
+                <svg width="${clearIconSz}" height="${clearIconSz}" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+            </button>`;
+            // Equal side columns (same width as clear control) so the blanks sit on true center.
+            // Previous 1fr|auto|tile pushed the row one tile to the RIGHT.
+            const lastRowWithClear = (innerHTML) =>
+                `<div style="display:grid;grid-template-columns:${clearColW}px auto ${clearColW}px;align-items:center;justify-content:center;width:fit-content;max-width:100%;margin:0 auto;box-sizing:border-box;">
+                    <div aria-hidden="true" style="width:${clearColW}px;height:1px;"></div>
+                    <div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap;">${innerHTML}</div>
+                    <div style="display:flex;align-items:center;justify-content:center;width:${clearColW}px;height:${tileH}px;">${clearBtnHTML}</div>
+                 </div>`;
 
             let answerRowsHTML = '';
             if (isMultiWord) {
@@ -15055,29 +15284,29 @@
                         }
                         slotIndex++;
                     }
-                    return `<div style="display:flex;gap:3px;align-items:flex-end;justify-content:center;flex-wrap:nowrap;flex-shrink:0;">${groupSlots.join('')}</div>`;
+                    return `<div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap;flex-shrink:0;">${groupSlots.join('')}</div>`;
                 });
                 if (words.length >= 3) {
                     const splitAt = Math.ceil(wordGroups.length / 2);
-                    answerRowsHTML = `<div style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;overflow:visible;">
-                                          <div style="display:flex;gap:18px;justify-content:center;align-items:flex-end;flex-wrap:wrap;">${wordGroups.slice(0, splitAt).join('')}</div>
-                                          <div style="display:flex;gap:18px;justify-content:center;align-items:flex-end;flex-wrap:wrap;">${wordGroups.slice(splitAt).join('')}</div>
+                    // First half of words centered; last visual row has clear on the right without shifting tiles
+                    answerRowsHTML = `<div id="answerRow" style="display:flex;flex-direction:column;gap:8px;align-items:stretch;justify-content:center;overflow:visible;width:100%;">
+                                          <div style="display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;">${wordGroups.slice(0, splitAt).join('')}</div>
+                                          ${lastRowWithClear(`<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">${wordGroups.slice(splitAt).join('')}</div>`)}
                                       </div>`;
                 } else {
-                    answerRowsHTML = `<div style="display:flex;gap:18px;justify-content:center;align-items:flex-end;flex-wrap:wrap;overflow:visible;">
-                                          ${wordGroups.join('')}
+                    answerRowsHTML = `<div id="answerRow" style="width:100%;overflow:visible;">
+                                          ${lastRowWithClear(`<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">${wordGroups.join('')}</div>`)}
                                       </div>`;
                 }
             } else {
                 const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
-                answerRowsHTML = `<div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;max-width:100%;overflow:visible;align-items:flex-end;">${slots}</div>`;
+                answerRowsHTML = `<div id="answerRow" style="width:100%;max-width:100%;overflow:visible;">
+                                      ${lastRowWithClear(slots)}
+                                  </div>`;
             }
 
-            // Letter bank tiles
-            const letterRowFS = lineFS;
-            const letterSpans = scrambledArray.map((letter, idx) => {
-                const isVowel = ['A','E','I','O','U','a','e','i','o','u'].includes(letter);
-                return `<span class="letter-tile" data-index="${idx}"
+            const letterSpans = scrambledArray.map((letter, idx) =>
+                `<span class="letter-tile" data-index="${idx}"
                     onclick="selectLetter(${idx})"
                     draggable="true"
                     ondragstart="spellingDragStart(event,${idx},'tile')"
@@ -15085,19 +15314,20 @@
                     ontouchmove="spellingTouchMove(event)"
                     ontouchend="spellingTouchEnd(event)"
                     style="display:inline-flex;align-items:center;justify-content:center;
-                           font-size:${letterRowFS};font-weight:${window.SPELL_LETTER_WEIGHT||'400'};padding:4px ${Math.round(_fsPx * 0.18)}px;
-                           min-width:${Math.round(_fsPx * 0.85)}px;min-height:${Math.round(_fsPx * 0.95)}px;
+                           width:${tileW}px;height:${tileH}px;min-width:${tileW}px;min-height:${tileH}px;
+                           font-size:${lineFS};line-height:1;font-weight:${window.SPELL_LETTER_WEIGHT||'400'};
+                           padding:0;margin:0;box-sizing:border-box;overflow:hidden;
                            font-family:${window.SPELL_LETTER_FONT||'Impact, Arial Black, sans-serif'};border-radius:10px;
-                           background:#f0f8f3;border:2px solid #a8d5b5;
-                           color:${isVowel ? '#ff9500' : '#35654D'};
+                           background:${SPELL_FILL_BG};border:2px solid transparent;
+                           color:${spellLetterColor(letter)};
                            cursor:grab;user-select:none;-webkit-user-select:none;
-                           -webkit-user-drag:element;touch-action:none;flex-shrink:0;">
-                    ${letter}
-                </span>`;
-            }).join('');
+                           -webkit-user-drag:element;touch-action:none;flex-shrink:0;
+                           text-align:center;">
+                    <span class="letter-tile-ch" style="display:flex;align-items:center;justify-content:center;
+                          line-height:1;transform:${glyphLift};">${letter}</span></span>`
+            ).join('');
 
             const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-            // Portrait: image top, blanks, bank, confirm. Landscape: image left | spell right.
             const cardFlexDir = isLandscape ? 'row' : 'column';
             const imgFlex = isLandscape ? '0 0 42%' : '1 1 auto';
             const spellFlex = isLandscape ? '1 1 58%' : '0 0 auto';
@@ -15110,142 +15340,118 @@
                                 display:flex;flex-direction:${cardFlexDir};
                                 padding:12px;box-sizing:border-box;overflow:hidden;position:relative;gap:10px;">
 
-                        <!-- Progress -->
+                        <!-- Progress: index text only (no grey pill) + dots -->
                         <div style="position:absolute;top:8px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;z-index:3;pointer-events:none;">
-                            <span style="background:rgba(0,0,0,0.1);color:#555;font-size:0.72rem;font-weight:700;border-radius:5px;padding:2px 8px;line-height:1.6;">
+                            <span style="color:#555;font-size:0.72rem;font-weight:700;line-height:1.6;background:none;padding:0;">
                                 ${currentCardIndex + 1} / ${gameCards.length}
                             </span>
                             <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;">
-                                ${gameCards.map((_, i) => `<div style="width:7px;height:7px;border-radius:50%;background:${spelledCards.has(i) ? '#35654D' : (i === currentCardIndex ? '#888' : '#ccc')}"></div>`).join('')}
+                                ${gameCards.map((_, i) => {
+                                    const c = spellingDotColor(i);
+                                    const isCur = i === currentCardIndex;
+                                    const sz = isCur ? 10 : 7;
+                                    return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${c};flex-shrink:0;"></div>`;
+                                }).join('')}
                             </div>
                         </div>
 
-                        <!-- Image -->
-                        <div id="spellingImgWrap" style="flex:${imgFlex};min-width:0;min-height:${isLandscape ? '0' : '140px'};position:relative;padding-top:22px;box-sizing:border-box;">
-                            <!-- width/height 100% + contain: every image scales to fill the slot (up or down), same frame size; aspect ratio kept -->
+                        <!-- Image: original large share; spell column below/side is fixed-height content only -->
+                        <div id="spellingImgWrap" style="flex:${imgFlex};min-width:0;min-height:${isLandscape ? '0' : '140px'};position:relative;padding-top:22px;box-sizing:border-box;overflow:hidden;">
                             <img id="spellingImg" src="${gifSrc(currentCard.frontImage)}"
-                                 style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;border-radius:12px;display:block;">
+                                 style="position:absolute;inset:0;top:22px;width:100%;height:calc(100% - 22px);object-fit:contain;object-position:center;border-radius:12px;display:block;">
+                        </div>
 
-                            <!-- Side tools -->
-                            <div id="spellingBtnPanel" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);
-                                        display:flex;flex-direction:column;align-items:center;gap:2px;
-                                        background:rgba(255,255,255,0.82);
-                                        backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-                                        border-radius:16px;padding:6px 3px;z-index:2;">
-                                <button onclick="closeSpellingGame()" style="background:none;border:none;cursor:pointer;padding:5px;color:#e53935;display:flex;" title="Back">
-                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                                </button>
-                                <div style="width:22px;height:1px;background:rgba(0,0,0,0.1);"></div>
-                                <button onclick="startNewSpellingGame()" style="background:none;border:none;cursor:pointer;padding:5px;color:#35654D;display:flex;" title="Shuffle">
-                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-                                </button>
-                                <button onclick="undoSpelling()" style="background:none;border:none;cursor:pointer;padding:5px;color:#888;display:flex;" title="Undo">
-                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-                                </button>
-                                <button onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')" style="background:none;border:none;cursor:pointer;padding:5px;color:#ff9500;display:flex;" title="Say It">
-                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                                </button>
-                                <button onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)" ontouchstart="event.stopPropagation();peekSpelling(true)" ontouchend="event.stopPropagation();peekSpelling(false)" style="background:none;border:none;cursor:pointer;padding:5px;color:#9c27b0;display:flex;" title="Peek">
-                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <!-- Spelling column: content-sized only (does not steal space from image) -->
+                        <div style="flex:${spellFlex};flex-shrink:0;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding-top:${isLandscape ? '22px' : '4px'};">
+
+                            <!-- Answer blanks; clear icon is embedded on the last word row (right side) -->
+                            <div style="width:100%;flex-shrink:0;padding:4px 6px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
+                                ${answerRowsHTML}
+                            </div>
+
+                            <!-- Letter bank: fixed height. Confirm overlays the CENTER of this bank
+                                 after letters are placed — never a second row below (no image jump). -->
+                            <!-- Letter bank: no panel background/border — tiles only on white card -->
+                            <div id="spellLetterBank"
+                                 style="width:100%;flex-shrink:0;position:relative;
+                                        border:none;border-radius:0;padding:4px 0;box-sizing:border-box;
+                                        background:transparent;">
+                                <div id="letterRow"
+                                     ondragover="event.preventDefault()"
+                                     ondrop="spellingDragDropToTile(event)"
+                                     style="width:100%;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;
+                                            min-height:${tileH}px;gap:6px;box-sizing:border-box;">
+                                    ${letterSpans}
+                                </div>
+                                <button id="checkBtn" onclick="checkSpelling()" type="button"
+                                    style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+                                           display:flex;align-items:center;justify-content:center;gap:8px;z-index:4;
+                                           min-width:160px;padding:12px 28px;border:none;border-radius:999px;cursor:pointer;
+                                           background:#35654D;color:white;font-size:1.05rem;font-weight:700;font-family:inherit;
+                                           box-shadow:0 4px 16px rgba(53,101,77,0.35);touch-action:manipulation;
+                                           transition:opacity 0.15s, background 0.15s;
+                                           visibility:hidden;opacity:0;pointer-events:none;" title="Confirm spelling">
+                                    Confirm
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Spelling column: blanks + bank + Confirm -->
-                        <div style="flex:${spellFlex};min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding-top:${isLandscape ? '22px' : '4px'};">
-
-                            <div style="width:100%;flex-shrink:0;padding:4px 6px;box-sizing:border-box;">
-                                <div id="answerRow">${answerRowsHTML}</div>
-                            </div>
-
-                            <div id="letterRow"
-                                 ondragover="event.preventDefault()"
-                                 ondrop="spellingDragDropToTile(event)"
-                                 style="width:100%;flex-shrink:0;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;
-                                        border:1.5px solid #ddd;border-radius:12px;padding:8px 10px;box-sizing:border-box;
-                                        min-height:${Math.round(_fsPx * 1.1)}px;gap:6px;background:#fafcfb;">
-                                ${letterSpans}
-                            </div>
-
-                            <button id="checkBtn" onclick="checkSpelling()" type="button"
-                                style="display:none;align-items:center;justify-content:center;gap:8px;
-                                       min-width:160px;padding:12px 28px;border:none;border-radius:999px;cursor:pointer;
-                                       background:#35654D;color:white;font-size:1.05rem;font-weight:700;font-family:inherit;
-                                       box-shadow:0 4px 16px rgba(53,101,77,0.35);touch-action:manipulation;
-                                       transition:transform 0.15s, background 0.15s;flex-shrink:0;" title="Confirm spelling">
-                                Confirm
+                        <!-- Side tools: centered on full card, inset from right edge -->
+                        <div id="spellingBtnPanel" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);
+                                    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+                                    width:auto;padding:0;box-sizing:border-box;z-index:6;
+                                    background:transparent;border:none;box-shadow:none;pointer-events:auto;">
+                            <button type="button" class="spell-glass-btn" onclick="closeSpellingGame()" style="color:#e53935;" title="Back">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                            </button>
+                            <button type="button" class="spell-glass-btn" onclick="startNewSpellingGame()" style="color:#35654D;" title="Shuffle">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+                            </button>
+                            <button type="button" class="spell-glass-btn" onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')" style="color:#ff9500;" title="Say It">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            </button>
+                            <button type="button" class="spell-glass-btn" onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)" ontouchstart="event.stopPropagation();peekSpelling(true)" ontouchend="event.stopPropagation();peekSpelling(false)" style="color:#9c27b0;" title="Peek">
+                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             </button>
                         </div>
 
                     </div>
                 </div>`;
 
-            // Populate initial slot values + force browser-specific letter font
             renderSpellingGameState();
             if (typeof applySpellLetterFonts === 'function') applySpellLetterFonts();
 
-            // Render progress dots in bottom bar
-            // Dots now rendered inline in card template above
-
-            // Landscape: nudge button panel to sit close to actual image edge
-            function adjustBtnPanelForLandscape() {
-                const panel = document.getElementById('spellingBtnPanel');
-                if (!panel) return;
-                // Landscape: fixed comfortable inset — close to image but not at border
-                panel.style.right = window.matchMedia('(orientation: landscape)').matches ? '24px' : '12px';
-            }
-
-            const _spellingImgL = document.getElementById('spellingImg');
-            if (_spellingImgL) {
-                if (_spellingImgL.complete) adjustBtnPanelForLandscape();
-                else _spellingImgL.addEventListener('load', adjustBtnPanelForLandscape);
-            }
-            window.addEventListener('resize', adjustBtnPanelForLandscape);
-            window.addEventListener('orientationchange', () => setTimeout(adjustBtnPanelForLandscape, 300));
-
-            // Swipe on white card to navigate prev/next unspelled word
+            // Card swipe (not on letter tiles): left = next, right = prev
             const _card = document.getElementById('spellingCard');
             if (_card) {
-                let _swipeStartX = 0, _swipeStartY = 0, _swipeActive = false;
+                let sx = 0, sy = 0, active = false;
+                const onLetter = (t) => t.closest('.letter-tile') || t.closest('.answer-slot');
                 _card.addEventListener('touchstart', (e) => {
-                    // Only track if not starting on a tile/slot
-                    if (e.target.closest('.letter-tile') || e.target.closest('.answer-slot')) return;
-                    _swipeStartX = e.touches[0].clientX;
-                    _swipeStartY = e.touches[0].clientY;
-                    _swipeActive = true;
+                    if (onLetter(e.target)) return;
+                    sx = e.touches[0].clientX; sy = e.touches[0].clientY; active = true;
                 }, { passive: true });
                 _card.addEventListener('touchend', (e) => {
-                    if (!_swipeActive) return;
-                    _swipeActive = false;
-                    const dx = e.changedTouches[0].clientX - _swipeStartX;
-                    const dy = e.changedTouches[0].clientY - _swipeStartY;
-                    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-                        if (dx < 0) spellingNextCard();
-                        else spellingPrevCard();
+                    if (!active) return;
+                    active = false;
+                    const dx = e.changedTouches[0].clientX - sx;
+                    const dy = e.changedTouches[0].clientY - sy;
+                    if (Math.abs(dx) > SPELL_CARD_SWIPE_MIN && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                        if (dx < 0) spellingNextCard(); else spellingPrevCard();
                     }
                 }, { passive: true });
-                // Mouse drag for PC
-                let _mStartX = 0, _mDown = false;
+                let mx = 0, md = false;
                 _card.addEventListener('mousedown', (e) => {
-                    if (e.target.closest('.letter-tile') || e.target.closest('.answer-slot')) return;
-                    _mStartX = e.clientX; _mDown = true;
+                    if (onLetter(e.target)) return;
+                    mx = e.clientX; md = true;
                 });
                 _card.addEventListener('mouseup', (e) => {
-                    if (!_mDown) return; _mDown = false;
-                    const dx = e.clientX - _mStartX;
-                    if (Math.abs(dx) > 60) {
-                        if (dx < 0) spellingNextCard();
-                        else spellingPrevCard();
+                    if (!md) return; md = false;
+                    const dx = e.clientX - mx;
+                    if (Math.abs(dx) > SPELL_CARD_SWIPE_MIN) {
+                        if (dx < 0) spellingNextCard(); else spellingPrevCard();
                     }
                 });
             }
-        }
-
-        function spellingSnapshot() {
-            return {
-                scrambledLetters: [...spellingGameState.scrambledLetters],
-                answerSlots: [...spellingGameState.answerSlots]
-            };
         }
 
         function selectLetter(letterIndex) {
@@ -15253,38 +15459,62 @@
             if (letter === null) return;
             const firstEmptySlot = spellingGameState.answerSlots.findIndex(slot => slot === null);
             if (firstEmptySlot === -1) return;
-            spellingGameState.moveHistory.push(spellingSnapshot());
             spellingGameState.answerSlots[firstEmptySlot] = letter;
             spellingGameState.scrambledLetters[letterIndex] = null;
             renderSpellingGameState();
         }
 
         function selectAnswerSlot(slotIndex) {
-            if (spellingGameState.answerSlots[slotIndex] === 'SPACE' || spellingGameState.answerSlots[slotIndex] === 'HYPHEN') return;
-            if (spellingGameState.answerSlots[slotIndex] === null) return;
-            const letter = spellingGameState.answerSlots[slotIndex];
-            // Find first null slot in scrambled array
+            const v = spellingGameState.answerSlots[slotIndex];
+            if (!isSpellLetter(v)) return;
             let emptyIndex = spellingGameState.scrambledLetters.findIndex(l => l === null);
             if (emptyIndex === -1) {
-                // All slots full — push to end (shouldn't happen but be safe)
-                spellingGameState.scrambledLetters.push(letter);
+                spellingGameState.scrambledLetters.push(v);
                 emptyIndex = spellingGameState.scrambledLetters.length - 1;
             }
-            spellingGameState.moveHistory.push(spellingSnapshot());
-            spellingGameState.scrambledLetters[emptyIndex] = letter;
+            spellingGameState.scrambledLetters[emptyIndex] = v;
             spellingGameState.answerSlots[slotIndex] = null;
             renderSpellingGameState();
         }
 
-        function undoSpelling() {
-            if (spellingGameState.moveHistory.length === 0) return;
-            const prev = spellingGameState.moveHistory.pop();
-            spellingGameState.scrambledLetters = prev.scrambledLetters;
-            spellingGameState.answerSlots = prev.answerSlots;
+        function backspaceSpellingLetter() {
+            const slots = spellingGameState.answerSlots;
+            if (!slots) return;
+            for (let i = slots.length - 1; i >= 0; i--) {
+                if (isSpellLetter(slots[i])) {
+                    selectAnswerSlot(i);
+                    return;
+                }
+            }
+        }
+
+        /** Clear placed letters and reshuffle bank (random, not spelling order). */
+        function clearSpellingAnswer() {
+            const slots = spellingGameState.answerSlots;
+            const bank = spellingGameState.scrambledLetters;
+            if (!slots || !bank) return;
+
+            const allLetters = bank.filter(l => l !== null && l !== undefined);
+            let hadPlaced = false;
+            for (let i = 0; i < slots.length; i++) {
+                if (isSpellLetter(slots[i])) {
+                    allLetters.push(slots[i]);
+                    slots[i] = null;
+                    hadPlaced = true;
+                }
+            }
+            if (!hadPlaced) return;
+
+            const correct = (spellingGameState.correctWord || '').split('').filter(l => l !== ' ' && l !== '-');
+            let scrambled;
+            do { scrambled = fisherYatesShuffle([...allLetters]); }
+            while (correct.length > 1 && scrambled.join('') === correct.join(''));
+
+            spellingGameState.scrambledLetters = scrambled;
             renderSpellingGameState();
         }
 
-        // ---- Mouse Drag & Drop ----
+        // ---- Mouse drag & drop ----
         let _spellDragSource = null;
 
         function spellingDragStart(e, index, type) {
@@ -15302,10 +15532,8 @@
             if (type === 'tile') {
                 const letter = spellingGameState.scrambledLetters[index];
                 if (letter === null) return;
-                spellingGameState.moveHistory.push(spellingSnapshot());
                 const existing = spellingGameState.answerSlots[destSlotIdx];
-                if (existing && existing !== 'SPACE') {
-                    // Swap existing back to tile row
+                if (isSpellLetter(existing)) {
                     const emptyIdx = spellingGameState.scrambledLetters.findIndex(l => l === null);
                     if (emptyIdx !== -1) spellingGameState.scrambledLetters[emptyIdx] = existing;
                 }
@@ -15313,11 +15541,10 @@
                 spellingGameState.scrambledLetters[index] = null;
             } else if (type === 'slot') {
                 const fromLetter = spellingGameState.answerSlots[index];
-                if (!fromLetter || fromLetter === 'SPACE' || fromLetter === 'HYPHEN') return;
-                spellingGameState.moveHistory.push(spellingSnapshot());
+                if (!isSpellLetter(fromLetter)) return;
                 const toExisting = spellingGameState.answerSlots[destSlotIdx];
                 spellingGameState.answerSlots[destSlotIdx] = fromLetter;
-                spellingGameState.answerSlots[index] = (toExisting && toExisting !== 'SPACE') ? toExisting : null;
+                spellingGameState.answerSlots[index] = isSpellLetter(toExisting) ? toExisting : null;
             }
             renderSpellingGameState();
         }
@@ -15332,18 +15559,18 @@
 
         // ---- Touch drag ----
         let _spellTouch = null;
-        const SPELL_DRAG_THRESHOLD = 8; // px movement before considered a drag
+
+        function _isSpellCardSwipe(dx, dy) {
+            return Math.abs(dx) > SPELL_CARD_SWIPE_MIN && Math.abs(dx) > Math.abs(dy) * 1.5;
+        }
 
         function spellingTouchStart(e, index, type) {
-            if (type === 'tile' && spellingGameState.scrambledLetters[index] === null) return;
-            if (type === 'slot' && (spellingGameState.answerSlots[index] === null || spellingGameState.answerSlots[index] === 'SPACE' || spellingGameState.answerSlots[index] === 'HYPHEN')) return;
-            const t = e.touches[0];
-            const el = e.currentTarget;
-            const rect = el.getBoundingClientRect();
             const letter = type === 'tile'
                 ? spellingGameState.scrambledLetters[index]
                 : spellingGameState.answerSlots[index];
-            if (!letter || letter === 'SPACE' || letter === 'HYPHEN') return;
+            if (!isSpellLetter(letter)) return;
+            const t = e.touches[0];
+            const rect = e.currentTarget.getBoundingClientRect();
 
             const ghostSize = Math.max(44, Math.min(rect.width, rect.height));
             const ghost = document.createElement('div');
@@ -15362,17 +15589,44 @@
                 type, index, ghost, letter,
                 startX: t.clientX, startY: t.clientY,
                 offX: ghostSize / 2, offY: ghostSize / 2,
-                isDragging: false
+                isDragging: false,
+                isCardSwipe: false
             };
         }
 
         function spellingTouchMove(e) {
             if (!_spellTouch) return;
             const t = e.touches[0];
-            const dx = Math.abs(t.clientX - _spellTouch.startX);
-            const dy = Math.abs(t.clientY - _spellTouch.startY);
+            const dx = t.clientX - _spellTouch.startX;
+            const dy = t.clientY - _spellTouch.startY;
+            const adx = Math.abs(dx);
+            const ady = Math.abs(dy);
 
-            if (!_spellTouch.isDragging && (dx > SPELL_DRAG_THRESHOLD || dy > SPELL_DRAG_THRESHOLD)) {
+            // Horizontal swipe across tiles → card navigation, not letter drag
+            // (long words fill the bank; users often swipe starting on a tile)
+            if (_isSpellCardSwipe(dx, dy)) {
+                _spellTouch.isCardSwipe = true;
+                _spellTouch.isDragging = false;
+                if (_spellTouch.ghost) {
+                    _spellTouch.ghost.style.opacity = '0';
+                    _spellTouch.ghost.style.display = 'none';
+                }
+                clearSpellDropHover();
+                e.preventDefault();
+                return;
+            }
+            if (_spellTouch.isCardSwipe) {
+                e.preventDefault();
+                return;
+            }
+
+            if (!_spellTouch.isDragging && (adx > SPELL_DRAG_THRESHOLD || ady > SPELL_DRAG_THRESHOLD)) {
+                // Prefer vertical / short moves as letter drag; keep horizontal-dominant for swipe
+                if (adx > ady * 1.2 && adx > SPELL_DRAG_THRESHOLD) {
+                    // Still tracking — may become a card swipe once past SPELL_CARD_SWIPE_MIN
+                    e.preventDefault();
+                    return;
+                }
                 _spellTouch.isDragging = true;
                 _spellTouch.ghost.style.opacity = '0.92';
                 e.preventDefault();
@@ -15382,44 +15636,66 @@
                 _spellTouch.ghost.style.left = (t.clientX - _spellTouch.offX) + 'px';
                 _spellTouch.ghost.style.top  = (t.clientY - _spellTouch.offY) + 'px';
 
-                // Highlight the slot under finger
-                document.querySelectorAll('.answer-slot').forEach(s => s.style.background = '');
+                clearSpellDropHover();
                 const midEl = document.elementFromPoint(t.clientX, t.clientY);
                 const slotEl = midEl && midEl.closest('.answer-slot');
-                if (slotEl) slotEl.style.background = '#e8f5e9';
+                if (slotEl) slotEl.classList.add('spell-drop-hover');
             }
+        }
+
+        function clearSpellDropHover() {
+            document.querySelectorAll('#spellingGameModal .answer-slot.spell-drop-hover').forEach(s => {
+                s.classList.remove('spell-drop-hover');
+            });
         }
 
         function spellingTouchEnd(e) {
             if (!_spellTouch) return;
             const t = e.changedTouches[0];
-            const { type, index, ghost, isDragging } = _spellTouch;
+            const { type, index, ghost, isDragging, isCardSwipe, startX, startY } = _spellTouch;
             _spellTouch = null;
 
-            // Clear slot highlights
-            document.querySelectorAll('.answer-slot').forEach(s => s.style.background = '');
-            ghost.style.display = 'none';
-            const dropTarget = document.elementFromPoint(t.clientX, t.clientY);
-            ghost.remove();
+            clearSpellDropHover();
+            if (ghost) {
+                ghost.style.display = 'none';
+                ghost.remove();
+            }
+
+            const dx = t.clientX - startX;
+            const dy = t.clientY - startY;
+
+            // Swipe that began on a letter tile / filled slot → next/prev word (not rearrange bank)
+            if (isCardSwipe || _isSpellCardSwipe(dx, dy)) {
+                if (dx < 0) spellingNextCard();
+                else spellingPrevCard();
+                return;
+            }
 
             if (!isDragging) {
-                // Pure tap — use click handlers
+                // Pure tap
                 if (type === 'tile') selectLetter(index);
                 else if (type === 'slot') selectAnswerSlot(index);
                 return;
             }
 
-            // Dragged — find what's under finger
-            if (!dropTarget) return;
+            // Intentional letter drag → only place if dropped on an answer slot (or bank for return)
+            const dropTarget = document.elementFromPoint(t.clientX, t.clientY);
+            if (!dropTarget) {
+                // Cancelled drag: restore filled green boxes (never leave slots stripped)
+                renderSpellingGameState();
+                return;
+            }
             const slotEl = dropTarget.closest('.answer-slot');
-            const inLetterRow = dropTarget.closest('#letterRow');
+            const inLetterRow = dropTarget.closest('#letterRow') || dropTarget.closest('#spellLetterBank');
 
             if (type === 'tile' && slotEl) {
                 const destIdx = parseInt(slotEl.dataset.index);
-                if (spellingGameState.answerSlots[destIdx] === 'SPACE' || spellingGameState.answerSlots[destIdx] === 'HYPHEN') return;
-                spellingGameState.moveHistory.push(spellingSnapshot());
+                if (isSpellSeparator(spellingGameState.answerSlots[destIdx])) {
+                    renderSpellingGameState();
+                    return;
+                }
                 const existing = spellingGameState.answerSlots[destIdx];
-                if (existing && existing !== 'SPACE') {
+                if (isSpellLetter(existing)) {
                     const emptyIdx = spellingGameState.scrambledLetters.findIndex(l => l === null);
                     if (emptyIdx !== -1) spellingGameState.scrambledLetters[emptyIdx] = existing;
                 }
@@ -15427,132 +15703,167 @@
                 spellingGameState.scrambledLetters[index] = null;
                 renderSpellingGameState();
             } else if (type === 'tile' && !slotEl) {
-                // Dropped outside slots — snap to first empty slot
-                selectLetter(index);
+                if (dropTarget.closest('#answerRow')) selectLetter(index);
+                else renderSpellingGameState();
             } else if (type === 'slot' && (inLetterRow || !slotEl)) {
-                // Dragged slot letter back to tile row or anywhere not a slot
                 selectAnswerSlot(index);
             } else if (type === 'slot' && slotEl) {
-                // Slot to slot
                 const destIdx = parseInt(slotEl.dataset.index);
-                if (destIdx === index) return;
-                spellingDragDrop({ preventDefault: () => {} }, destIdx);
+                if (destIdx === index) {
+                    renderSpellingGameState();
+                    return;
+                }
                 _spellDragSource = { type, index };
                 spellingDragDrop({ preventDefault: () => {} }, destIdx);
+            } else {
+                renderSpellingGameState();
             }
         }
 
-        function spellLetterColor(ch) {
-            if (!ch) return '#1a1a1a';
-            return /[AEIOUaeiou]/.test(ch) ? '#ff9500' : '#35654D';
-        }
-
         function renderSpellingGameState() {
-            const answerSlots = document.querySelectorAll('.answer-slot');
-            answerSlots.forEach((slot) => {
-                const index = parseInt(slot.getAttribute('data-index'));
+            const lift = SPELL_GLYPH_LIFT;
+
+            document.querySelectorAll('.answer-slot').forEach((slot) => {
+                const index = parseInt(slot.getAttribute('data-index'), 10);
                 const value = spellingGameState.answerSlots[index];
                 const letterEl = slot.querySelector('.answer-letter');
-                const ch = (value === 'SPACE' || value === 'HYPHEN' || value === null || value === undefined) ? '' : value;
+                const lineEl = slot.querySelector('.answer-underline');
+                const ch = isSpellLetter(value) ? value : '';
+
+                slot.classList.remove('spell-drop-hover');
                 if (letterEl) {
-                    letterEl.textContent = ch || '\u00a0'; // keep line height with nbsp when empty
-                    // Keep orange vowels / green consonants after place (was stuck on black)
+                    letterEl.textContent = ch || '\u00a0';
                     letterEl.style.color = ch ? spellLetterColor(ch) : '#1a1a1a';
                     letterEl.style.opacity = '1';
+                    letterEl.style.transform = lift;
+                }
+
+                if (ch) {
+                    slot.classList.add('spell-slot-filled');
+                    slot.style.background = SPELL_FILL_BG;
+                    slot.style.boxShadow = 'none';
+                    if (lineEl) lineEl.style.display = 'none';
+                    if (letterEl) {
+                        letterEl.style.display = 'flex';
+                        letterEl.style.alignItems = 'center';
+                        letterEl.style.justifyContent = 'center';
+                        letterEl.style.lineHeight = '1';
+                        letterEl.style.width = '100%';
+                        letterEl.style.height = '100%';
+                    }
                 } else {
-                    slot.textContent = ch;
-                    if (ch) slot.style.color = spellLetterColor(ch);
+                    slot.classList.remove('spell-slot-filled');
+                    slot.style.background = 'transparent';
+                    slot.style.boxShadow = 'none';
+                    if (lineEl) {
+                        lineEl.style.display = 'block';
+                        lineEl.style.background = '#35654D';
+                    }
                 }
             });
 
-            const letterTiles = document.querySelectorAll('.letter-tile');
-            letterTiles.forEach((tile, index) => {
-                if (spellingGameState.scrambledLetters[index] === null) {
+            document.querySelectorAll('.letter-tile').forEach((tile, index) => {
+                const letter = spellingGameState.scrambledLetters[index];
+                if (letter === null || letter === undefined) {
                     tile.style.visibility = 'hidden';
-                } else {
-                    const letter = spellingGameState.scrambledLetters[index];
-                    tile.style.visibility = 'visible';
-                    tile.textContent = letter;
-                    // Re-apply color + light-green tile chrome every update
-                    tile.style.color = spellLetterColor(letter);
-                    tile.style.background = '#f0f8f3';
-                    tile.style.border = '2px solid #a8d5b5';
-                    tile.style.borderRadius = '10px';
+                    return;
                 }
+                tile.style.visibility = 'visible';
+                let inner = tile.querySelector('.letter-tile-ch');
+                if (!inner) {
+                    tile.textContent = '';
+                    inner = document.createElement('span');
+                    inner.className = 'letter-tile-ch';
+                    inner.style.cssText = `display:flex;align-items:center;justify-content:center;line-height:1;transform:${lift};`;
+                    tile.appendChild(inner);
+                }
+                inner.textContent = letter;
+                inner.style.transform = lift;
+                tile.style.color = spellLetterColor(letter);
+                tile.style.background = SPELL_FILL_BG;
             });
 
-            // Confirm button when every letter slot is filled
+            const clearBtn = document.getElementById('spellClearBtn');
+            if (clearBtn) {
+                const hasPlaced = spellingGameState.answerSlots.some(isSpellLetter);
+                clearBtn.style.display = 'inline-flex';
+                clearBtn.style.visibility = hasPlaced ? 'visible' : 'hidden';
+                clearBtn.style.opacity = hasPlaced ? '1' : '0';
+                clearBtn.style.pointerEvents = hasPlaced ? 'auto' : 'none';
+            }
+
             const checkBtn = document.getElementById('checkBtn');
             if (checkBtn) {
-                const allFilled = spellingGameState.answerSlots.every(
-                    s => s !== null && s !== undefined
-                );
-                checkBtn.style.display = allFilled ? 'flex' : 'none';
+                const allFilled = spellingGameState.answerSlots.every(s => s !== null && s !== undefined);
+                checkBtn.style.visibility = allFilled ? 'visible' : 'hidden';
+                checkBtn.style.opacity = allFilled ? '1' : '0';
+                checkBtn.style.pointerEvents = allFilled ? 'auto' : 'none';
                 checkBtn.textContent = 'Confirm';
                 checkBtn.style.background = '#35654D';
+                const bank = document.getElementById('letterRow');
+                if (bank) bank.style.visibility = allFilled ? 'hidden' : 'visible';
             }
             if (typeof applySpellLetterFonts === 'function') applySpellLetterFonts();
         }
 
         function peekSpelling(show) {
-            const answerSlots = document.querySelectorAll('.answer-slot');
-            if (show) {
-                const word = spellingGameState.correctWord;
-                const chars = word.split('');
-                let charIdx = 0;
-                answerSlots.forEach(slot => {
-                    const idx = parseInt(slot.getAttribute('data-index'));
-                    const slotVal = spellingGameState.answerSlots[idx];
-                    const letterEl = slot.querySelector('.answer-letter') || slot;
-                    if (slotVal === 'SPACE' || slotVal === 'HYPHEN') {
-                        if (letterEl) letterEl.textContent = '\u00a0';
-                        return;
-                    }
-                    // advance through word chars skipping spaces/hyphens already in slot model
-                    while (charIdx < chars.length && (chars[charIdx] === ' ' || chars[charIdx] === '-')) charIdx++;
-                    const peekCh = chars[charIdx] || '';
-                    letterEl.textContent = peekCh || '\u00a0';
-                    letterEl.style.color = peekCh ? spellLetterColor(peekCh) : '#35654D';
-                    letterEl.style.opacity = '0.55';
-                    charIdx++;
-                });
-            } else {
-                answerSlots.forEach(slot => {
-                    const idx = parseInt(slot.getAttribute('data-index'));
-                    const value = spellingGameState.answerSlots[idx];
-                    const letterEl = slot.querySelector('.answer-letter') || slot;
-                    const ch = (value === 'SPACE' || value === 'HYPHEN' || value === null) ? '' : value;
-                    letterEl.textContent = ch || '\u00a0';
-                    letterEl.style.color = ch ? spellLetterColor(ch) : '#1a1a1a';
-                    letterEl.style.opacity = '1';
-                });
+            if (!show) {
+                renderSpellingGameState();
+                return;
             }
+            const chars = (spellingGameState.correctWord || '').split('');
+            let charIdx = 0;
+            document.querySelectorAll('.answer-slot').forEach(slot => {
+                const idx = parseInt(slot.getAttribute('data-index'), 10);
+                const slotVal = spellingGameState.answerSlots[idx];
+                const letterEl = slot.querySelector('.answer-letter') || slot;
+                const lineEl = slot.querySelector('.answer-underline');
+                if (isSpellSeparator(slotVal)) {
+                    if (letterEl) letterEl.textContent = '\u00a0';
+                    return;
+                }
+                while (charIdx < chars.length && (chars[charIdx] === ' ' || chars[charIdx] === '-')) charIdx++;
+                const peekCh = chars[charIdx] || '';
+                letterEl.textContent = peekCh || '\u00a0';
+                letterEl.style.color = peekCh ? spellLetterColor(peekCh) : '#35654D';
+                letterEl.style.opacity = '0.55';
+                if (peekCh) {
+                    slot.style.background = SPELL_FILL_BG;
+                    if (lineEl) lineEl.style.display = 'none';
+                }
+                charIdx++;
+            });
         }
 
         function checkSpelling() {
-            const answer = spellingGameState.answerSlots.map(slot => slot === 'SPACE' ? ' ' : slot === 'HYPHEN' ? '-' : slot).join('');
-            const correct = spellingGameState.correctWord;
+            const answer = spellingGameState.answerSlots.map(slot =>
+                slot === 'SPACE' ? ' ' : slot === 'HYPHEN' ? '-' : slot
+            ).join('');
 
-            if (answer === correct) {
+            if (answer === spellingGameState.correctWord) {
                 playSound('correctSound');
-                spellingGameState.spelledCards.add(spellingGameState.currentCardIndex);
+                ensureSpellSets();
+                const doneIdx = spellingGameState.currentCardIndex;
+                spellingGameState.spelledCards.add(doneIdx);
+                spellingGameState.skippedCards.delete(doneIdx);
                 setTimeout(() => spellingNextCard(), 400);
-            } else {
-                playSound('errorSound');
+                return;
+            }
 
-                // Flash Confirm button red then restore
-                const checkBtn = document.getElementById('checkBtn');
-                if (checkBtn) {
-                    checkBtn.style.background = '#ff1744';
-                    checkBtn.textContent = 'Try again';
-                    setTimeout(() => {
-                        checkBtn.style.background = '#35654D';
-                        checkBtn.textContent = 'Confirm';
-                    }, 1000);
-                }
-
-                const contentEl = document.getElementById('spellingGameContent');
-                if (contentEl) { contentEl.style.animation = 'shake 0.5s'; setTimeout(() => { contentEl.style.animation = ''; }, 500); }
+            playSound('errorSound');
+            const checkBtn = document.getElementById('checkBtn');
+            if (checkBtn) {
+                checkBtn.style.background = '#ff1744';
+                checkBtn.textContent = 'Try again';
+                setTimeout(() => {
+                    checkBtn.style.background = '#35654D';
+                    checkBtn.textContent = 'Confirm';
+                }, 1000);
+            }
+            const contentEl = document.getElementById('spellingGameContent');
+            if (contentEl) {
+                contentEl.style.animation = 'shake 0.5s';
+                setTimeout(() => { contentEl.style.animation = ''; }, 500);
             }
         }
 
