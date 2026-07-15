@@ -29,18 +29,16 @@
 
     <title>FlashABC</title>
     <!--
-      Spell Me fonts (one file):
-        Edge (incl. iPad Edge) → Fredoka (999 original), with iPad system fallbacks
-        Chrome / Safari / others → Comic Neue (1006-b)
-      NOTE: Impact / Arial Black do NOT exist on iPad — that is why earlier "tests" looked unchanged.
+      Letter fonts (Spell Me + main study cards share one stack):
+        Edge (incl. iPad Edge) → Fredoka 400
+        Chrome / Safari / others → Comic Neue 700
+      Main card page matches Spell Me (not the other way around).
     -->
     <script>
         (function () {
             var ua = navigator.userAgent || '';
-            // iPadOS desktop-mode Safari/Edge often reports as Macintosh + touch
             var isIOS = /iPad|iPhone|iPod/.test(ua) ||
                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            // Edge on all platforms: Edg/ (desktop), EdgiOS/ (iPhone/iPad), EdgA/ (Android)
             var isEdge = /Edg\/|EdgA\/|EdgiOS\/|Edge\//.test(ua);
             window.SPELL_IS_EDGE = isEdge;
             window.SPELL_IS_IOS = isIOS;
@@ -48,21 +46,22 @@
             if (isIOS) document.documentElement.classList.add('is-ios');
 
             if (isEdge) {
-                // 999 original look = Fredoka. On iPad, also list Apple chalk fonts so
-                // something clearly non-Fredoka still appears if Google Fonts is blocked.
                 window.SPELL_LETTER_FONT = 'Fredoka, "Chalkboard SE", "Marker Felt", Arial, sans-serif';
                 window.SPELL_LETTER_WEIGHT = '400';
             } else {
                 window.SPELL_LETTER_FONT = 'Comic Neue, "Comic Sans MS", "Chalkboard SE", cursive, sans-serif';
                 window.SPELL_LETTER_WEIGHT = '700';
             }
+            // CSS variables so main cards + Spell Me stay in sync
+            document.documentElement.style.setProperty('--spell-letter-font', window.SPELL_LETTER_FONT);
+            document.documentElement.style.setProperty('--spell-letter-weight', window.SPELL_LETTER_WEIGHT);
         })();
 
         /** Force font on every spelling letter node (CSS alone is unreliable). */
         function applySpellLetterFonts() {
             var font = window.SPELL_LETTER_FONT || 'Fredoka, Arial, sans-serif';
             var weight = window.SPELL_LETTER_WEIGHT || '400';
-            var sel = '#spellingGameModal .answer-letter, #spellingGameModal .letter-tile, #spellingGameModal .answer-hyphen, #spellingGameModal #checkBtn';
+            var sel = '#spellingGameModal .answer-letter, #spellingGameModal .letter-tile, #spellingGameModal .letter-tile-ch, #spellingGameModal .answer-hyphen, #spellingGameModal #checkBtn';
             try {
                 document.querySelectorAll(sel).forEach(function (el) {
                     el.style.setProperty('font-family', font, 'important');
@@ -72,14 +71,30 @@
                 try { console.error('applySpellLetterFonts', e); } catch (e2) {}
             }
         }
+
+        /** Apply the same Spell Me font to main study-card text nodes. */
+        function applyCardLetterFonts() {
+            var font = window.SPELL_LETTER_FONT || 'Fredoka, Arial, sans-serif';
+            var weight = window.SPELL_LETTER_WEIGHT || '400';
+            var sel = '.card-text, .card-text-auto-scale, .card-front-text, .card-char-label, .card-front-text .vowel, .card-text .vowel, .vowel';
+            try {
+                document.querySelectorAll(sel).forEach(function (el) {
+                    el.style.setProperty('font-family', font, 'important');
+                    el.style.setProperty('font-weight', weight, 'important');
+                });
+            } catch (e) {
+                try { console.error('applyCardLetterFonts', e); } catch (e2) {}
+            }
+        }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=Comic+Neue:wght@400;700&family=Dancing+Script:wght@700&family=Fredoka:wght@400;500;600&family=Great+Vibes&display=swap" rel="stylesheet">
     <style>
-        /* Backup CSS — applySpellLetterFonts() is the real enforcer after each render */
+        /* Spell Me + main cards share --spell-letter-font / weight (set in head script) */
         html.is-edge #spellingGameModal .answer-letter,
         html.is-edge #spellingGameModal .letter-tile,
+        html.is-edge #spellingGameModal .letter-tile-ch,
         html.is-edge #spellingGameModal .answer-hyphen,
         html.is-edge #spellingGameModal #checkBtn {
             font-family: Fredoka, "Chalkboard SE", "Marker Felt", Arial, sans-serif !important;
@@ -87,10 +102,22 @@
         }
         html.is-other-browser #spellingGameModal .answer-letter,
         html.is-other-browser #spellingGameModal .letter-tile,
+        html.is-other-browser #spellingGameModal .letter-tile-ch,
         html.is-other-browser #spellingGameModal .answer-hyphen,
         html.is-other-browser #spellingGameModal #checkBtn {
             font-family: "Comic Neue", "Comic Sans MS", "Chalkboard SE", cursive, sans-serif !important;
             font-weight: 700 !important;
+        }
+        /* Main study cards — match Spell Me font stack */
+        .card-text,
+        .card-text-auto-scale,
+        .card-front-text,
+        .card-char-label,
+        .card-front-text .vowel,
+        .card-text .vowel,
+        .vowel {
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
+            font-weight: var(--spell-letter-weight, 400) !important;
         }
 
         /* Spell Me: per-button frosted glass + answer-slot states */
@@ -146,10 +173,312 @@
             background: #e8f5e9 !important;
             box-shadow: inset 0 0 0 2px rgba(53, 101, 77, 0.35);
         }
+        /* Filled answer tiles + bank tiles: fill paints full box; glyphs stay inside. */
+        #spellingGameModal .answer-slot {
+            border: 2px solid transparent;
+            border-radius: 10px;
+            background-clip: border-box;
+            -webkit-background-clip: border-box;
+            overflow: hidden; /* keep fill boundary clean; font size sized to fit descenders */
+        }
         #spellingGameModal .answer-slot.spell-slot-filled {
             background: #f0f8f3 !important;
             box-shadow: none;
+            border: 2px solid transparent !important;
+            border-radius: 10px !important;
+            background-clip: border-box;
+            -webkit-background-clip: border-box;
+            overflow: hidden;
+        }
+        #spellingGameModal .letter-tile {
+            border: 2px solid transparent;
             border-radius: 10px;
+            background: #f0f8f3;
+            background-clip: border-box;
+            -webkit-background-clip: border-box;
+            overflow: hidden;
+            box-sizing: border-box;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+        /* Shared glyph box: flex-center every letter the same way (g/y/p match a/e/n). */
+        #spellingGameModal .letter-tile-ch,
+        #spellingGameModal .answer-letter {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            line-height: 1 !important;
+            /* Mid lift: between previous (-0.03em) and too-high (-0.10em) */
+            transform: translateY(-0.065em);
+            overflow: visible;
+            box-sizing: border-box;
+        }
+        #spellingGameModal #spellLetterBank,
+        #spellingGameModal #letterRow,
+        #spellingGameModal #answerRow {
+            overflow: visible !important;
+        }
+
+        /* Spell Me responsive shell — override global landscape 85% shrink on #spellingGameContent */
+        #spellingGameModal {
+            --spell-tool-gutter: 58px;
+        }
+        #spellingGameModal #spellingGameContent {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding-left: 12px;
+            padding-right: 12px;
+            box-sizing: border-box;
+        }
+        /* Desktop: wider shell so landscape side-by-side has room for image + tiles */
+        @media (min-width: 900px) and (min-height: 640px) {
+            #spellingGameModal #spellingGameContent {
+                width: min(1100px, 96vw) !important;
+                max-width: 1100px !important;
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+            #spellingGameModal .spell-glass-btn {
+                width: 48px;
+                height: 48px;
+            }
+            #spellingGameModal #spellTopBar .spell-glass-btn {
+                width: 44px;
+                height: 44px;
+            }
+        }
+        /* Phone / short landscape: full width, tighter chrome */
+        @media (orientation: landscape) and (max-height: 700px) {
+            #spellingGameModal #spellingGameContent {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+            #spellingGameModal .spell-glass-btn {
+                width: 42px;
+                height: 42px;
+            }
+            #spellingGameModal #spellingBottomBar {
+                padding-top: 2px !important;
+                padding-bottom: 4px !important;
+            }
+            #spellingGameModal #spellingBottomBar span {
+                font-size: 0.78rem !important;
+            }
+        }
+        #spellingGameModal #spellingCard {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        #spellingGameModal #spellMain.spell-main-row {
+            flex: 1 1 auto;
+            min-height: 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 10px;
+            height: 100%;
+        }
+        #spellingGameModal #spellMain.spell-main-col {
+            flex: 1 1 auto;
+            min-height: 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            height: 100%;
+        }
+        #spellingGameModal #spellingImgWrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            min-height: 0;
+            position: relative;
+        }
+        /* Fill the wrap like 973 — large image, contain without letterboxing waste */
+        #spellingGameModal #spellingImgWrap #spellingImg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            object-position: center;
+            border-radius: 12px;
+        }
+        /*
+         * Landscape side-by-side: word-length tiers + hard min-width on spell column
+         * so the image never squeezes 6–8 letter / multi-word answer rows.
+         */
+        #spellingGameModal #spellMain.spell-main-row #spellingImgWrap {
+            align-self: stretch;
+            height: auto;
+            min-width: 0;
+        }
+        #spellingGameModal #spellMain.spell-main-row #spellColumn {
+            /* Floor: never narrower than ~38% or 280px (whichever is smaller on tiny screens) */
+            min-width: min(280px, 38%);
+            justify-content: center !important;
+        }
+        /* Short ≤5 letters: large image (~58%) */
+        #spellingGameModal #spellMain.spell-main-row.spell-tier-short #spellingImgWrap {
+            flex: 1 1 58%;
+            min-width: 0;
+            max-width: none;
+        }
+        #spellingGameModal #spellMain.spell-main-row.spell-tier-short #spellColumn {
+            flex: 0 1 42%;
+            max-width: 48%;
+        }
+        /* Medium 6–8 letters or multi-word: balanced (~45% image) */
+        #spellingGameModal #spellMain.spell-main-row.spell-tier-medium #spellingImgWrap {
+            flex: 0 1 45%;
+            min-width: 0;
+            max-width: 48%;
+        }
+        #spellingGameModal #spellMain.spell-main-row.spell-tier-medium #spellColumn {
+            flex: 1 1 55%;
+            max-width: 62%;
+            min-width: min(300px, 40%);
+        }
+        /* Long / portrait stack */
+        #spellingGameModal #spellMain.spell-main-col #spellingImgWrap {
+            flex: 1 1 auto;
+            width: 100%;
+            min-height: 0;
+        }
+        #spellingGameModal #spellMain.spell-main-col.spell-tier-long #spellingImgWrap {
+            flex: 0 1 auto;
+            max-height: min(42vh, 300px);
+        }
+        #spellingGameModal #spellMain.spell-main-col #spellColumn {
+            flex: 0 0 auto;
+            width: 100%;
+            margin-top: auto;
+        }
+        /* Progress: original corners (index left, dots right) — never centered with tools */
+        #spellingGameModal #spellProgressBar {
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            right: 12px; /* matched top inset; side-tools override inline when needed */
+            display: flex;
+            align-items: flex-start; /* multi-row dots stack down from top */
+            justify-content: space-between;
+            z-index: 5;
+            pointer-events: none;
+            gap: 8px;
+        }
+        /* Even grid of progress dots: fixed cell size so current/large dots don't skew spacing */
+        #spellingGameModal .spell-dots-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px; /* same as horizontal row gap */
+        }
+        #spellingGameModal .spell-dots-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+        #spellingGameModal .spell-dot-cell {
+            width: 10px;
+            height: 10px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        #spellingGameModal .spell-dot {
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        #spellingGameModal .spell-dot.is-current {
+            width: 10px;
+            height: 10px;
+            box-shadow: 0 0 0 1.5px rgba(85, 85, 85, 0.35);
+        }
+        #spellingGameModal .spell-dot:not(.is-current) {
+            width: 7px;
+            height: 7px;
+        }
+        /* Side-by-side: menu tools top-centered, same top offset as index/dots (8px) */
+        #spellingGameModal #spellTopBar {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: auto;
+            max-width: calc(100% - 120px);
+            min-height: 0;
+            padding: 0;
+            box-sizing: border-box;
+            z-index: 6;
+            pointer-events: none;
+        }
+        #spellingGameModal #spellTopBar #spellingBtnPanel {
+            position: static !important;
+            top: auto !important;
+            right: auto !important;
+            transform: none !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center;
+            justify-content: center;
+            /* Landscape top bar spacing — large screens only (phones stay tight below) */
+            gap: 56px !important;
+            pointer-events: auto;
+        }
+        #spellingGameModal #spellTopBar .spell-glass-btn {
+            width: 40px;
+            height: 40px;
+        }
+        /* Portrait: tools stay on the right edge */
+        #spellingGameModal #spellingBtnPanel.spell-tools-side {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 44px;
+            z-index: 6;
+        }
+        @media (min-width: 900px) {
+            #spellingGameModal #spellingBtnPanel.spell-tools-side {
+                right: 14px;
+                gap: 48px;
+            }
+        }
+        /* Phones: keep compact button spacing (wide gaps are unnecessary on small screens) */
+        @media (max-width: 600px), (max-height: 500px) {
+            #spellingGameModal #spellTopBar #spellingBtnPanel {
+                gap: 10px !important;
+            }
+            #spellingGameModal #spellingBtnPanel.spell-tools-side {
+                gap: 14px !important;
+            }
         }
 
         * {
@@ -743,9 +1072,9 @@
             position: absolute;
             top: 54px;
             left: 10px;
-            font-family: 'Fredoka', Arial, sans-serif !important;
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
             font-size: 9rem !important;
-            font-weight: 400;
+            font-weight: var(--spell-letter-weight, 400) !important;
             color: #1a1a1a;
             line-height: 1;
             pointer-events: none;
@@ -797,9 +1126,9 @@
             align-items: center;
             justify-content: center;
             padding: 6px 10px 4px;
-            font-family: 'Fredoka', Arial, sans-serif !important;
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
             font-size: 6rem;
-            font-weight: 400;
+            font-weight: var(--spell-letter-weight, 400) !important;
             color: #1a1a1a;
             text-align: center;
             line-height: 1.1;
@@ -810,7 +1139,8 @@
         }
 
         .card-front-text .vowel {
-            font-family: 'Fredoka', Arial, sans-serif !important;
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
+            font-weight: var(--spell-letter-weight, 400) !important;
             display: inline;
             white-space: pre-wrap;
         }
@@ -853,8 +1183,8 @@
             font-size: 7.5rem;
             text-align: center;
             margin: 0;
-            font-weight: 400;
-            font-family: 'Fredoka', Arial, sans-serif;
+            font-weight: var(--spell-letter-weight, 400) !important;
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
             line-height: 1.3;
             max-width: 100%;
             width: 100%;
@@ -3841,10 +4171,10 @@
                     <span style="font-size:1.15rem;font-weight:600;color:#e53935;font-family:inherit;">Bomb</span>
                 </button>
 
-                <button onclick="startGame('spelling')"
+                <button id="spellingGameBtn" onclick="startGame('spelling')"
                     style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #1565c0;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1565c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/><line x1="3" y1="21" x2="7" y2="17"/></svg>
-                    <span style="font-size:1.15rem;font-weight:600;color:#1565c0;font-family:inherit;">Spell Me</span>
+                    <span id="spellingGameBtnLabel" style="font-size:1.15rem;font-weight:600;color:#1565c0;font-family:inherit;">Spell Me</span>
                 </button>
 
                 <button onclick="startGame('match')"
@@ -4899,10 +5229,82 @@
             correctWord: ''
         };
 
-        const SPELL_GLYPH_LIFT = 'translateY(-0.08em)';
+        /* Mid lift: between previous (-0.03em) and too-high (-0.10em). */
+        const SPELL_GLYPH_LIFT = 'translateY(-0.065em)';
         const SPELL_FILL_BG = '#f0f8f3';
         const SPELL_DRAG_THRESHOLD = 8;
         const SPELL_CARD_SWIPE_MIN = 60;
+
+        /**
+         * Spell Me layout — option 2: word-length tiers + min spell-column width.
+         *  short  ≤5 letters (single)      → side-by-side, large image (~58%)
+         *  medium 6–8 letters OR multi-word → side-by-side, medium image (~45%), spell min-width
+         *  long   >8 letters (single only) → stack, image top (capped), spelling bottom
+         */
+        function getSpellLayout(opts) {
+            const vw = window.innerWidth || 360;
+            const vh = window.innerHeight || 640;
+            const isCoarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+            const isLandscape = vw > vh;
+            const isDesktop = vw >= 900 && vh >= 600;
+            const isCompact = vh <= 520;
+
+            const word = (opts && opts.word) || '';
+            const lettersOnly = String(word).replace(/[\s-]/g, '');
+            const letterCount = lettersOnly.length;
+            const isMultiWordPhrase = /\s/.test(String(word).trim());
+
+            let spellTier = 'short';
+            if (!isMultiWordPhrase && letterCount > 8) spellTier = 'long';
+            else if (isMultiWordPhrase || letterCount >= 6) spellTier = 'medium';
+
+            const isLongSpell = spellTier === 'long';
+            const sideBySide = isLandscape && !isLongSpell;
+            const toolsTop = sideBySide;
+            const toolsSide = !toolsTop;
+
+            const fsPx = Math.round(Math.min(Math.max(vw * 0.075, 36), 72));
+
+            const toolGutter = toolsSide ? (isCompact ? 50 : (isDesktop ? 64 : 56)) : 12;
+            const mainClass = sideBySide ? 'spell-main-row' : 'spell-main-col';
+            const tierClass = 'spell-tier-' + spellTier;
+            const topChrome = toolsTop ? 56 : 22;
+
+            let imgMaxH = 'none';
+            let imgMinH = sideBySide ? 0 : (isDesktop && !isLandscape ? 200 : (isLandscape ? 0 : 140));
+            if (isLandscape && isLongSpell) {
+                imgMaxH = 'min(42vh, 300px)';
+                imgMinH = 0;
+            }
+
+            return {
+                vw, vh, isLandscape, sideBySide, isLongSpell, spellTier, letterCount,
+                isMultiWordPhrase, isDesktop, isCompact, isCoarse, fsPx,
+                toolsTop, toolsSide, toolGutter, mainClass, tierClass, topChrome,
+                outerPad: isLandscape ? '4px 0 0' : (isDesktop ? '10px 0 0' : '8px 0 0'),
+                cardPad: toolsSide
+                    ? (isDesktop ? `14px ${toolGutter}px 14px 16px` : `12px ${toolGutter}px 12px 12px`)
+                    : (isCompact ? '8px 10px 8px 10px' : '10px 14px 12px 14px'),
+                imgPadTop: toolsTop ? 0 : 22,
+                spellPadTop: sideBySide ? 2 : (isDesktop ? 6 : 2),
+                spellGap: sideBySide ? 4 : 6,
+                imgMinH,
+                imgMaxH,
+                btnRight: isDesktop ? 14 : 10,
+                // Wide button gaps on tablet/PC only. Phones keep compact spacing.
+                // isPhone: short side ≤500px (covers phone portrait + landscape).
+                btnGap: (function () {
+                    var isPhone = Math.min(vw, vh) <= 500;
+                    if (isPhone) {
+                        return toolsTop ? 10 : 14; // compact on phones
+                    }
+                    if (toolsTop) {
+                        return isDesktop ? 64 : 56; // landscape top bar, large screens
+                    }
+                    return isDesktop ? 48 : 44; // portrait side column, large screens
+                })()
+            };
+        }
 
         function isSpellLetter(v) {
             return v !== null && v !== undefined && v !== 'SPACE' && v !== 'HYPHEN';
@@ -11962,6 +12364,7 @@
 
             // Auto-scale text to fit on one line if needed - use requestAnimationFrame for proper timing
             requestAnimationFrame(() => {
+                if (typeof applyCardLetterFonts === 'function') applyCardLetterFonts();
                 scaleTextToFit();
                 applyCardTextScale();
                 scaleFrontText();
@@ -13138,6 +13541,10 @@
                 if (document.getElementById('guessGameModal')?.classList.contains('active')) {
                     rerenderGuessGameForResize();
                 }
+                // Spell Me: reflow layout (stack vs phone-landscape row) without reshuffling letters
+                if (document.getElementById('spellingGameModal')?.style.display === 'flex') {
+                    rerenderSpellingGameForResize();
+                }
             }, 300);
         });
         let resizeTimer;
@@ -13156,6 +13563,10 @@
                 // Re-render guess game on window resize so grid columns update
                 if (document.getElementById('guessGameModal')?.classList.contains('active')) {
                     rerenderGuessGameForResize();
+                }
+                // Spell Me: keep progress; only reflow for mobile/PC layout
+                if (document.getElementById('spellingGameModal')?.style.display === 'flex') {
+                    rerenderSpellingGameForResize();
                 }
             }, 250);
         });
@@ -13432,6 +13843,20 @@
 
     <!-- Deferred game code: parsed only when Games is first opened -->
     <script type="text/plain" id="deferredGameCode">
+        function hasActiveSpellingSession() {
+            try {
+                if (typeof spellingGameState === 'undefined' || !spellingGameState) return false;
+                if (typeof ensureSpellSets === 'function') ensureSpellSets();
+                const g = spellingGameState;
+                if (!g.gameCards || g.gameCards.length === 0) return false;
+                // Finished all words → no continue (use Shuffle / Play Again for a new run)
+                if (g.spelledCards && g.spelledCards.size >= g.gameCards.length) return false;
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
         function openGameMenu() {
             window.speechSynthesis.cancel();
             if (cards.length === 0) {
@@ -13455,6 +13880,12 @@
             } else {
                 guessBtn.innerHTML = `<svg width="36" height="36" viewBox="0 0 38 38" fill="none" stroke="#35654D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="0.9" y="12" width="10" height="14" rx="1.2"/><path d="M4.5 17a1.4 1.4 0 012.5 1c0 1.1-1.2 1.3-1.2 2.2"/><circle cx="5.8" cy="23.5" r="0.55" fill="#35654D" stroke="none"/><rect x="14" y="12" width="10" height="14" rx="1.2"/><rect x="27" y="12" width="10" height="14" rx="1.2"/></svg><span style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word</span>`;
             }
+
+            // Spell Me: show (Continue) when a mid-game session can be resumed
+            const spellLabel = document.getElementById('spellingGameBtnLabel');
+            if (spellLabel) {
+                spellLabel.textContent = hasActiveSpellingSession() ? 'Spell Me (Continue)' : 'Spell Me';
+            }
         }
 
         function closeGameMenu() {
@@ -13462,20 +13893,37 @@
             document.getElementById('gameMenuModal').classList.remove('active');
         }
 
-        function setGuessGridSize(n) {
-            if (cards.length < n) return; // not enough cards for this size
-            if (cards.length < 9) return; // locked to 9-tile mode
-            guessGridSize = n;
-            // Update button styles in the DOM pill (touch portrait)
+        /**
+         * Guess the Word grid sizes.
+         * Size 9 is ALWAYS available: decks with fewer than 9 images still use a 3×3
+         * layout (empty green shells for unused slots). 12/15 need enough cards.
+         */
+        function isGuessSizeAvailable(size) {
+            if (size === 9) return true;
+            return cards.length >= size;
+        }
+
+        function applyGuessSizeButtonStyles(selectedSize) {
+            const n = selectedSize != null ? selectedSize : guessGridSize;
             [9, 12, 15].forEach(size => {
                 const btn = document.getElementById('guessSize' + size);
                 if (!btn) return;
-                const available = cards.length >= size;
-                btn.style.background = size === n ? '#35654D' : 'transparent';
-                btn.style.color      = size === n ? 'white' : (available ? '#666' : '#ccc');
+                const available = isGuessSizeAvailable(size);
+                const selected = size === n;
+                // Selected "9" stays full green even when the deck has fewer than 9 images
+                btn.style.background = selected ? '#35654D' : 'transparent';
+                btn.style.color      = selected ? 'white' : (available ? '#666' : '#ccc');
                 btn.style.cursor     = available ? 'pointer' : 'not-allowed';
-                btn.style.opacity    = available ? '1' : '0.4';
+                btn.style.opacity    = (selected || available) ? '1' : '0.4';
             });
+        }
+
+        function setGuessGridSize(n) {
+            if (!isGuessSizeAvailable(n)) return;
+            // Sub-9 decks stay on the 9-tile layout
+            if (cards.length < 9) n = 9;
+            guessGridSize = n;
+            applyGuessSizeButtonStyles(n);
             // Reset current round so new size takes effect immediately
             guessGameState.currentRoundCards = null;
             guessGameState.correctCards = {};
@@ -13486,13 +13934,12 @@
 
         // Returns inline style string for a grid-size button based on selection & availability
         function guessGridSizeBtnStyle(size, selected) {
-            const available = cards.length >= size;
-            // Sub-9 decks are locked to the 9-tile layout — all buttons disabled
-            const locked = cards.length < 9;
+            const available = isGuessSizeAvailable(size);
             const bg    = selected ? '#35654D' : 'transparent';
-            const color = selected ? 'white' : (available && !locked ? '#666' : '#ccc');
-            const cursor  = (available && !locked) ? 'pointer' : 'not-allowed';
-            const opacity = (available && !locked) ? '1' : '0.4';
+            const color = selected ? 'white' : (available ? '#666' : '#ccc');
+            const cursor  = available ? 'pointer' : 'not-allowed';
+            // Keep selected 9 fully lit green even with fewer than 9 images
+            const opacity = (selected || available) ? '1' : '0.4';
             return `padding:4px 11px; border:none; border-radius:999px; font-size:0.82rem; font-weight:700; cursor:${cursor}; background:${bg}; color:${color}; opacity:${opacity}; transition:all 0.15s;`;
         }
 
@@ -13539,18 +13986,9 @@
                 document.querySelector('.container').style.filter = 'blur(6px)';
                 document.querySelector('.container').style.transition = 'filter 0.3s ease';
                 document.getElementById('guessGameModal').classList.add('active');
-                // Sync grid-size toggle buttons with current guessGridSize and card count
-                const _locked = cards.length < 9;
-                [9, 12, 15].forEach(size => {
-                    const btn = document.getElementById('guessSize' + size);
-                    if (!btn) return;
-                    const available = cards.length >= size;
-                    const selected  = size === guessGridSize;
-                    btn.style.background = selected ? '#35654D' : 'transparent';
-                    btn.style.color      = selected ? 'white' : (available && !_locked ? '#666' : '#ccc');
-                    btn.style.cursor     = (available && !_locked) ? 'pointer' : 'not-allowed';
-                    btn.style.opacity    = (available && !_locked) ? '1' : '0.4';
-                });
+                // Sub-9 decks force 9-tile mode; "9" stays full green in the size menu
+                if (cards.length < 9) guessGridSize = 9;
+                applyGuessSizeButtonStyles(guessGridSize);
                 renderGuessGame();
             } else if (gameType === 'bomb') {
                 // Initialize bomb game
@@ -13578,34 +14016,41 @@
                 document.getElementById('bombGameModal').classList.add('active');
                 renderBombGame();
             } else if (gameType === 'spelling') {
-                // Initialize spelling game
+                // Initialize or continue spelling game
                 if (cards.length === 0) {
                     alert('Please add some cards first!');
                     openGameMenu();
                     return;
                 }
 
-                // Filter cards that have text; cap letter-count to original name limit (60 non-space/hyphen chars)
                 const SPELL_MAX_LETTERS = 60;
-                const cardsWithText = cards.filter(card => {
-                    if (!card.backText || !card.backText.trim()) return false;
-                    const letters = card.backText.trim().replace(/[\s-]/g, '').length;
-                    return letters > 0 && letters <= SPELL_MAX_LETTERS;
-                });
+                const continueSpell = hasActiveSpellingSession();
 
-                if (cardsWithText.length === 0) {
-                    alert('You need cards with text (up to 60 letters) to play Spelling Game!');
-                    openGameMenu();
-                    return;
+                if (!continueSpell) {
+                    // Fresh run: filter + shuffle deck, clear progress and tile placements
+                    const cardsWithText = cards.filter(card => {
+                        if (!card.backText || !card.backText.trim()) return false;
+                        const letters = card.backText.trim().replace(/[\s-]/g, '').length;
+                        return letters > 0 && letters <= SPELL_MAX_LETTERS;
+                    });
+
+                    if (cardsWithText.length === 0) {
+                        alert('You need cards with text (up to 60 letters) to play Spelling Game!');
+                        openGameMenu();
+                        return;
+                    }
+
+                    spellingGameState.gameCards = fisherYatesShuffle(cardsWithText);
+                    resetSpellingProgress();
+                    spellingGameState.scrambledLetters = [];
+                    spellingGameState.answerSlots = [];
+                    spellingGameState.correctWord = '';
                 }
-
-                // Shuffle cards
-                spellingGameState.gameCards = fisherYatesShuffle(cardsWithText);
-                resetSpellingProgress();
+                // Continue: keep gameCards, index, progress dots, scrambled bank, and answer slots
 
                 document.body.style.overflow = 'hidden';
                 document.getElementById('spellingGameModal').style.display = 'flex';
-                renderSpellingGame();
+                renderSpellingGame({ preserveState: continueSpell });
             } else if (gameType === 'match') {
                 if (cards.length === 0) {
                     alert('Please add some cards first!');
@@ -14566,24 +15011,17 @@
             const content = document.getElementById('guessGameContent');
 
             // Auto-clamp grid size if deck has fewer cards than the selected size.
-            // Minimum is always 9 (3x3) — smaller decks still use the 9-tile layout.
-            if (cards.length < guessGridSize) {
+            // Minimum is always 9 (3×3) — smaller decks still use the 9-tile layout
+            // and the "9" menu control stays fully green / selected.
+            if (cards.length < 9) {
+                guessGridSize = 9;
+            } else if (cards.length < guessGridSize) {
                 if (cards.length >= 12) guessGridSize = 12;
                 else guessGridSize = 9;
             }
 
-            // Sync DOM pill button states (touch portrait pill)
-            const _locked = cards.length < 9;
-            [9, 12, 15].forEach(size => {
-                const btn = document.getElementById('guessSize' + size);
-                if (!btn) return;
-                const available = cards.length >= size;
-                const selected  = size === guessGridSize;
-                btn.style.background = selected ? '#35654D' : 'transparent';
-                btn.style.color      = selected ? 'white' : (available && !_locked ? '#666' : '#ccc');
-                btn.style.cursor     = (available && !_locked) ? 'pointer' : 'not-allowed';
-                btn.style.opacity    = (available && !_locked) ? '1' : '0.4';
-            });
+            // Sync DOM pill button states — "9" always fully green when selected
+            applyGuessSizeButtonStyles(guessGridSize);
 
             if (guessGameState.currentCardIndex >= guessGameState.gameCards.length) {
                 // Game over - play winning sound
@@ -14676,20 +15114,16 @@
                             </div>
                         </div>`;
                     } else {
-                        // Empty tile — dotted, or light grey if previously seen this round
-                        const wasSeen = guessGameState.seenCards && guessGameState.seenCards[index];
-                        if (wasSeen) {
-                            cellInner = `<div style="width:100%;height:100%;border-radius:15px;background:rgba(200,200,200,0.35);border:2px solid rgba(200,200,200,0.5);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
-                                <span style="font-size:clamp(1.8rem,6vw,3.5rem);font-weight:800;color:rgba(255,255,255,0.5);">${cardNumber}</span>
-                            </div>`;
-                        } else {
-                            cellInner = `<div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.4);background:transparent;box-sizing:border-box;"></div>`;
-                        }
+                        // Unflipped (incl. previously seen): transparent + dotted boundary only
+                        cellInner = `<div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.4);background:transparent;box-sizing:border-box;"></div>`;
                     }
 
                     gridCells.push(`<div style="position:relative;width:100%;${cellAspect}">${cellInner}</div>`);
                 } else {
-                    gridCells.push(`<div style="width:100%;${cellAspect}"></div>`);
+                    // Unused slots (e.g. card 9 with fewer than 9 images): same transparent dotted shell
+                    gridCells.push(`<div style="position:relative;width:100%;${cellAspect}">
+                        <div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.4);background:transparent;box-sizing:border-box;pointer-events:none;"></div>
+                    </div>`);
                 }
             }
 
@@ -15101,14 +15535,19 @@
         }
 
         function closeSpellingGame() {
+            // Leave spellingGameState intact so menu can show Spell Me (Continue)
             document.getElementById('spellingGameModal').style.display = 'none';
             openGameMenu();
         }
 
         function startNewSpellingGame() {
+            // In-game Shuffle: new order + clear progress and tile placements
             resetSpellingProgress();
-            spellingGameState.gameCards = fisherYatesShuffle(spellingGameState.gameCards);
-            renderSpellingGame();
+            spellingGameState.gameCards = fisherYatesShuffle(spellingGameState.gameCards || []);
+            spellingGameState.scrambledLetters = [];
+            spellingGameState.answerSlots = [];
+            spellingGameState.correctWord = '';
+            renderSpellingGame({ preserveState: false });
         }
 
         // Dots: grey default · larger grey = current · green = done · red = forward-skipped
@@ -15117,6 +15556,49 @@
             if (spellingGameState.spelledCards.has(i)) return '#2ecc71';
             if (spellingGameState.skippedCards.has(i)) return '#e53935';
             return '#ccc';
+        }
+
+        /**
+         * Balanced multi-row layout for progress dots.
+         * Cap row length at maxPerRow (default 15), but distribute evenly so
+         * 16 → 8+8 (not 15+1), 17 → 9+8, 30 → 15+15, 31 → 11+10+10.
+         * Returns array of row lengths that sum to n.
+         */
+        function spellDotRowSizes(n, maxPerRow) {
+            const max = maxPerRow || 15;
+            const total = Math.max(0, n | 0);
+            if (total <= 0) return [];
+            if (total <= max) return [total];
+            const rows = Math.ceil(total / max);
+            const base = Math.floor(total / rows);
+            const rem = total % rows;
+            const sizes = [];
+            for (let r = 0; r < rows; r++) {
+                sizes.push(base + (r < rem ? 1 : 0));
+            }
+            return sizes;
+        }
+
+        /** Build stacked, right-aligned progress dots — equal cell pitch (centers evenly spaced). */
+        function buildSpellingDotsHTML(gameCards, currentCardIndex) {
+            const n = gameCards.length;
+            const rowSizes = spellDotRowSizes(n, 15);
+            let i = 0;
+            const rows = rowSizes.map((count) => {
+                const cells = [];
+                for (let k = 0; k < count; k++, i++) {
+                    const c = spellingDotColor(i);
+                    const isCur = i === currentCardIndex;
+                    // Fixed 10×10 cell for every dot so gaps stay equal even when current is larger
+                    cells.push(
+                        `<div class="spell-dot-cell">` +
+                        `<div class="spell-dot${isCur ? ' is-current' : ''}" style="background:${c};"></div>` +
+                        `</div>`
+                    );
+                }
+                return `<div class="spell-dots-row">${cells.join('')}</div>`;
+            });
+            return `<div class="spell-dots-stack">${rows.join('')}</div>`;
         }
 
         function markSpellingSkippedIfIncomplete(fromIndex) {
@@ -15181,45 +15663,86 @@
                 </div>`;
         }
 
-        function renderSpellingGame() {
+        /** Reflow Spell Me on resize/rotate without reshuffling or clearing the current answer. */
+        let _spellLayoutKey = '';
+        function rerenderSpellingGameForResize() {
+            if (document.getElementById('spellingGameModal')?.style.display !== 'flex') return;
+            if (!spellingGameState.gameCards || !spellingGameState.gameCards.length) return;
+            const content = document.getElementById('spellingGameContent');
+            // Don't stomp the "all done" celebration screen
+            if (content && content.querySelector('h2') && /All words spelled/i.test(content.textContent || '')) return;
+            const word = (spellingGameState.correctWord || (spellingGameState.gameCards[spellingGameState.currentCardIndex] || {}).backText || '').trim();
+            const L = getSpellLayout({ word });
+            const key = [L.mainClass, L.tierClass, L.fsPx, L.sideBySide ? 1 : 0, L.spellTier, L.toolsTop ? 1 : 0, Math.round(L.vw / 40), Math.round(L.vh / 40)].join('|');
+            if (key === _spellLayoutKey && document.getElementById('spellingCard')) return;
+            _spellLayoutKey = key;
+            renderSpellingGame({ preserveState: true });
+        }
+
+        function renderSpellingGame(opts) {
+            const preserveState = !!(opts && opts.preserveState);
             const content = document.getElementById('spellingGameContent');
             const { currentCardIndex, gameCards, spelledCards } = spellingGameState;
+            if (!content || !gameCards || !gameCards.length) return;
 
             const currentCard = gameCards[currentCardIndex];
+            if (!currentCard) return;
             const word = currentCard.backText.trim();
             spellingGameState.correctWord = word;
 
             const words = word.split(/[\s-]/);
             const isMultiWord = words.length > 1;
             const lettersOnly = word.split('').filter(l => l !== ' ' && l !== '-');
-            let scrambled;
-            do { scrambled = fisherYatesShuffle([...lettersOnly]); }
-            while (scrambled.join('') === lettersOnly.join('') && lettersOnly.length > 1);
 
-            const answerSlotsArray = [];
-            const scrambledArray = [];
-            let si = 0;
-            word.split('').forEach(char => {
-                if (char === ' ') answerSlotsArray.push('SPACE');
-                else if (char === '-') answerSlotsArray.push('HYPHEN');
-                else { answerSlotsArray.push(null); scrambledArray.push(scrambled[si++]); }
-            });
+            let answerSlotsArray;
+            let scrambledArray;
+            // Resume: keep answer-line + bank placement when same word is still current
+            const canPreserve = preserveState
+                && Array.isArray(spellingGameState.answerSlots)
+                && Array.isArray(spellingGameState.scrambledLetters)
+                && spellingGameState.answerSlots.length === word.length
+                && (spellingGameState.correctWord === word || !spellingGameState.correctWord)
+                && spellingGameState.scrambledLetters.length >= lettersOnly.length;
 
-            spellingGameState.scrambledLetters = scrambledArray;
-            spellingGameState.answerSlots = answerSlotsArray;
+            if (canPreserve) {
+                answerSlotsArray = spellingGameState.answerSlots;
+                scrambledArray = spellingGameState.scrambledLetters;
+            } else {
+                let scrambled;
+                do { scrambled = fisherYatesShuffle([...lettersOnly]); }
+                while (scrambled.join('') === lettersOnly.join('') && lettersOnly.length > 1);
 
-            const _fsPx = Math.round(Math.min(Math.max(window.innerWidth * 0.075, 36), 72));
-            const lineFS = _fsPx + 'px';
-            // Taller tiles + shared glyph lift for optical center (descenders)
-            const tileH = Math.round(_fsPx * 1.55);
-            const tileW = Math.round(_fsPx * 1.08);
-            const underInset = Math.round(tileW * 0.12);
+                answerSlotsArray = [];
+                scrambledArray = [];
+                let si = 0;
+                word.split('').forEach(char => {
+                    if (char === ' ') answerSlotsArray.push('SPACE');
+                    else if (char === '-') answerSlotsArray.push('HYPHEN');
+                    else { answerSlotsArray.push(null); scrambledArray.push(scrambled[si++]); }
+                });
+
+                spellingGameState.scrambledLetters = scrambledArray;
+                spellingGameState.answerSlots = answerSlotsArray;
+            }
+
+            const layout = getSpellLayout({ word });
+            const _fsPx = layout.fsPx;
+            // Compact tiles; glyph sized so a -0.065em lift still keeps descenders inside.
+            const tileH = Math.round(_fsPx * 1.32);
+            const tileW = Math.round(_fsPx * 0.88);
+            const glyphPx = Math.round(_fsPx * 0.82);
+            const lineFS = glyphPx + 'px';
+            const underInset = Math.round(tileW * 0.14);
+            const underBottom = Math.max(4, Math.round(tileH * 0.12));
             const glyphLift = SPELL_GLYPH_LIFT;
+            const slotGap = 2;
+            const letterGap = layout.sideBySide ? 3 : 4;
+            const radius = Math.max(8, Math.round(tileW * 0.22));
 
             const makeSlot = (idx) => {
                 if (answerSlotsArray[idx] === 'HYPHEN') {
-                    return `<div class="answer-hyphen" style="min-width:18px;display:inline-flex;align-items:center;justify-content:center;height:${tileH}px;padding:0 2px;user-select:none;">
-                        <span class="answer-hyphen" style="font-size:${lineFS};font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Impact, Arial Black, sans-serif'};color:#35654D;line-height:1;">-</span>
+                    return `<div class="answer-hyphen" style="min-width:14px;display:inline-flex;align-items:center;justify-content:center;height:${tileH}px;padding:0 1px;user-select:none;">
+                        <span class="answer-hyphen" style="font-size:${lineFS};font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Fredoka, Arial, sans-serif'};color:#35654D;line-height:1;">-</span>
                     </div>`;
                 }
                 // Empty = green underline. Filled = box. Same outer size either way.
@@ -15234,45 +15757,67 @@
                        display:inline-flex;align-items:center;justify-content:center;
                        cursor:pointer;overflow:hidden;touch-action:none;padding:0;
                        user-select:none;box-sizing:border-box;
-                       background:transparent;border-radius:10px;position:relative;">
-                    <span class="answer-letter" style="font-size:${lineFS};line-height:1;font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Impact, Arial Black, sans-serif'};
+                       background:transparent;border:2px solid transparent;border-radius:${radius}px;
+                       background-clip:border-box;-webkit-background-clip:border-box;position:relative;">
+                    <span class="answer-letter" style="font-size:${lineFS};line-height:1;font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Fredoka, Arial, sans-serif'};
                            color:#1a1a1a;display:flex;align-items:center;justify-content:center;
                            width:100%;height:100%;margin:0;padding:0;box-sizing:border-box;position:relative;z-index:1;
-                           transform:${glyphLift};">&nbsp;</span>
-                    <span class="answer-underline" style="position:absolute;left:${underInset}px;right:${underInset}px;bottom:${Math.round(tileH * 0.16)}px;height:3px;background:#35654D;border-radius:2px;z-index:0;"></span>
+                           overflow:visible;transform:${glyphLift};">&nbsp;</span>
+                    <span class="answer-underline" style="position:absolute;left:${underInset}px;right:${underInset}px;bottom:${underBottom}px;height:2px;background:#35654D;border-radius:2px;z-index:0;"></span>
                 </div>`;
             };
 
-            // Clear icon: letter scale, icon only. Sits in a right-side grid cell so the
-            // blanks stay truly centered (button space is mirrored on the left).
+            // Clear / undo icon. In side-by-side landscape it sits centered ABOVE the answer
+            // line so the full 8-letter row keeps full width (no side column stealing space).
+            // In portrait / stacked modes it stays beside the last answer row (mirrored columns).
             const clearIconSz = Math.round(_fsPx * 0.72);
             const clearColW = tileW + 4; // reserved column width (matches letter footprint)
+            // Landscape (clear above): slightly smaller control. Portrait (beside last tile): full tile size.
+            const clearBtnH = layout.isLandscape ? Math.round(tileH * 0.72) : tileH;
+            const clearBtnW = layout.isLandscape ? Math.round(tileW * 0.72) : tileW;
+            const clearIconDraw = layout.isLandscape ? Math.round(clearIconSz * 0.85) : clearIconSz;
             const clearBtnHTML = `<button type="button" id="spellClearBtn" onclick="event.stopPropagation();clearSpellingAnswer()"
                 title="Clear all letters"
                 style="display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;
-                       width:${tileW}px;height:${tileH}px;padding:0;margin:0;
+                       width:${clearBtnW}px;height:${clearBtnH}px;padding:0;margin:0;
                        background:transparent;border:none;border-radius:0;box-shadow:none;
                        cursor:pointer;touch-action:manipulation;color:#888;box-sizing:border-box;
                        visibility:hidden;opacity:0;pointer-events:none;">
-                <svg width="${clearIconSz}" height="${clearIconSz}" viewBox="0 0 24 24" fill="none"
+                <svg width="${clearIconDraw}" height="${clearIconDraw}" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;">
                     <polyline points="1 4 1 10 7 10"/>
                     <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
                 </svg>
             </button>`;
-            // Equal side columns (same width as clear control) so the blanks sit on true center.
-            // Previous 1fr|auto|tile pushed the row one tile to the RIGHT.
+            // Portrait: clear/undo sits to the right of the last answer tile (mirrored empty
+            // column on the left so blanks stay centered). Landscape: clear stays above.
+            // Portrait: clear beside last tile — equal side gaps so blanks stay centered
+            // with a bit more air between the answer line and the undo control.
+            const clearBesideGap = Math.max(10, Math.round(tileW * 0.28));
             const lastRowWithClear = (innerHTML) =>
-                `<div style="display:grid;grid-template-columns:${clearColW}px auto ${clearColW}px;align-items:center;justify-content:center;width:fit-content;max-width:100%;margin:0 auto;box-sizing:border-box;">
+                `<div style="display:grid;grid-template-columns:${clearColW}px auto ${clearColW}px;column-gap:${clearBesideGap}px;align-items:center;justify-content:center;width:fit-content;max-width:100%;margin:0 auto;box-sizing:border-box;">
                     <div aria-hidden="true" style="width:${clearColW}px;height:1px;"></div>
-                    <div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap;">${innerHTML}</div>
+                    <div style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;min-width:0;max-width:100%;">${innerHTML}</div>
                     <div style="display:flex;align-items:center;justify-content:center;width:${clearColW}px;height:${tileH}px;">${clearBtnHTML}</div>
                  </div>`;
+            // Landscape: clear centered over the answer line; slots wrap when needed
+            const answerWithClearAbove = (slotsInnerHTML) =>
+                `<div id="answerRow" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;width:100%;max-width:100%;overflow:visible;box-sizing:border-box;">
+                    <div style="display:flex;align-items:center;justify-content:center;width:100%;min-height:${clearBtnH}px;margin-bottom:1px;">
+                        ${clearBtnHTML}
+                    </div>
+                    <div style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;max-width:100%;margin:0 auto;box-sizing:border-box;">
+                        ${slotsInnerHTML}
+                    </div>
+                 </div>`;
 
-            let answerRowsHTML = '';
-            if (isMultiWord) {
+            // Letter-to-letter gap stays tight (slotGap). Between words use a wider gap
+            // so multi-word phrases stay readable on the same row.
+            const wordGap = layout.isLandscape ? 22 : 28;
+
+            const buildWordGroups = () => {
                 let slotIndex = 0;
-                const wordGroups = words.map((w, wi) => {
+                return words.map((w, wi) => {
                     const groupSlots = [];
                     for (let ci = 0; ci < w.length; ci++) {
                         groupSlots.push(makeSlot(slotIndex++));
@@ -15280,25 +15825,42 @@
                     if (wi < words.length - 1) {
                         const sep = answerSlotsArray[slotIndex];
                         if (sep === 'HYPHEN') {
-                            groupSlots.push(makeSlot(slotIndex));
+                            groupSlots.push(makeSlot(slotIndex)); // real hyphen in deck word
                         }
-                        slotIndex++;
+                        slotIndex++; // skip SPACE or HYPHEN slot in data model
                     }
-                    return `<div style="display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap;flex-shrink:0;">${groupSlots.join('')}</div>`;
+                    return `<div class="spell-word-group" style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:100%;">${groupSlots.join('')}</div>`;
                 });
+            };
+
+            let answerRowsHTML = '';
+            // Landscape (side-by-side short/medium OR long-word stack): clear ABOVE answer line
+            if (layout.isLandscape) {
+                if (isMultiWord) {
+                    const wordGroups = buildWordGroups();
+                    answerRowsHTML = answerWithClearAbove(
+                        `<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;max-width:100%;">${wordGroups.join('')}</div>`
+                    );
+                } else {
+                    const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
+                    answerRowsHTML = answerWithClearAbove(slots);
+                }
+            } else if (isMultiWord) {
+                // Portrait multi-word: clear beside last row; wider gap between words
+                const wordGroups = buildWordGroups();
                 if (words.length >= 3) {
                     const splitAt = Math.ceil(wordGroups.length / 2);
-                    // First half of words centered; last visual row has clear on the right without shifting tiles
                     answerRowsHTML = `<div id="answerRow" style="display:flex;flex-direction:column;gap:8px;align-items:stretch;justify-content:center;overflow:visible;width:100%;">
-                                          <div style="display:flex;gap:18px;justify-content:center;align-items:center;flex-wrap:wrap;">${wordGroups.slice(0, splitAt).join('')}</div>
-                                          ${lastRowWithClear(`<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">${wordGroups.slice(splitAt).join('')}</div>`)}
+                                          <div style="display:flex;gap:${wordGap}px;row-gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;">${wordGroups.slice(0, splitAt).join('')}</div>
+                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;flex-wrap:wrap;">${wordGroups.slice(splitAt).join('')}</div>`)}
                                       </div>`;
                 } else {
                     answerRowsHTML = `<div id="answerRow" style="width:100%;overflow:visible;">
-                                          ${lastRowWithClear(`<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">${wordGroups.join('')}</div>`)}
+                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;flex-wrap:wrap;">${wordGroups.join('')}</div>`)}
                                       </div>`;
                 }
             } else {
+                // Portrait single word: clear to the right of the last tile
                 const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
                 answerRowsHTML = `<div id="answerRow" style="width:100%;max-width:100%;overflow:visible;">
                                       ${lastRowWithClear(slots)}
@@ -15317,103 +15879,121 @@
                            width:${tileW}px;height:${tileH}px;min-width:${tileW}px;min-height:${tileH}px;
                            font-size:${lineFS};line-height:1;font-weight:${window.SPELL_LETTER_WEIGHT||'400'};
                            padding:0;margin:0;box-sizing:border-box;overflow:hidden;
-                           font-family:${window.SPELL_LETTER_FONT||'Impact, Arial Black, sans-serif'};border-radius:10px;
+                           font-family:${window.SPELL_LETTER_FONT||'Fredoka, Arial, sans-serif'};border-radius:${radius}px;
                            background:${SPELL_FILL_BG};border:2px solid transparent;
+                           background-clip:border-box;-webkit-background-clip:border-box;
+                           -webkit-transform:translateZ(0);transform:translateZ(0);
                            color:${spellLetterColor(letter)};
                            cursor:grab;user-select:none;-webkit-user-select:none;
                            -webkit-user-drag:element;touch-action:none;flex-shrink:0;
                            text-align:center;">
                     <span class="letter-tile-ch" style="display:flex;align-items:center;justify-content:center;
-                          line-height:1;transform:${glyphLift};">${letter}</span></span>`
+                          width:100%;height:100%;line-height:1;overflow:visible;transform:${glyphLift};">${letter}</span></span>`
             ).join('');
 
-            const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-            const cardFlexDir = isLandscape ? 'row' : 'column';
-            const imgFlex = isLandscape ? '0 0 42%' : '1 1 auto';
-            const spellFlex = isLandscape ? '1 1 58%' : '0 0 auto';
+            const L = layout;
+            const imgMaxHCss = L.imgMaxH === 'none' ? '' : `max-height:${L.imgMaxH};`;
+            const checkMinW = L.isCompact ? 130 : 160;
+            const checkPad = L.isCompact ? '10px 20px' : '12px 28px';
+            const checkFs = L.isCompact ? '0.95rem' : '1.05rem';
+            // Keep tool icons close to original glass-btn scale (top bar uses CSS 40px on short landscape)
+            const iconSz = L.toolsTop ? 22 : (L.isCompact ? 22 : 26);
+            const bankGap = letterGap;
+            const speakEsc = currentCard.backText.trim().replace(/'/g, "\\'");
+
+            // Balanced multi-row dots (never a lonely last row like 15+1)
+            const dotsHTML = buildSpellingDotsHTML(gameCards, currentCardIndex);
+
+            const toolsBtnsHTML = `
+                <button type="button" class="spell-glass-btn" onclick="closeSpellingGame()" style="color:#e53935;" title="Back">
+                    <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <button type="button" class="spell-glass-btn" onclick="startNewSpellingGame()" style="color:#35654D;" title="Shuffle">
+                    <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+                </button>
+                <button type="button" class="spell-glass-btn" onclick="event.stopPropagation();speakText('${speakEsc}')" style="color:#ff9500;" title="Say It">
+                    <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                </button>
+                <button type="button" class="spell-glass-btn" onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)" ontouchstart="event.stopPropagation();peekSpelling(true)" ontouchend="event.stopPropagation();peekSpelling(false)" style="color:#9c27b0;" title="Peek">
+                    <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>`;
+
+            // Index left; dots top-right. Same top/right inset (8px) when tools are not on the side.
+            // Portrait with side tools: extra right inset so dots clear the button column.
+            const progressRight = L.toolsSide ? Math.max(L.toolGutter, 12) : 8;
+            const progressHTML = `
+                <div id="spellProgressBar" style="top:8px;right:${progressRight}px;left:12px;">
+                    <span style="color:#555;font-size:0.72rem;font-weight:700;line-height:1.6;background:none;padding:0;padding-top:1px;">
+                        ${currentCardIndex + 1} / ${gameCards.length}
+                    </span>
+                    ${dotsHTML}
+                </div>`;
+
+            // Short landscape only: tools top-centered (separate row under progress)
+            const topToolsHTML = L.toolsTop ? `
+                <div id="spellTopBar">
+                    <div id="spellingBtnPanel" style="background:transparent;border:none;box-shadow:none;gap:${L.btnGap}px !important;">
+                        ${toolsBtnsHTML}
+                    </div>
+                </div>` : '';
+
+            const sideToolsHTML = L.toolsSide ? `
+                <div id="spellingBtnPanel" class="spell-tools-side" style="gap:${L.btnGap}px !important;background:transparent;border:none;box-shadow:none;pointer-events:auto;">
+                    ${toolsBtnsHTML}
+                </div>` : '';
 
             content.innerHTML = `
-                <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;min-height:0;box-sizing:border-box;padding:8px 0 0;">
+                <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;min-height:0;box-sizing:border-box;padding:${L.outerPad};">
 
-                    <div id="spellingCard" style="width:100%;flex:1;min-height:0;background:white;border-radius:20px;
+                    <div id="spellingCard" class="${L.sideBySide ? 'spell-layout-row' : 'spell-layout-stack'}"
+                         style="width:100%;flex:1;min-height:0;background:white;border-radius:20px;
                                 box-shadow:0 10px 40px rgba(0,0,0,0.2);
-                                display:flex;flex-direction:${cardFlexDir};
-                                padding:12px;box-sizing:border-box;overflow:hidden;position:relative;gap:10px;">
+                                padding:${L.cardPad};box-sizing:border-box;overflow:hidden;position:relative;">
 
-                        <!-- Progress: index text only (no grey pill) + dots -->
-                        <div style="position:absolute;top:8px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;z-index:3;pointer-events:none;">
-                            <span style="color:#555;font-size:0.72rem;font-weight:700;line-height:1.6;background:none;padding:0;">
-                                ${currentCardIndex + 1} / ${gameCards.length}
-                            </span>
-                            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;">
-                                ${gameCards.map((_, i) => {
-                                    const c = spellingDotColor(i);
-                                    const isCur = i === currentCardIndex;
-                                    const sz = isCur ? 10 : 7;
-                                    return `<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${c};flex-shrink:0;"></div>`;
-                                }).join('')}
-                            </div>
-                        </div>
+                        ${progressHTML}
+                        ${topToolsHTML}
 
-                        <!-- Image: original large share; spell column below/side is fixed-height content only -->
-                        <div id="spellingImgWrap" style="flex:${imgFlex};min-width:0;min-height:${isLandscape ? '0' : '140px'};position:relative;padding-top:22px;box-sizing:border-box;overflow:hidden;">
-                            <img id="spellingImg" src="${gifSrc(currentCard.frontImage)}"
-                                 style="position:absolute;inset:0;top:22px;width:100%;height:calc(100% - 22px);object-fit:contain;object-position:center;border-radius:12px;display:block;">
-                        </div>
-
-                        <!-- Spelling column: content-sized only (does not steal space from image) -->
-                        <div style="flex:${spellFlex};flex-shrink:0;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding-top:${isLandscape ? '22px' : '4px'};">
-
-                            <!-- Answer blanks; clear icon is embedded on the last word row (right side) -->
-                            <div style="width:100%;flex-shrink:0;padding:4px 6px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;">
-                                ${answerRowsHTML}
+                        <div id="spellMain" class="${L.mainClass} ${L.tierClass}" style="padding-top:${L.toolsTop ? L.topChrome : 0}px;box-sizing:border-box;">
+                            <div id="spellingImgWrap" style="position:relative;padding-top:${L.imgPadTop}px;box-sizing:border-box;overflow:hidden;
+                                        min-height:${L.imgMinH}px;${imgMaxHCss}${L.sideBySide ? '' : 'width:100%;'}">
+                                <img id="spellingImg" src="${gifSrc(currentCard.frontImage)}"
+                                     alt="" draggable="false"
+                                     style="width:100%;height:100%;object-fit:contain;object-position:center;border-radius:12px;display:block;">
                             </div>
 
-                            <!-- Letter bank: fixed height. Confirm overlays the CENTER of this bank
-                                 after letters are placed — never a second row below (no image jump). -->
-                            <!-- Letter bank: no panel background/border — tiles only on white card -->
-                            <div id="spellLetterBank"
-                                 style="width:100%;flex-shrink:0;position:relative;
-                                        border:none;border-radius:0;padding:4px 0;box-sizing:border-box;
-                                        background:transparent;">
-                                <div id="letterRow"
-                                     ondragover="event.preventDefault()"
-                                     ondrop="spellingDragDropToTile(event)"
-                                     style="width:100%;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;
-                                            min-height:${tileH}px;gap:6px;box-sizing:border-box;">
-                                    ${letterSpans}
+                            <div id="spellColumn" style="min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;
+                                        justify-content:${L.sideBySide ? 'center' : 'flex-end'};gap:${L.spellGap}px;
+                                        padding-top:${L.spellPadTop}px;">
+                                <div style="width:100%;flex-shrink:0;padding:4px 4px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:visible;">
+                                    ${answerRowsHTML}
                                 </div>
-                                <button id="checkBtn" onclick="checkSpelling()" type="button"
-                                    style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-                                           display:flex;align-items:center;justify-content:center;gap:8px;z-index:4;
-                                           min-width:160px;padding:12px 28px;border:none;border-radius:999px;cursor:pointer;
-                                           background:#35654D;color:white;font-size:1.05rem;font-weight:700;font-family:inherit;
-                                           box-shadow:0 4px 16px rgba(53,101,77,0.35);touch-action:manipulation;
-                                           transition:opacity 0.15s, background 0.15s;
-                                           visibility:hidden;opacity:0;pointer-events:none;" title="Confirm spelling">
-                                    Confirm
-                                </button>
+                                <div id="spellLetterBank"
+                                     style="width:100%;flex-shrink:0;position:relative;overflow:visible;
+                                            border:none;border-radius:0;padding:4px 2px;box-sizing:border-box;
+                                            background:transparent;">
+                                    <div id="letterRow"
+                                         ondragover="event.preventDefault()"
+                                         ondrop="spellingDragDropToTile(event)"
+                                         style="width:100%;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;
+                                                min-height:${tileH}px;gap:${bankGap}px;box-sizing:border-box;overflow:visible;
+                                                padding:2px 0;">
+                                        ${letterSpans}
+                                    </div>
+                                    <button id="checkBtn" onclick="checkSpelling()" type="button"
+                                        style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+                                               display:flex;align-items:center;justify-content:center;gap:8px;z-index:4;
+                                               min-width:${checkMinW}px;padding:${checkPad};border:none;border-radius:999px;cursor:pointer;
+                                               background:#35654D;color:white;font-size:${checkFs};font-weight:700;font-family:inherit;
+                                               box-shadow:0 4px 16px rgba(53,101,77,0.35);touch-action:manipulation;
+                                               transition:opacity 0.15s, background 0.15s;
+                                               visibility:hidden;opacity:0;pointer-events:none;" title="Confirm spelling">
+                                        Confirm
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Side tools: centered on full card, inset from right edge -->
-                        <div id="spellingBtnPanel" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);
-                                    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-                                    width:auto;padding:0;box-sizing:border-box;z-index:6;
-                                    background:transparent;border:none;box-shadow:none;pointer-events:auto;">
-                            <button type="button" class="spell-glass-btn" onclick="closeSpellingGame()" style="color:#e53935;" title="Back">
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                            </button>
-                            <button type="button" class="spell-glass-btn" onclick="startNewSpellingGame()" style="color:#35654D;" title="Shuffle">
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-                            </button>
-                            <button type="button" class="spell-glass-btn" onclick="event.stopPropagation();speakText('${currentCard.backText.trim().replace(/'/g, "\\'")}')" style="color:#ff9500;" title="Say It">
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-                            </button>
-                            <button type="button" class="spell-glass-btn" onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)" ontouchstart="event.stopPropagation();peekSpelling(true)" ontouchend="event.stopPropagation();peekSpelling(false)" style="color:#9c27b0;" title="Peek">
-                                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </button>
-                        </div>
+                        ${sideToolsHTML}
 
                     </div>
                 </div>`;
@@ -15421,13 +16001,27 @@
             renderSpellingGameState();
             if (typeof applySpellLetterFonts === 'function') applySpellLetterFonts();
 
-            // Card swipe (not on letter tiles): left = next, right = prev
+            // Remember layout so resize handler can skip no-op reflows
+            try {
+                const _L = getSpellLayout({ word });
+                _spellLayoutKey = [_L.mainClass, _L.tierClass, _L.fsPx, _L.sideBySide ? 1 : 0, _L.spellTier, _L.toolsTop ? 1 : 0, Math.round(_L.vw / 40), Math.round(_L.vh / 40)].join('|');
+            } catch (e) { /* ignore */ }
+
+            // Card swipe only OUTSIDE tiles / answer line / letter bank (never steal letter drags)
             const _card = document.getElementById('spellingCard');
             if (_card) {
                 let sx = 0, sy = 0, active = false;
-                const onLetter = (t) => t.closest('.letter-tile') || t.closest('.answer-slot');
+                const inSpellPlayArea = (t) => !!(t && (
+                    t.closest('.letter-tile') ||
+                    t.closest('.answer-slot') ||
+                    t.closest('#answerRow') ||
+                    t.closest('#spellLetterBank') ||
+                    t.closest('#letterRow') ||
+                    t.closest('#spellClearBtn') ||
+                    t.closest('#checkBtn')
+                ));
                 _card.addEventListener('touchstart', (e) => {
-                    if (onLetter(e.target)) return;
+                    if (inSpellPlayArea(e.target)) { active = false; return; }
                     sx = e.touches[0].clientX; sy = e.touches[0].clientY; active = true;
                 }, { passive: true });
                 _card.addEventListener('touchend', (e) => {
@@ -15441,7 +16035,7 @@
                 }, { passive: true });
                 let mx = 0, md = false;
                 _card.addEventListener('mousedown', (e) => {
-                    if (onLetter(e.target)) return;
+                    if (inSpellPlayArea(e.target)) { md = false; return; }
                     mx = e.clientX; md = true;
                 });
                 _card.addEventListener('mouseup', (e) => {
@@ -15519,8 +16113,90 @@
 
         function spellingDragStart(e, index, type) {
             _spellDragSource = { type, index };
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', index);
+            try {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(index));
+            } catch (err) { /* some browsers */ }
+        }
+
+        /** Place a bank tile letter into destSlotIdx (swap if occupied). */
+        function placeTileOnSlot(tileIndex, destSlotIdx) {
+            if (destSlotIdx == null || isNaN(destSlotIdx)) return false;
+            const letter = spellingGameState.scrambledLetters[tileIndex];
+            if (letter === null || letter === undefined) return false;
+            if (isSpellSeparator(spellingGameState.answerSlots[destSlotIdx])) return false;
+            const existing = spellingGameState.answerSlots[destSlotIdx];
+            if (isSpellLetter(existing)) {
+                const emptyIdx = spellingGameState.scrambledLetters.findIndex(l => l === null);
+                if (emptyIdx !== -1) spellingGameState.scrambledLetters[emptyIdx] = existing;
+                else {
+                    spellingGameState.scrambledLetters.push(existing);
+                }
+            }
+            spellingGameState.answerSlots[destSlotIdx] = letter;
+            spellingGameState.scrambledLetters[tileIndex] = null;
+            return true;
+        }
+
+        /**
+         * Robust drop target: exact hit, stacked elements, nearest empty slot,
+         * or first empty when pointer is over the answer row (fixes last-letter misses).
+         */
+        function findSpellAnswerSlotAt(clientX, clientY) {
+            const hitTest = (x, y) => {
+                const stack = (typeof document.elementsFromPoint === 'function')
+                    ? document.elementsFromPoint(x, y)
+                    : [document.elementFromPoint(x, y)].filter(Boolean);
+                for (let i = 0; i < stack.length; i++) {
+                    const el = stack[i];
+                    if (!el || !el.closest) continue;
+                    const slot = el.closest('.answer-slot');
+                    if (slot && slot.closest('#spellingGameModal')) return slot;
+                }
+                return null;
+            };
+
+            let slotEl = hitTest(clientX, clientY);
+            if (slotEl) return slotEl;
+
+            // Near-miss padding (wrapped last slot / finger offset)
+            const pads = [0, 12, -12, 24, -24];
+            for (let i = 0; i < pads.length && !slotEl; i++) {
+                for (let j = 0; j < pads.length && !slotEl; j++) {
+                    if (i === 0 && j === 0) continue;
+                    slotEl = hitTest(clientX + pads[i], clientY + pads[j]);
+                }
+            }
+            if (slotEl) return slotEl;
+
+            // Nearest empty answer slot by center distance (helps final letter)
+            const slots = document.querySelectorAll('#spellingGameModal .answer-slot');
+            let best = null, bestDist = 56; // px radius
+            slots.forEach((slot) => {
+                const idx = parseInt(slot.getAttribute('data-index'), 10);
+                if (isSpellSeparator(spellingGameState.answerSlots[idx])) return;
+                // Prefer empty slots for bank→answer drops; still allow any if all filled
+                const r = slot.getBoundingClientRect();
+                const cx = r.left + r.width / 2;
+                const cy = r.top + r.height / 2;
+                const d = Math.hypot(clientX - cx, clientY - cy);
+                const emptyBoost = spellingGameState.answerSlots[idx] == null ? 0 : 18;
+                if (d + emptyBoost < bestDist) {
+                    bestDist = d + emptyBoost;
+                    best = slot;
+                }
+            });
+            if (best) return best;
+
+            // Over answer row chrome → first empty letter slot
+            const overAnswer = hitTest(clientX, clientY) || document.elementFromPoint(clientX, clientY);
+            if (overAnswer && overAnswer.closest && overAnswer.closest('#answerRow')) {
+                const emptyIdx = spellingGameState.answerSlots.findIndex(s => s === null);
+                if (emptyIdx !== -1) {
+                    return document.querySelector(`#spellingGameModal .answer-slot[data-index="${emptyIdx}"]`);
+                }
+            }
+            return null;
         }
 
         function spellingDragDrop(e, destSlotIdx) {
@@ -15530,15 +16206,7 @@
             _spellDragSource = null;
 
             if (type === 'tile') {
-                const letter = spellingGameState.scrambledLetters[index];
-                if (letter === null) return;
-                const existing = spellingGameState.answerSlots[destSlotIdx];
-                if (isSpellLetter(existing)) {
-                    const emptyIdx = spellingGameState.scrambledLetters.findIndex(l => l === null);
-                    if (emptyIdx !== -1) spellingGameState.scrambledLetters[emptyIdx] = existing;
-                }
-                spellingGameState.answerSlots[destSlotIdx] = letter;
-                spellingGameState.scrambledLetters[index] = null;
+                if (!placeTileOnSlot(index, destSlotIdx)) return;
             } else if (type === 'slot') {
                 const fromLetter = spellingGameState.answerSlots[index];
                 if (!isSpellLetter(fromLetter)) return;
@@ -15557,29 +16225,28 @@
             if (type === 'slot') selectAnswerSlot(index);
         }
 
-        // ---- Touch drag ----
+        // ---- Touch drag (letter placement only — never card swipe) ----
         let _spellTouch = null;
-
-        function _isSpellCardSwipe(dx, dy) {
-            return Math.abs(dx) > SPELL_CARD_SWIPE_MIN && Math.abs(dx) > Math.abs(dy) * 1.5;
-        }
 
         function spellingTouchStart(e, index, type) {
             const letter = type === 'tile'
                 ? spellingGameState.scrambledLetters[index]
                 : spellingGameState.answerSlots[index];
             if (!isSpellLetter(letter)) return;
+            // Don't let the card-level swipe tracker claim this gesture
+            e.stopPropagation();
             const t = e.touches[0];
             const rect = e.currentTarget.getBoundingClientRect();
 
             const ghostSize = Math.max(44, Math.min(rect.width, rect.height));
             const ghost = document.createElement('div');
             ghost.textContent = letter;
+            ghost.setAttribute('aria-hidden', 'true');
             ghost.style.cssText = `position:fixed;z-index:99999;pointer-events:none;
                 width:${ghostSize}px;height:${ghostSize}px;
                 background:white;border-radius:8px;border:2.5px solid #35654D;
                 display:flex;align-items:center;justify-content:center;
-                font-size:1.4rem;font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Impact, Arial Black, sans-serif'};
+                font-size:1.4rem;font-weight:${window.SPELL_LETTER_WEIGHT||'400'};font-family:${window.SPELL_LETTER_FONT||'Fredoka, Arial, sans-serif'};
                 color:#35654D;box-shadow:0 6px 20px rgba(0,0,0,0.35);
                 opacity:0;transition:opacity 0.1s;
                 top:${t.clientY - ghostSize/2}px;left:${t.clientX - ghostSize/2}px;`;
@@ -15589,8 +16256,7 @@
                 type, index, ghost, letter,
                 startX: t.clientX, startY: t.clientY,
                 offX: ghostSize / 2, offY: ghostSize / 2,
-                isDragging: false,
-                isCardSwipe: false
+                isDragging: false
             };
         }
 
@@ -15602,43 +16268,19 @@
             const adx = Math.abs(dx);
             const ady = Math.abs(dy);
 
-            // Horizontal swipe across tiles → card navigation, not letter drag
-            // (long words fill the bank; users often swipe starting on a tile)
-            if (_isSpellCardSwipe(dx, dy)) {
-                _spellTouch.isCardSwipe = true;
-                _spellTouch.isDragging = false;
-                if (_spellTouch.ghost) {
-                    _spellTouch.ghost.style.opacity = '0';
-                    _spellTouch.ghost.style.display = 'none';
-                }
-                clearSpellDropHover();
-                e.preventDefault();
-                return;
-            }
-            if (_spellTouch.isCardSwipe) {
-                e.preventDefault();
-                return;
-            }
-
+            // Any direction past threshold = letter drag (including horizontal to the answer line)
             if (!_spellTouch.isDragging && (adx > SPELL_DRAG_THRESHOLD || ady > SPELL_DRAG_THRESHOLD)) {
-                // Prefer vertical / short moves as letter drag; keep horizontal-dominant for swipe
-                if (adx > ady * 1.2 && adx > SPELL_DRAG_THRESHOLD) {
-                    // Still tracking — may become a card swipe once past SPELL_CARD_SWIPE_MIN
-                    e.preventDefault();
-                    return;
-                }
                 _spellTouch.isDragging = true;
-                _spellTouch.ghost.style.opacity = '0.92';
-                e.preventDefault();
+                if (_spellTouch.ghost) _spellTouch.ghost.style.opacity = '0.92';
             }
             if (_spellTouch.isDragging) {
                 e.preventDefault();
+                e.stopPropagation();
                 _spellTouch.ghost.style.left = (t.clientX - _spellTouch.offX) + 'px';
                 _spellTouch.ghost.style.top  = (t.clientY - _spellTouch.offY) + 'px';
 
                 clearSpellDropHover();
-                const midEl = document.elementFromPoint(t.clientX, t.clientY);
-                const slotEl = midEl && midEl.closest('.answer-slot');
+                const slotEl = findSpellAnswerSlotAt(t.clientX, t.clientY);
                 if (slotEl) slotEl.classList.add('spell-drop-hover');
             }
         }
@@ -15652,7 +16294,7 @@
         function spellingTouchEnd(e) {
             if (!_spellTouch) return;
             const t = e.changedTouches[0];
-            const { type, index, ghost, isDragging, isCardSwipe, startX, startY } = _spellTouch;
+            const { type, index, ghost, isDragging } = _spellTouch;
             _spellTouch = null;
 
             clearSpellDropHover();
@@ -15661,55 +16303,51 @@
                 ghost.remove();
             }
 
-            const dx = t.clientX - startX;
-            const dy = t.clientY - startY;
-
-            // Swipe that began on a letter tile / filled slot → next/prev word (not rearrange bank)
-            if (isCardSwipe || _isSpellCardSwipe(dx, dy)) {
-                if (dx < 0) spellingNextCard();
-                else spellingPrevCard();
-                return;
-            }
-
+            // Pure tap — never treat as page swipe (swipes only start outside play area)
             if (!isDragging) {
-                // Pure tap
                 if (type === 'tile') selectLetter(index);
                 else if (type === 'slot') selectAnswerSlot(index);
                 return;
             }
 
-            // Intentional letter drag → only place if dropped on an answer slot (or bank for return)
-            const dropTarget = document.elementFromPoint(t.clientX, t.clientY);
-            if (!dropTarget) {
-                // Cancelled drag: restore filled green boxes (never leave slots stripped)
-                renderSpellingGameState();
-                return;
-            }
-            const slotEl = dropTarget.closest('.answer-slot');
-            const inLetterRow = dropTarget.closest('#letterRow') || dropTarget.closest('#spellLetterBank');
+            e.preventDefault();
+            e.stopPropagation();
 
-            if (type === 'tile' && slotEl) {
-                const destIdx = parseInt(slotEl.dataset.index);
-                if (isSpellSeparator(spellingGameState.answerSlots[destIdx])) {
-                    renderSpellingGameState();
+            const clientX = t.clientX, clientY = t.clientY;
+            const slotEl = findSpellAnswerSlotAt(clientX, clientY);
+            const dropTarget = document.elementFromPoint(clientX, clientY);
+            const inLetterRow = dropTarget && dropTarget.closest &&
+                (dropTarget.closest('#letterRow') || dropTarget.closest('#spellLetterBank'));
+
+            if (type === 'tile') {
+                if (slotEl) {
+                    const destIdx = parseInt(slotEl.getAttribute('data-index'), 10);
+                    if (placeTileOnSlot(index, destIdx)) {
+                        renderSpellingGameState();
+                        return;
+                    }
+                }
+                // Dropped on answer row / near blanks → fill first empty (helps last letter)
+                if (dropTarget && dropTarget.closest && dropTarget.closest('#answerRow')) {
+                    selectLetter(index);
                     return;
                 }
-                const existing = spellingGameState.answerSlots[destIdx];
-                if (isSpellLetter(existing)) {
-                    const emptyIdx = spellingGameState.scrambledLetters.findIndex(l => l === null);
-                    if (emptyIdx !== -1) spellingGameState.scrambledLetters[emptyIdx] = existing;
+                // One empty slot left and drop was in the spell column → auto-place
+                const emptyIdx = spellingGameState.answerSlots.findIndex(s => s === null);
+                const emptyCount = spellingGameState.answerSlots.filter(s => s === null).length;
+                if (emptyCount === 1 && emptyIdx !== -1 &&
+                    dropTarget && dropTarget.closest && dropTarget.closest('#spellColumn')) {
+                    if (placeTileOnSlot(index, emptyIdx)) {
+                        renderSpellingGameState();
+                        return;
+                    }
                 }
-                spellingGameState.answerSlots[destIdx] = spellingGameState.scrambledLetters[index];
-                spellingGameState.scrambledLetters[index] = null;
                 renderSpellingGameState();
-            } else if (type === 'tile' && !slotEl) {
-                if (dropTarget.closest('#answerRow')) selectLetter(index);
-                else renderSpellingGameState();
             } else if (type === 'slot' && (inLetterRow || !slotEl)) {
                 selectAnswerSlot(index);
             } else if (type === 'slot' && slotEl) {
-                const destIdx = parseInt(slotEl.dataset.index);
-                if (destIdx === index) {
+                const destIdx = parseInt(slotEl.getAttribute('data-index'), 10);
+                if (destIdx === index || isNaN(destIdx)) {
                     renderSpellingGameState();
                     return;
                 }
@@ -15731,11 +16369,23 @@
                 const ch = isSpellLetter(value) ? value : '';
 
                 slot.classList.remove('spell-drop-hover');
+                // Keep full tile box model so fill paints edge-to-edge (matches bank tiles)
+                slot.style.border = '2px solid transparent';
+                slot.style.boxSizing = 'border-box';
+                slot.style.overflow = 'hidden';
+                slot.style.backgroundClip = 'border-box';
                 if (letterEl) {
                     letterEl.textContent = ch || '\u00a0';
                     letterEl.style.color = ch ? spellLetterColor(ch) : '#1a1a1a';
                     letterEl.style.opacity = '1';
                     letterEl.style.transform = lift;
+                    letterEl.style.overflow = 'visible';
+                    letterEl.style.display = 'flex';
+                    letterEl.style.alignItems = 'center';
+                    letterEl.style.justifyContent = 'center';
+                    letterEl.style.lineHeight = '1';
+                    letterEl.style.width = '100%';
+                    letterEl.style.height = '100%';
                 }
 
                 if (ch) {
@@ -15743,14 +16393,6 @@
                     slot.style.background = SPELL_FILL_BG;
                     slot.style.boxShadow = 'none';
                     if (lineEl) lineEl.style.display = 'none';
-                    if (letterEl) {
-                        letterEl.style.display = 'flex';
-                        letterEl.style.alignItems = 'center';
-                        letterEl.style.justifyContent = 'center';
-                        letterEl.style.lineHeight = '1';
-                        letterEl.style.width = '100%';
-                        letterEl.style.height = '100%';
-                    }
                 } else {
                     slot.classList.remove('spell-slot-filled');
                     slot.style.background = 'transparent';
@@ -15766,21 +16408,47 @@
                 const letter = spellingGameState.scrambledLetters[index];
                 if (letter === null || letter === undefined) {
                     tile.style.visibility = 'hidden';
+                    tile.style.pointerEvents = 'none';
                     return;
                 }
+                // Full style restore when a letter returns from the answer line
                 tile.style.visibility = 'visible';
+                tile.style.pointerEvents = 'auto';
+                tile.style.display = 'inline-flex';
+                tile.style.alignItems = 'center';
+                tile.style.justifyContent = 'center';
+                tile.style.lineHeight = '1';
+                tile.style.padding = '0';
+                tile.style.margin = '0';
+                tile.style.boxSizing = 'border-box';
+                tile.style.overflow = 'hidden';
+                tile.style.border = '2px solid transparent';
+                tile.style.background = SPELL_FILL_BG;
+                tile.style.backgroundClip = 'border-box';
+                tile.style.boxShadow = 'none';
+                tile.style.opacity = '1';
+                tile.style.color = spellLetterColor(letter);
+                tile.style.webkitTransform = 'translateZ(0)';
+                tile.style.transform = 'translateZ(0)';
+                tile.style.textAlign = 'center';
+                tile.style.flexShrink = '0';
                 let inner = tile.querySelector('.letter-tile-ch');
                 if (!inner) {
                     tile.textContent = '';
                     inner = document.createElement('span');
                     inner.className = 'letter-tile-ch';
-                    inner.style.cssText = `display:flex;align-items:center;justify-content:center;line-height:1;transform:${lift};`;
+                    inner.style.cssText = `display:flex;align-items:center;justify-content:center;width:100%;height:100%;line-height:1;overflow:visible;transform:${lift};`;
                     tile.appendChild(inner);
                 }
                 inner.textContent = letter;
+                inner.style.display = 'flex';
+                inner.style.alignItems = 'center';
+                inner.style.justifyContent = 'center';
+                inner.style.width = '100%';
+                inner.style.height = '100%';
+                inner.style.lineHeight = '1';
                 inner.style.transform = lift;
-                tile.style.color = spellLetterColor(letter);
-                tile.style.background = SPELL_FILL_BG;
+                inner.style.overflow = 'visible';
             });
 
             const clearBtn = document.getElementById('spellClearBtn');
@@ -15922,19 +16590,15 @@
                             <img src="${gifSrc(c.frontImage)}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;">
                         </div>`;
                     } else {
-                        // Unflipped — dotted, or light grey if previously seen this round
-                        const wasSeen = guessGameState.seenCards && guessGameState.seenCards[index];
-                        if (wasSeen) {
-                            cellInner = `<div style="width:100%;height:100%;border-radius:15px;background:rgba(200,200,200,0.35);border:2px solid rgba(200,200,200,0.5);display:flex;align-items:center;justify-content:center;box-sizing:border-box;">
-                                <span style="font-size:clamp(1.8rem,6vw,3.5rem);font-weight:800;color:rgba(255,255,255,0.5);">${index + 1}</span>
-                            </div>`;
-                        } else {
-                            cellInner = `<div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.4);background:transparent;box-sizing:border-box;"></div>`;
-                        }
+                        // Unflipped (incl. previously seen): transparent + dotted boundary only
+                        cellInner = `<div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.4);background:transparent;box-sizing:border-box;"></div>`;
                     }
                     gridCells.push(`<div style="position:relative;width:100%;aspect-ratio:1;">${cellInner}</div>`);
                 } else {
-                    gridCells.push(`<div style="width:100%;aspect-ratio:1;"></div>`);
+                    // Unused slots (e.g. card 9 with fewer than 9 images): transparent dotted shell
+                    gridCells.push(`<div style="position:relative;width:100%;aspect-ratio:1;">
+                        <div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.4);background:transparent;box-sizing:border-box;pointer-events:none;"></div>
+                    </div>`);
                 }
             }
 
