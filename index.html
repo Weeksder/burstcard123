@@ -1754,6 +1754,14 @@
             overflow-y: auto;
             position: relative;
         }
+        #newFolderModal {
+            z-index: 20020;
+        }
+        #unitConfigModal .ucm-folders-scroll {
+            max-height: min(28vh, 220px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
         .modal-content h2 {
             margin-bottom: 25px;
@@ -3001,9 +3009,21 @@
         }
 
         @keyframes unitHighlight {
-            0%   { border-color: #35654D; box-shadow: 0 0 0 3px rgba(53,101,77,0.4); }
-            70%  { border-color: #35654D; box-shadow: 0 0 0 3px rgba(53,101,77,0.2); }
-            100% { border-color: #ddd;    box-shadow: none; }
+            0%   {
+                background-color: #e8f5e9;
+                border-color: #81c784;
+                box-shadow: 0 0 0 3px rgba(129, 199, 132, 0.55);
+            }
+            35%  {
+                background-color: #f1f8f2;
+                border-color: #a5d6a7;
+                box-shadow: 0 0 0 2px rgba(129, 199, 132, 0.3);
+            }
+            100% {
+                background-color: #ffffff;
+                border-color: #ddd;
+                box-shadow: none;
+            }
         }
         @keyframes slideDown {
             from {
@@ -3970,7 +3990,7 @@
     <div id="manageSidePanel">
         <div id="mspResizeHandle"></div>
         <div class="msp-header">
-            <span class="msp-title">📚 Manage My Decks</span>
+            <span class="msp-title">📚 Deck Library</span>
             <button class="msp-close" onclick="closeManageSidePanel()">×</button>
         </div>
         <div style="padding:6px 10px;border-bottom:1px solid #eee;flex-shrink:0;display:flex;gap:5px;flex-wrap:nowrap;overflow:visible;">
@@ -3987,7 +4007,7 @@
                 style="flex-shrink:0;width:76px;padding:6px 4px;background:white;border:1.5px solid #35654D;border-radius:8px;
                        color:#35654D;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;"
                 onclick="mspToggleSort()">
-                Sort: Date
+                Sort: Name
             </button>
 
             <button id="mspUndoBtn" onclick="mspUndoDelete()"
@@ -4616,6 +4636,455 @@
             transition: all 0.2s;
         }
         .msp-del-btn:active { transform: scale(0.93); }
+        /* Deck Library tabs */
+        #unitConfigModal .ucm-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+            padding: 4px;
+            background: #f0f4f1;
+            border-radius: 12px;
+        }
+        #unitConfigModal .ucm-tab-btn {
+            flex: 1;
+            padding: 10px 8px;
+            border: none;
+            border-radius: 9px;
+            background: transparent;
+            color: #666;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+        }
+        #unitConfigModal .ucm-tab-btn.active {
+            background: #fff;
+            color: #1a3d2b;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        #unitConfigModal .ucm-tab-panel { display: none; }
+        #unitConfigModal .ucm-tab-panel.active { display: block; }
+        /* Fixed list viewport so "more" fade/label never resizes the modal */
+        #unitConfigModal #unitsListWrap {
+            position: relative;
+            height: min(42vh, 340px);
+            min-height: 200px;
+            flex-shrink: 0;
+        }
+        #unitConfigModal .ucm-units-scroll {
+            height: 100%;
+            max-height: none;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+            box-sizing: border-box;
+        }
+        #unitConfigModal .ucm-units-scroll::-webkit-scrollbar,
+        #unitConfigModal .ucm-folders-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        #unitConfigModal .ucm-units-scroll::-webkit-scrollbar-thumb,
+        #unitConfigModal .ucm-folders-scroll::-webkit-scrollbar-thumb {
+            background: rgba(53, 101, 77, 0.35);
+            border-radius: 4px;
+        }
+        #unitConfigModal #libraryMoreFade,
+        #unitConfigModal #libraryMoreLabel {
+            pointer-events: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            display: block !important; /* stay in tree — no layout shift */
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        #unitConfigModal #libraryMoreFade {
+            bottom: 0;
+            height: 48px;
+            background: linear-gradient(to top, rgba(255,255,255,0.98) 20%, rgba(255,255,255,0));
+            border-radius: 0 0 8px 8px;
+            z-index: 2;
+        }
+        #unitConfigModal #libraryMoreLabel {
+            bottom: 4px;
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #35654D;
+            z-index: 3;
+        }
+        #unitConfigModal #libraryMoreLabel.is-visible,
+        #unitConfigModal #libraryMoreFade.is-visible {
+            opacity: 1;
+        }
+        #unitConfigModal .ucm-folders-scroll {
+            max-height: min(38vh, 300px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 4px;
+            box-sizing: border-box;
+        }
+        #unitConfigModal .ucm-file-card {
+            margin-top: 0;
+            margin-bottom: 10px;
+            padding: 14px 16px;
+            background: #f7f7f7;
+            border: 1px solid #e8e8e8;
+            border-radius: 10px;
+        }
+        #unitConfigModal .ucm-import-remove:hover {
+            color: #e53935 !important;
+            background: #ffebee !important;
+        }
+        #unitConfigModal .ucm-file-card.is-renaming {
+            border-color: #35654D;
+            background: #f4f8f5;
+        }
+        /* Name + edit field share the exact same slot (no second field / modal) */
+        #unitConfigModal .ucm-import-name-slot,
+        #unitConfigModal .ucm-unit-name-slot {
+            position: relative;
+            min-height: 1.45em;
+            width: 100%;
+        }
+        #unitConfigModal .ucm-import-name,
+        #unitConfigModal .ucm-unit-name-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            word-break: break-word;
+            line-height: 1.35;
+        }
+        #unitConfigModal .ucm-unit-name-text {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        #unitConfigModal .ucm-import-meta {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 6px;
+        }
+        #unitConfigModal .ucm-import-name-input,
+        #unitConfigModal .ucm-unit-name-input {
+            display: none;
+            width: 100%;
+            margin: 0;
+            padding: 2px 6px;
+            border: 1.5px solid #35654D;
+            border-radius: 6px;
+            font-size: 16px; /* ≥16px: keyboard on iOS, no page zoom */
+            font-weight: 700;
+            line-height: 1.35;
+            color: #1a1a1a;
+            box-sizing: border-box;
+            background: #fffde7;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(53, 101, 77, 0.2);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        #unitConfigModal .ucm-unit-name-input {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        #unitConfigModal .ucm-import-name-slot.is-editing .ucm-import-name,
+        #unitConfigModal .ucm-unit-name-slot.is-editing .ucm-unit-name-text {
+            display: none !important;
+        }
+        #unitConfigModal .ucm-import-name-slot.is-editing .ucm-import-name-input,
+        #unitConfigModal .ucm-unit-name-slot.is-editing .ucm-unit-name-input {
+            display: block !important;
+        }
+        #unitConfigModal #importSessionList {
+            max-height: min(48vh, 380px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #unitConfigModal .ucm-action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        #unitConfigModal .ucm-action-row > button {
+            flex: 1;
+            padding: 12px 10px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid #35654D;
+        }
+        #unitConfigModal .ucm-btn-primary {
+            background: #35654D;
+            color: #fff;
+        }
+        #unitConfigModal .ucm-btn-secondary {
+            background: #fff;
+            color: #35654D;
+        }
+        #unitConfigModal .ucm-pending-banner {
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            background: #e8f5e9;
+            border: 1.5px solid #81c784;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: #1b5e20;
+            line-height: 1.4;
+        }
+        #unitConfigModal .ucm-folder-pick {
+            background: #35654D;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            margin-top: 8px;
+            width: 100%;
+        }
+        /* Organize list rows — clean default; icon actions only in edit mode */
+        #unitConfigModal .ucm-unit-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            user-select: none;
+            transition: background-color 0.2s, border-color 0.15s, box-shadow 0.2s;
+        }
+        /* New imports: solid soft green (no flash animation) */
+        #unitConfigModal .ucm-unit-row.is-pending {
+            background: #e8f5e9;
+            border-color: #a5d6a7;
+            margin-bottom: 6px;
+        }
+        #unitConfigModal .ucm-unit-row .ucm-new-badge {
+            font-size: 0.72rem;
+            color: #e53935;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+        }
+        /* Divider between newly added (top) and older library decks */
+        #unitConfigModal .ucm-new-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0 8px;
+            padding: 0 2px;
+            color: #9e9e9e;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            user-select: none;
+        }
+        #unitConfigModal .ucm-new-divider::before,
+        #unitConfigModal .ucm-new-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #cfd8dc;
+        }
+        #unitConfigModal .ucm-unit-row.is-pending + .ucm-new-divider {
+            margin-top: 2px;
+        }
+        #unitConfigModal .ucm-new-divider + .ucm-unit-row {
+            margin-top: 0;
+        }
+        #unitConfigModal .ucm-unit-info {
+            flex: 1;
+            min-width: 0;
+        }
+        #unitConfigModal .ucm-unit-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1a1a1a;
+            word-break: break-word;
+        }
+        /* View mode: older decks grey; new ones stay dark for contrast */
+        #unitConfigModal:not(.ucm-edit-mode) .ucm-unit-row:not(.is-pending) .ucm-unit-name-text {
+            color: #9e9e9e;
+        }
+        #unitConfigModal:not(.ucm-edit-mode) .ucm-unit-row.is-pending .ucm-unit-name-text {
+            color: #1a1a1a;
+        }
+        /* Edit mode: all names black */
+        #unitConfigModal.ucm-edit-mode .ucm-unit-name-text {
+            color: #1a1a1a !important;
+        }
+        #unitConfigModal .ucm-unit-date {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+        #unitConfigModal .ucm-unit-row .msp-btn,
+        #unitConfigModal .ucm-unit-row .msp-del-btn {
+            width: 36px;
+            height: 36px;
+        }
+        #unitConfigModal #organizeEditBtn.is-active {
+            background: #35654D !important;
+            border-color: #35654D !important;
+            color: #fff !important;
+            box-shadow: 0 2px 6px rgba(53, 101, 77, 0.35);
+        }
+        /* Folders tab content: items (to place) vs bins (folders) */
+        #unitConfigModal .ucm-section-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 8px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #8a8a8a;
+            user-select: none;
+        }
+        #unitConfigModal .ucm-section-label .ucm-section-count {
+            font-weight: 700;
+            letter-spacing: 0;
+            text-transform: none;
+            font-size: 0.75rem;
+            color: #fff;
+            background: #9e9e9e;
+            border-radius: 999px;
+            padding: 1px 8px;
+            line-height: 1.4;
+        }
+        #unitConfigModal .ucm-section-label.is-items .ucm-section-count {
+            background: #5c7cfa;
+        }
+        #unitConfigModal .ucm-section-label.is-bins .ucm-section-count {
+            background: #78909c;
+        }
+        #unitConfigModal #foldersPendingFile {
+            margin-bottom: 0;
+            padding: 10px 10px 8px;
+            background: #f4f6fb;
+            border: 1px solid #e3e7f0;
+            border-radius: 12px;
+            min-height: 48px;
+        }
+        #unitConfigModal #foldersPendingFile:empty {
+            display: none;
+        }
+        /* New decks = loose “items” (paper cards + left accent when selected) */
+        #unitConfigModal .ucm-pending-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fff;
+            border: 1px solid #d8dce6;
+            border-radius: 8px;
+            padding: 10px 12px 10px 10px;
+            margin-bottom: 6px;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            border-left: 3px solid transparent;
+            transition: border-color 0.12s, box-shadow 0.12s;
+        }
+        #unitConfigModal .ucm-pending-file:last-child { margin-bottom: 0; }
+        #unitConfigModal .ucm-pending-file:active { cursor: grabbing; }
+        #unitConfigModal .ucm-pending-file.ucm-dragging {
+            opacity: 0.35;
+            transform: scale(0.98);
+        }
+        #unitConfigModal .ucm-pending-file.is-selected {
+            border-color: #35654D;
+            border-left-color: #35654D;
+            box-shadow: 0 0 0 2px rgba(53, 101, 77, 0.12);
+        }
+        #unitConfigModal .ucm-pending-file-icon {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: #eef1f8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+        }
+        #unitConfigModal .ucm-pending-file-name {
+            flex: 1;
+            min-width: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            word-break: break-word;
+        }
+        /* Folders tab — folder rows (combined single window) */
+        #unitConfigModal #groupsListWrap {
+            padding: 10px 10px 6px;
+            background: #faf8f5;
+            border: 1px solid #ebe6df;
+            border-radius: 12px;
+            position: relative;
+            margin-bottom: 4px;
+        }
+        #unitConfigModal .ucm-folder-target {
+            background: #fffefb;
+            border: 1.5px solid #e0dcd4;
+            border-radius: 10px;
+            padding: 11px 12px;
+            margin-bottom: 7px;
+            cursor: pointer;
+            transition: border-color 0.12s, box-shadow 0.12s;
+            border-left: 3px solid transparent;
+        }
+        #unitConfigModal .ucm-folder-target:hover {
+            border-color: #cfc8bc;
+        }
+        #unitConfigModal .ucm-folder-target.is-selected {
+            border-color: #35654D;
+            border-left-color: #35654D;
+            background: #fffefb;
+            box-shadow: 0 0 0 2px rgba(53, 101, 77, 0.1);
+        }
+        #unitConfigModal .ucm-folder-target.is-drop-hover {
+            border-color: #35654D;
+            border-style: dashed;
+            background: #fff;
+        }
+        #unitConfigModal .ucm-folder-target-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #unitConfigModal .ucm-folder-count-pill {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #607d8b;
+            background: #eceff1;
+            border-radius: 999px;
+            padding: 2px 8px;
+            white-space: nowrap;
+        }
+        #unitConfigModal .ucm-folder-pick {
+            margin-top: 8px;
+            background: #35654D;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+
         .msp-empty {
             padding: 40px 20px;
             text-align: center;
@@ -4801,12 +5270,12 @@
         </div>
     </div>
 
-    <!-- Unit Configuration Modal -->
+    <!-- Unit Configuration Modal — 3-tab flow: Import → Organize → Folders -->
     <div class="modal" id="unitConfigModal">
         <div class="modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto; position:relative;">
-            <button onclick="closeUnitConfigModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-                <h2 style="margin:0;">⚙️ Manage My Decks</h2>
+            <button onclick="closeUnitConfigModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;z-index:2;">✕</button>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-right:28px;">
+                <h2 style="margin:0;">📚 Deck Library</h2>
                 <button onclick="toggleUnitConfigHelp()" title="Help"
                     style="flex-shrink:0;background:none;border:2px solid #35654D;border-radius:50%;
                            width:28px;height:28px;font-size:0.85rem;font-weight:700;color:#35654D;cursor:pointer;
@@ -4816,83 +5285,182 @@
             <!-- Help Panel -->
             <div id="unitConfigHelpPanel" style="display:none;background:#fffde7;border:1.5px solid #f9a825;border-radius:10px;
                  padding:14px 16px;margin-bottom:16px;font-size:0.87rem;color:#444;line-height:1.6;">
-                <div style="font-weight:700;color:#f57f17;margin-bottom:8px;">📖 About this page</div>
-                <p style="margin:0 0 8px;">This page is your personal deck library — a collection of JSON flashcard sets you can load instantly from the side panel without having to re-import each time.</p>
-                <p style="margin:0 0 8px;">Use <strong>Add a new deck</strong> to import a JSON file. Once added, it appears in the side panel where you can load, add to, or remove from your active deck with a single tap.</p>
-                <p style="margin:0 0 8px;">You can organise units into <strong>Groups</strong> by creating a group and dragging units into it. Groups keep your library tidy when you have many files.</p>
-                <p style="margin:0;">📁 <em>Your JSON files are cached directly in your browser's storage — no internet connection needed to reload them after the first import.</em></p>
+                <div style="font-weight:700;color:#f57f17;margin-bottom:8px;">📖 How this library works</div>
+                <p style="margin:0 0 8px;"><strong>1. Import</strong> — Pick one or more JSON decks, then tap <em>Next</em>.</p>
+                <p style="margin:0 0 8px;"><strong>2. Organize</strong> — Browse all saved decks; rename or delete in Edit. Use <em>Create</em> to keep it in the default list, or <em>Group</em> for a folder.</p>
+                <p style="margin:0 0 8px;"><strong>3. Folders</strong> — Create folders and assign decks. Load decks from the side panel anytime.</p>
+                <p style="margin:0;">💡 Importing does <em>not</em> automatically load the deck into play — use the side panel for that.</p>
             </div>
 
-            <!-- Add New Unit Form -->
-            <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="margin-top: 0;">Add a new deck</h3>
-                <div style="margin-bottom: 10px;">
-                    <input type="file" id="newUnitFile" accept=".json" onchange="onUnitFileSelected()" style="display:none;">
-                    <button type="button" onclick="document.getElementById('newUnitFile').click()"
-                        style="width:100%;padding:10px;border:2px solid #4CAF50;border-radius:5px;background:white;
-                               cursor:pointer;font-size:14px;font-weight:600;color:#2e7d32;text-align:left;">
-                        📂 Choose JSON file…
-                    </button>
-                </div>
-                <div id="newUnitExtras" style="display:none;">
-                    <div style="margin-bottom: 10px;">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" id="useFilenameAsUnit" checked onchange="toggleUnitNameInput()" style="width: 18px; height: 18px; cursor: pointer;">
-                            <span style="font-weight: 600;">Match filename</span>
-                        </label>
-                    </div>
-                    <div id="customUnitNameContainer" style="margin-bottom: 10px; display: none;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">Custom Unit Name:</label>
-                        <input type="text" id="newUnitName" autocapitalize="none" autocorrect="off" placeholder="e.g., Unit 1, Chapter 2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-                    </div>
-                    <div id="filenamePreview" style="margin-bottom: 10px; padding: 8px; background: #e8f5e9; border-radius: 5px; display: none;">
-                        <span style="font-weight: 600; color: #2e7d32;">Unit name: </span>
-                        <span id="filenamePreviewText" style="color: #333;"></span>
-                    </div>
-                    <button class="btn btn-success" onclick="addNewUnit()" style="width: 100%; padding: 12px;">
-                        ➕ Add Unit
-                    </button>
-                </div>
+            <!-- Tabs -->
+            <div class="ucm-tabs" role="tablist">
+                <button type="button" class="ucm-tab-btn active" id="ucmTabBtnImport" role="tab" aria-selected="true" onclick="switchUcmTab('import')">Import</button>
+                <button type="button" class="ucm-tab-btn" id="ucmTabBtnOrganize" role="tab" aria-selected="false" onclick="switchUcmTab('organize')">Organize</button>
+                <button type="button" class="ucm-tab-btn" id="ucmTabBtnFolders" role="tab" aria-selected="false" onclick="switchUcmTab('folders')">Folders</button>
             </div>
 
-            <!-- Existing Units List -->
-            <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                    <h3 style="margin:0;">Configured Units</h3>
-                    <div style="display:flex;gap:6px;">
-                        <button type="button" id="manageSortBtn" onclick="manageToggleSort()"
-                            style="padding:5px 12px;background:white;border:1.5px solid #35654D;border-radius:8px;
+            <!-- TAB: Import -->
+            <div id="ucmTabImport" class="ucm-tab-panel active" role="tabpanel">
+                <input type="file" id="newUnitFile" accept=".json" multiple onchange="onUnitFileSelected()" style="display:none;">
+
+                <!-- First open / leave & return: clean import only -->
+                <div id="importPhasePick">
+                    <button type="button" id="importDeckPickBtn" onclick="document.getElementById('newUnitFile').click()"
+                        style="width:100%;padding:18px 16px;border:none;border-radius:12px;background:#35654D;
+                               cursor:pointer;font-size:1.05rem;font-weight:700;color:white;
+                               box-shadow:0 2px 10px rgba(53,101,77,0.28);display:flex;align-items:center;justify-content:center;gap:10px;">
+                        <span>📂</span><span>Import deck(s) (JSON)</span>
+                    </button>
+                    <p style="margin:14px 0 0;text-align:center;font-size:0.82rem;color:#999;line-height:1.4;">
+                        Saved in your browser — load from the side panel anytime.
+                    </p>
+                </div>
+
+                <!-- Session imports: each file as its own card (no full-page reset mid-session) -->
+                <div id="importPhaseDone" style="display:none;">
+                    <div id="importSessionList"></div>
+                    <div style="display:flex;gap:10px;margin-top:12px;align-items:stretch;">
+                        <button type="button" id="importAnotherBtn" onclick="importAnotherKeepList()"
+                            style="flex:1;padding:12px 14px;border:1.5px dashed #35654D;border-radius:10px;
+                                   background:#f7faf8;cursor:pointer;font-size:0.92rem;font-weight:700;color:#35654D;">
+                            + Import another
+                        </button>
+                        <button type="button" id="importNextBtn" onclick="importGoNext()"
+                            style="flex:1;padding:12px 14px;border:none;border-radius:10px;
+                                   background:#35654D;cursor:pointer;font-size:0.95rem;font-weight:700;color:#fff;
+                                   box-shadow:0 2px 8px rgba(53,101,77,0.25);">
+                            Next
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden fields kept for compatibility -->
+                <input type="hidden" id="useFilenameAsUnit" checked>
+                <input type="hidden" id="newUnitName" value="">
+                <div id="newUnitExtras" style="display:none;"></div>
+                <div id="filenamePreview" style="display:none;"><div id="filenamePreviewText"></div>
+                    <div id="importAddedName" style="display:none;"></div>
+                    <div id="importFileMeta" style="display:none;"></div>
+                    <input type="text" id="importRenameInput" style="display:none;">
+                </div>
+                <div id="customUnitNameContainer" style="display:none;"></div>
+                <div id="importAdvancedPanel" style="display:none;"></div>
+                <span id="importAdvancedChevron" style="display:none;"></span>
+                <div id="importNameActions" style="display:none;"></div>
+                <div id="importRenameBox" style="display:none;"></div>
+            </div>
+
+            <!-- TAB: Organize -->
+            <div id="ucmTabOrganize" class="ucm-tab-panel" role="tabpanel">
+                <div id="organizePendingBanner" class="ucm-pending-banner" style="display:none;"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <h3 style="margin:0;font-size:1rem;color:#1a1a1a;">All decks</h3>
+                        <span id="libraryCountBadge" style="font-size:0.78rem;font-weight:600;color:#888;"></span>
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <div id="libraryToolbar" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;">
+                            <button type="button" id="manageSortBtn" onclick="manageToggleSort()"
+                                style="padding:5px 12px;background:white;border:1.5px solid #35654D;border-radius:8px;
+                                       color:#35654D;font-size:0.8rem;font-weight:700;cursor:pointer;">
+                                Sort: Name
+                            </button>
+                            <button type="button" id="manageDeleteAllBtn" onclick="manageDeleteAll()"
+                                style="padding:5px 12px;background:white;border:1.5px solid #e53935;border-radius:8px;
+                                       color:#e53935;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                                Delete All
+                            </button>
+                            <button type="button" id="ucmUndoBtn" onclick="ucmUndoDelete()" style="display:none;
+                                padding:5px 12px;background:#fff3e0;border:1.5px solid #ff9800;border-radius:8px;
+                                color:#e65100;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                                ↩ Undo
+                            </button>
+                        </div>
+                        <button type="button" id="organizeEditBtn" onclick="toggleOrganizeEdit()"
+                            style="padding:5px 14px;background:white;border:1.5px solid #35654D;border-radius:8px;
                                    color:#35654D;font-size:0.8rem;font-weight:700;cursor:pointer;">
-                            Sort: Date
-                        </button>
-                        <button type="button" id="manageDeleteAllBtn" onclick="manageDeleteAllConfirm(this)"
-                            style="padding:5px 12px;background:white;border:1.5px solid #e53935;border-radius:8px;
-                                   color:#e53935;font-size:0.8rem;font-weight:700;cursor:pointer;white-space:nowrap;">
-                            Delete All
+                            Edit
                         </button>
                     </div>
                 </div>
-                <div id="unitsList" style="margin-top: 10px;">
-                    <!-- Units will be populated here -->
+                <div id="librarySection">
+                    <div id="libraryBody">
+                        <div id="unitsListWrap">
+                            <div id="unitsList" class="ucm-units-scroll">
+                                <!-- Units populated by loadUnitsList -->
+                            </div>
+                            <div id="libraryMoreFade" aria-hidden="true"></div>
+                            <div id="libraryMoreLabel" aria-hidden="true">more</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ucm-action-row" id="organizeImportActions" style="display:none;margin-top:16px;">
+                    <button type="button" class="ucm-btn-primary" onclick="organizeCreate()">Create</button>
+                    <button type="button" class="ucm-btn-secondary" onclick="organizeGroup()">Group</button>
+                </div>
+                <p id="organizeCreateHint" style="display:none;margin:8px 0 0;text-align:center;font-size:0.78rem;color:#999;">
+                    <strong>Create</strong> keeps it in the default list · <strong>Group</strong> puts it in a folder
+                </p>
+            </div>
+
+            <!-- TAB: Folders — single window: uncategorized decks + folders + + Folder -->
+            <div id="ucmTabFolders" class="ucm-tab-panel" role="tabpanel">
+                <div id="foldersUncatHeader" style="margin-bottom:12px;">
+                    <div style="font-size:0.72rem;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#8a8a8a;margin-bottom:4px;">Uncategorized</div>
+                    <p style="margin:0;font-size:0.88rem;color:#666;line-height:1.4;">
+                        These decks are not in a folder yet. Drag a name into a folder below.
+                    </p>
+                </div>
+                <div id="foldersPendingBlock" style="margin-bottom:14px;">
+                    <div id="foldersPendingFile"></div>
+                    <div id="foldersPendingEmpty" style="display:none;padding:18px 12px;text-align:center;color:#aaa;font-size:0.9rem;background:#f7f7f7;border-radius:10px;">
+                        No uncategorized decks right now.<br>
+                        <span style="font-size:0.82rem;">Import a deck, then open this tab to place it.</span>
+                    </div>
+                </div>
+                <div class="ucm-section-label is-bins" style="margin-bottom:8px;">
+                    <span>Folders</span>
+                    <span class="ucm-section-count" id="foldersBinsCount">0</span>
+                </div>
+                <div id="groupsListWrap" style="position:relative;">
+                    <div id="groupsList" class="ucm-folders-scroll"></div>
+                    <div id="foldersMoreFade" style="display:none;pointer-events:none;position:absolute;left:0;right:0;bottom:0;height:36px;
+                         background:linear-gradient(to top, rgba(255,255,255,0.98) 20%, rgba(255,255,255,0));"></div>
+                    <div id="foldersMoreLabel" style="display:none;text-align:center;font-size:0.75rem;font-weight:700;color:#35654D;
+                         padding:2px 0 0;position:relative;z-index:1;">more</div>
+                </div>
+                <div id="foldersBottomActions" style="display:flex;gap:10px;margin-top:12px;align-items:stretch;">
+                    <button type="button" id="addFolderBtn" onclick="openNewFolderModal()"
+                        style="flex:1;padding:11px 16px;border:1.5px dashed #35654D;border-radius:10px;
+                               background:#f7faf8;cursor:pointer;font-size:0.92rem;font-weight:700;color:#35654D;">
+                        + Folder
+                    </button>
+                    <button type="button" id="foldersFinishBtn" onclick="finishFoldersTab()"
+                        style="display:none;flex:1;padding:11px 16px;border:none;border-radius:10px;
+                               background:#35654D;cursor:pointer;font-size:0.95rem;font-weight:700;color:#fff;
+                               box-shadow:0 2px 8px rgba(53,101,77,0.25);">
+                        Finish
+                    </button>
                 </div>
             </div>
 
-            <!-- Groups Section -->
-            <div style="margin-top:24px;">
-                <h3>📁 Groups</h3>
-                <p style="font-size:13px;color:#666;margin:0 0 10px;">Create groups to organise units in the side panel. Then drag units into groups.</p>
-                <div style="display:flex;gap:8px;margin-bottom:12px;">
-                    <input type="text" id="newGroupName" placeholder="e.g. Oxford Phonics World 1 - Unit 1"
-                        style="flex:1;padding:9px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;"
-                        onkeydown="if(event.key==='Enter')addGroup()">
-                    <button class="btn btn-success" onclick="addGroup()" style="padding:9px 16px;white-space:nowrap;">+ Add</button>
-                </div>
-                <div id="groupsList"></div>
-            </div>
+        </div>
+    </div>
 
-            <button class="btn btn-secondary" onclick="closeUnitConfigModal()" style="width: 100%; margin-top: 20px;">
-                Close
-            </button>
+    <!-- New Folder name dialog (shown only when + Folder is tapped) -->
+    <div class="modal" id="newFolderModal">
+        <div class="modal-content" style="max-width:400px;position:relative;">
+            <button type="button" onclick="closeNewFolderModal()"
+                style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:1.3rem;cursor:pointer;color:#aaa;line-height:1;padding:4px;">✕</button>
+            <h2 style="margin:0 0 14px;font-size:1.15rem;">New folder</h2>
+            <input type="text" id="newGroupName" placeholder="Folder name"
+                style="width:100%;padding:12px;border:1.5px solid #ddd;border-radius:8px;font-size:16px;box-sizing:border-box;"
+                inputmode="text" enterkeyhint="done" autocomplete="off"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();confirmNewFolder();}">
+            <div style="display:flex;gap:10px;margin-top:16px;">
+                <button type="button" class="btn btn-secondary" onclick="closeNewFolderModal()" style="flex:1;padding:12px;">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="confirmNewFolder()" style="flex:1;padding:12px;">Create</button>
+            </div>
         </div>
     </div>
 
@@ -5606,16 +6174,19 @@
 
         // Confirm before closing tab (prevents accidental data loss)
         window.addEventListener('beforeunload', function(event) {
-            // Only show prompt if there are cards
-            if (cards.length > 0) {
-                // Cancel the event
+            var manageOpen = false;
+            try {
+                var m = document.getElementById('unitConfigModal');
+                manageOpen = !!(m && m.classList.contains('active'));
+            } catch (e) {}
+            // Prompt if deck cards exist, or manage/library work is in progress
+            var manageWork = manageOpen && (typeof ucmHasManageWork === 'function' ? ucmHasManageWork() : false);
+            if (cards.length > 0 || manageWork) {
                 event.preventDefault();
-
-                // Chrome requires returnValue to be set
-                const confirmationMessage = 'You have unsaved flashcards. Are you sure you want to leave?';
+                const confirmationMessage = manageWork
+                    ? 'You have work open in Deck Library. Are you sure you want to leave?'
+                    : 'You have unsaved flashcards. Are you sure you want to leave?';
                 event.returnValue = confirmationMessage;
-
-                // For older browsers
                 return confirmationMessage;
             }
         });
@@ -10294,7 +10865,7 @@
 
             const renderUnits = (units) => {
                 if (!units || units.length === 0) {
-                    listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#666; font-size:14px;">No units configured yet.<br>Tap "Manage Units" to add.</div>';
+                    listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#666; font-size:14px;">No decks in your library yet.<br>Tap Manage to import a JSON file.</div>';
                     return;
                 }
                 listEl.innerHTML = units.map(unit => {
@@ -10394,7 +10965,7 @@
                 const listContainer = document.getElementById('quickLoadList');
 
                 if (units.length === 0) {
-                    listContainer.innerHTML = '<div style="padding: 15px; text-align: center; color: #666;">No units configured yet.<br>Click "Manage Units" to add.</div>';
+                    listContainer.innerHTML = '<div style="padding: 15px; text-align: center; color: #666;">No decks in your library yet.<br>Open Manage to import a JSON file.</div>';
                 } else {
                     // Horizontal layout: Unit Name | Card Count | Add Icon | Load Icon
                     listContainer.innerHTML = units.map(unit => {
@@ -10622,7 +11193,7 @@
         }
 
         // ── Groups (localStorage) ──
-        let _mspSortMode = 'date'; // 'date' or 'name'
+        let _mspSortMode = 'name'; // default: older decks by name; user can switch to date
 
         function mspToggleSort() {
             _mspSortMode = _mspSortMode === 'date' ? 'name' : 'date';
@@ -10661,63 +11232,208 @@
             }
         }
 
+        var _ucmOrganizeEdit = false;
+
+        function toggleOrganizeEdit() {
+            _ucmOrganizeEdit = !_ucmOrganizeEdit;
+            updateOrganizeEditUI();
+            if (typeof loadUnitsList === 'function') loadUnitsList();
+        }
+
+        var _ucmLibraryCount = 0;
+
+        function updateOrganizeEditUI() {
+            var toolbar = document.getElementById('libraryToolbar');
+            var editBtn = document.getElementById('organizeEditBtn');
+            var modal = document.getElementById('unitConfigModal');
+            if (toolbar) toolbar.style.display = _ucmOrganizeEdit ? 'flex' : 'none';
+            if (editBtn) {
+                editBtn.textContent = _ucmOrganizeEdit ? 'Done' : 'Edit';
+                editBtn.classList.toggle('is-active', !!_ucmOrganizeEdit);
+            }
+            if (modal) modal.classList.toggle('ucm-edit-mode', !!_ucmOrganizeEdit);
+            var mBtn = document.getElementById('manageSortBtn');
+            if (mBtn) mBtn.textContent = _mspSortMode === 'date' ? 'Sort: Date' : 'Sort: Name';
+            // When library is empty (Delete All), only Done + Undo — hide Sort / Delete All
+            var empty = _ucmLibraryCount === 0;
+            var sortBtn = document.getElementById('manageSortBtn');
+            var delAllBtn = document.getElementById('manageDeleteAllBtn');
+            if (sortBtn) sortBtn.style.display = (_ucmOrganizeEdit && !empty) ? '' : 'none';
+            if (delAllBtn) delAllBtn.style.display = (_ucmOrganizeEdit && !empty) ? '' : 'none';
+            updateUcmUndoBtn();
+        }
+
+        // Legacy expand row (no longer used — edit mode shows icon actions inline)
         function toggleUcmRow(rowEl, unitId, name) {
-            const actions = rowEl.querySelector('.ucm-unit-actions');
-            const arrow = rowEl.querySelector('span');
-            const isOpen = actions.style.display === 'flex';
-            // Collapse all others first
-            document.querySelectorAll('.ucm-unit-row').forEach(function(r) {
-                r.querySelector('.ucm-unit-actions').style.display = 'none';
-                r.querySelector('span').textContent = '›';
-                r.style.borderColor = '#ddd';
-            });
-            if (!isOpen) {
-                actions.style.display = 'flex';
-                arrow.textContent = '⌄';
-                rowEl.style.borderColor = '#35654D';
+            return;
+        }
+
+        // Organize undo: delete restore OR rename revert (shown in Edit toolbar)
+        // payload:
+        //   { type:'delete'|'deleteAll', items:[{ unit, groupIds, oldId }], groupsSnapshot?, wasDeleteAll?, timer }
+        //   { type:'rename', unitId, oldName, newName, timer }
+        var _ucmUndo = null;
+        var _ucmFlashIds = [];
+
+        function updateUcmUndoBtn() {
+            var btn = document.getElementById('ucmUndoBtn');
+            if (!btn) return;
+            btn.style.display = (_ucmOrganizeEdit && _ucmUndo) ? '' : 'none';
+        }
+
+        function setUcmUndo(payload) {
+            if (_ucmUndo && _ucmUndo.timer) clearTimeout(_ucmUndo.timer);
+            _ucmUndo = payload;
+            if (_ucmUndo) {
+                if (!_ucmUndo.type) {
+                    _ucmUndo.type = _ucmUndo.wasDeleteAll ? 'deleteAll' : 'delete';
+                }
+                markUcmManageDirty();
+                _ucmUndo.timer = setTimeout(function() {
+                    _ucmUndo = null;
+                    updateUcmUndoBtn();
+                }, 12000);
+            }
+            updateUcmUndoBtn();
+        }
+
+        function clearUcmUndo() {
+            if (_ucmUndo && _ucmUndo.timer) clearTimeout(_ucmUndo.timer);
+            _ucmUndo = null;
+            updateUcmUndoBtn();
+        }
+
+        function flashUcmRowsByIds(ids) {
+            // No fade/flash animation — new rows use solid green + NEW! badge instead
+            if (!ids || !ids.length) return;
+            _ucmFlashIds = [];
+        }
+
+        async function ucmUndoDelete() {
+            if (!_ucmUndo) return;
+            var payload = _ucmUndo;
+            clearUcmUndo();
+
+            // ── Undo rename: restore previous name ──
+            if (payload.type === 'rename') {
+                try {
+                    await updateUnitNameInDB(Number(payload.unitId), payload.oldName);
+                    if (_ucmPendingUnit && Number(_ucmPendingUnit.id) === Number(payload.unitId)) {
+                        _ucmPendingUnit.name = payload.oldName;
+                    }
+                    if (_ucmSessionImports) {
+                        var si = _ucmSessionImports.find(function(x) {
+                            return Number(x.id) === Number(payload.unitId);
+                        });
+                        if (si) si.name = payload.oldName;
+                    }
+                    markUcmManageDirty();
+                    syncUnitsEverywhere();
+                    await loadUnitsList();
+                    showToast('↩ Name restored: "' + payload.oldName + '"', 2200);
+                    if (document.getElementById('manageSidePanel') && document.getElementById('manageSidePanel').classList.contains('open')) {
+                        loadUnitsFromDB().then(function(units) { renderMspList(units); });
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showToast('⚠️ Could not undo rename', 2000);
+                }
+                return;
+            }
+
+            // ── Undo delete / delete all ──
+            if (!payload.items || !payload.items.length) return;
+            try {
+                var restoredIds = [];
+                var idMap = {}; // oldId -> newId
+                for (var i = 0; i < payload.items.length; i++) {
+                    var item = payload.items[i];
+                    var unitCopy = Object.assign({}, item.unit);
+                    delete unitCopy.id;
+                    var newId = await saveUnitToDB(unitCopy);
+                    restoredIds.push(newId);
+                    if (item.oldId != null) idMap[String(item.oldId)] = newId;
+                }
+                // Restore folder membership without wiping other decks
+                if (payload.wasDeleteAll && payload.groupsSnapshot) {
+                    var groupsAll = payload.groupsSnapshot.map(function(g) {
+                        return {
+                            id: g.id,
+                            name: g.name,
+                            collapsed: !!g.collapsed,
+                            unitIds: (g.unitIds || []).map(function(uid) {
+                                return idMap[String(uid)];
+                            }).filter(function(uid) { return uid != null; })
+                        };
+                    });
+                    saveGroups(groupsAll);
+                } else {
+                    var groupsLive = loadGroups();
+                    payload.items.forEach(function(item) {
+                        var nid = idMap[String(item.oldId)];
+                        if (nid == null) return;
+                        (item.groupIds || []).forEach(function(gid) {
+                            var g = groupsLive.find(function(x) { return x.id === gid; });
+                            if (g && g.unitIds.map(Number).indexOf(Number(nid)) === -1) {
+                                g.unitIds.push(nid);
+                            }
+                        });
+                    });
+                    saveGroups(groupsLive);
+                }
+                _ucmFlashIds = restoredIds.slice();
+                syncUnitsEverywhere();
+                await loadUnitsList();
+                flashUcmRowsByIds(restoredIds);
+                showToast(restoredIds.length > 1 ? '↩ Restored ' + restoredIds.length + ' decks' : '↩ Deck restored', 2200);
+                if (document.getElementById('manageSidePanel') && document.getElementById('manageSidePanel').classList.contains('open')) {
+                    loadUnitsFromDB().then(function(units) { renderMspList(units); });
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('⚠️ Could not undo', 2000);
             }
         }
 
-        // Collapse open unit row when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.ucm-unit-row')) {
-                document.querySelectorAll('.ucm-unit-row').forEach(function(r) {
-                    r.querySelector('.ucm-unit-actions').style.display = 'none';
-                    const arrow = r.querySelector('span');
-                    if (arrow) arrow.textContent = '›';
-                    r.style.borderColor = '#ddd';
+        // Delete all decks immediately (no Sure?) — Undo appears in Edit toolbar
+        function manageDeleteAll() {
+            loadUnitsFromDB().then(function(units) {
+                if (!units || !units.length) {
+                    showToast('No decks to delete', 1500);
+                    return;
+                }
+                var groups = loadGroups();
+                var items = units.map(function(u) {
+                    var unitCopy = Object.assign({}, u);
+                    var oldId = unitCopy.id;
+                    delete unitCopy.id;
+                    var groupIds = groups.filter(function(g) {
+                        return (g.unitIds || []).map(Number).indexOf(Number(oldId)) !== -1;
+                    }).map(function(g) { return g.id; });
+                    return { unit: unitCopy, oldId: oldId, groupIds: groupIds };
                 });
-            }
-        });
+                setUcmUndo({ type: 'deleteAll', items: items, groupsSnapshot: groups, wasDeleteAll: true });
+                Promise.all(units.map(function(u) { return deleteUnitFromDB(u.id); })).then(function() {
+                    saveGroups([]);
+                    localStorage.removeItem('msp_uncat_order');
+                    cards = []; currentIndex = 0; isFlipped = false;
+                    loadedUnitIds.clear(); currentLoadedUnitId = null;
+                    setLoadedFileName('');
+                    _ucmPendingUnit = null;
+                    saveCards(); renderDisplay(); syncUnitsEverywhere();
+                    updateOrganizePendingUI();
+                    updateFoldersPendingUI();
+                    resetImportFlow();
+                    loadUnitsList();
+                    updateUcmUndoBtn();
+                    showToast('✅ All deleted — tap Undo to restore', 3000);
+                });
+            });
+        }
 
+        // Back-compat alias
         function manageDeleteAllConfirm(btn) {
-            if (btn.dataset.confirming === 'true') {
-                btn.dataset.confirming = 'false';
-                // Delete all units from DB
-                loadUnitsFromDB().then(function(units) {
-                    Promise.all(units.map(function(u){ return deleteUnitFromDB(u.id); })).then(function() {
-                        saveGroups([]);
-                        localStorage.removeItem('msp_uncat_order');
-                        cards = []; currentIndex = 0; isFlipped = false;
-                        loadedUnitIds.clear(); currentLoadedUnitId = null;
-                        setLoadedFileName('');
-                        saveCards(); renderDisplay(); syncUnitsEverywhere();
-                        showToast('✅ All units deleted', 2000);
-                    });
-                });
-            } else {
-                btn.dataset.originalHtml = btn.innerHTML;
-                btn.dataset.originalBg = btn.style.background;
-                btn.dataset.originalColor = btn.style.color;
-                btn.dataset.originalBorderColor = btn.style.borderColor;
-                btn.dataset.confirming = 'true';
-                btn.innerHTML = '<span style="font-size:10px;font-weight:700;pointer-events:none;">Sure?</span>';
-                btn.style.background = '#e53935';
-                btn.style.color = 'white';
-                setTimeout(function() {
-                    if (btn.dataset.confirming === 'true') resetConfirmBtn(btn);
-                }, 3000);
-            }
+            manageDeleteAll();
         }
 
         function manageToggleSort() {
@@ -10745,19 +11461,48 @@
         function saveUncatOrder(order) {
             localStorage.setItem('msp_uncat_order', JSON.stringify(order));
         }
+        function openNewFolderModal() {
+            var modal = document.getElementById('newFolderModal');
+            var input = document.getElementById('newGroupName');
+            if (modal) modal.classList.add('active');
+            if (input) {
+                input.value = '';
+                setTimeout(function() {
+                    input.focus();
+                    try { input.select(); } catch (e) {}
+                }, 50);
+            }
+        }
+        function closeNewFolderModal() {
+            var modal = document.getElementById('newFolderModal');
+            if (modal) modal.classList.remove('active');
+            var input = document.getElementById('newGroupName');
+            if (input) input.value = '';
+        }
+        function confirmNewFolder() {
+            addGroup();
+        }
         function addGroup() {
             const input = document.getElementById('newGroupName');
             if (!input) return;
             const name = input.value.trim();
-            if (!name) { input.focus(); return; }
+            if (!name) {
+                openNewFolderModal();
+                if (input) input.focus();
+                return;
+            }
             const groups = loadGroups();
             groups.push({ id: 'g_' + Date.now(), name: name, unitIds: [], collapsed: false });
             saveGroups(groups);
             input.value = '';
+            closeNewFolderModal();
+            markUcmManageDirty();
+            showFoldersFinishButton();
             renderGroupsList();
             if (document.getElementById('manageSidePanel').classList.contains('open')) {
                 loadUnitsFromDB().then(units => renderMspList(units));
             }
+            showToast('✅ Folder created', 1500);
         }
         function confirmDeleteGroup(event, groupId) {
             event.stopPropagation();
@@ -10790,22 +11535,177 @@
                 loadUnitsFromDB().then(units => renderMspList(units));
             }
         }
+        var _ucmSelectedFolderId = null;
+        var _ucmFolderActiveUnitId = null; // which newly imported deck is selected for assign/drag
+
+        function getUcmNewImportList() {
+            // All newly imported decks this session
+            var list = [];
+            var seen = {};
+            if (_ucmSessionImports && _ucmSessionImports.length) {
+                _ucmSessionImports.forEach(function(s) {
+                    var id = Number(s.id);
+                    if (!seen[id]) {
+                        seen[id] = true;
+                        list.push({ id: id, name: s.name });
+                    }
+                });
+            }
+            if (_ucmPendingUnit) {
+                var pid = Number(_ucmPendingUnit.id);
+                if (!seen[pid]) list.push({ id: pid, name: _ucmPendingUnit.name });
+            }
+            return list;
+        }
+
+        function selectNewImportForFolder(unitId) {
+            _ucmFolderActiveUnitId = Number(unitId);
+            document.querySelectorAll('#foldersPendingFile .ucm-pending-file').forEach(function(el) {
+                el.classList.toggle('is-selected', Number(el.getAttribute('data-unit-id')) === _ucmFolderActiveUnitId);
+            });
+        }
+
+        function selectFolderForPending(groupId) {
+            var news = getUcmNewImportList();
+            if (!news.length) return;
+            if (_ucmFolderActiveUnitId == null) _ucmFolderActiveUnitId = news[0].id;
+            _ucmSelectedFolderId = groupId;
+            document.querySelectorAll('#groupsList .ucm-folder-target').forEach(function(el) {
+                var id = el.getAttribute('data-group-id');
+                var selected = id === groupId;
+                el.classList.toggle('is-selected', selected);
+                var btn = el.querySelector('.ucm-folder-pick');
+                if (btn) btn.style.display = selected ? 'block' : 'none';
+            });
+        }
+
+        function ucmPendingDragStart(e, unitId) {
+            unitId = unitId != null ? Number(unitId) : _ucmFolderActiveUnitId;
+            if (unitId == null) { e.preventDefault(); return; }
+            _ucmFolderActiveUnitId = unitId;
+            selectNewImportForFolder(unitId);
+            e.dataTransfer.setData('text/plain', String(unitId));
+            e.dataTransfer.effectAllowed = 'move';
+            var card = e.currentTarget;
+            if (card) card.classList.add('ucm-dragging');
+        }
+        function ucmPendingDragEnd(e) {
+            if (e && e.currentTarget) e.currentTarget.classList.remove('ucm-dragging');
+            document.querySelectorAll('#foldersPendingFile .ucm-pending-file.ucm-dragging').forEach(function(el) {
+                el.classList.remove('ucm-dragging');
+            });
+            document.querySelectorAll('#groupsList .ucm-folder-target.is-drop-hover').forEach(function(el) {
+                el.classList.remove('is-drop-hover');
+            });
+        }
+        function ucmFolderDragOver(e, el) {
+            if (!getUcmNewImportList().length) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (el) el.classList.add('is-drop-hover');
+        }
+        function ucmFolderDragLeave(el) {
+            if (el) el.classList.remove('is-drop-hover');
+        }
+        function ucmFolderDrop(e, groupId, el) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (el) el.classList.remove('is-drop-hover');
+            var raw = e.dataTransfer.getData('text/plain');
+            var unitId = raw && raw !== 'ucm-pending' ? Number(raw) : _ucmFolderActiveUnitId;
+            if (unitId) _ucmFolderActiveUnitId = unitId;
+            assignPendingToFolder(groupId, unitId);
+        }
+
+        function setFolderDockVisible(show) {
+            // Dual-window dock removed — folders live in the Folders tab again
+            var dock = document.getElementById('folderDockPanel');
+            var modal = document.getElementById('unitConfigModal');
+            if (dock) {
+                dock.classList.remove('open');
+                dock.style.display = 'none';
+            }
+            if (modal) modal.classList.remove('ucm-folders-layout');
+        }
+
         function renderGroupsList() {
             const container = document.getElementById('groupsList');
             if (!container) return;
             const groups = loadGroups();
+            const news = getUcmNewImportList();
+            const fileSlot = document.getElementById('foldersPendingFile');
+            const emptyEl = document.getElementById('foldersPendingEmpty');
+            const binsCount = document.getElementById('foldersBinsCount');
+
+            if (binsCount) binsCount.textContent = String(groups.length);
+
+            // TOP window (Deck Library Folders tab): uncategorized new decks only
+            if (fileSlot) {
+                if (news.length) {
+                    if (_ucmFolderActiveUnitId == null || !news.some(function(n) { return Number(n.id) === Number(_ucmFolderActiveUnitId); })) {
+                        _ucmFolderActiveUnitId = news[0].id;
+                    }
+                    if (emptyEl) emptyEl.style.display = 'none';
+                    fileSlot.style.display = 'block';
+                    fileSlot.innerHTML = news.map(function(n) {
+                        var sel = Number(n.id) === Number(_ucmFolderActiveUnitId) ? ' is-selected' : '';
+                        return '<div class="ucm-pending-file' + sel + '" draggable="true" data-unit-id="' + n.id + '"' +
+                            ' onclick="selectNewImportForFolder(' + n.id + ')"' +
+                            ' ondragstart="ucmPendingDragStart(event,' + n.id + ')" ondragend="ucmPendingDragEnd(event)">' +
+                            '<span class="ucm-pending-file-icon" aria-hidden="true">📄</span>' +
+                            '<span class="ucm-pending-file-name">' + escapeHtmlLite(n.name) + '</span></div>';
+                    }).join('');
+                } else {
+                    fileSlot.innerHTML = '';
+                    fileSlot.style.display = 'none';
+                    if (emptyEl) emptyEl.style.display = 'block';
+                    _ucmSelectedFolderId = null;
+                    _ucmFolderActiveUnitId = null;
+                }
+            }
+
+            // BOTTOM window (folder dock): all folders + drop targets
             if (groups.length === 0) {
-                container.innerHTML = '<div style="color:#aaa;font-size:13px;padding:8px 0;">No groups yet. Add one above.</div>';
+                container.innerHTML = '<div style="color:#aaa;font-size:13px;padding:8px 2px;">No folders yet. Tap <strong>+ Folder</strong> to create one.</div>';
+                bindFoldersScrollChrome();
+                requestAnimationFrame(() => updateFoldersScrollChrome());
+                updateFoldersPendingUI();
                 return;
             }
-            container.innerHTML = groups.map(g =>
-                '<div style="display:flex;align-items:center;gap:8px;background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:10px 12px;margin-bottom:6px;">' +
-                '<span style="font-size:1rem;">&#128193;</span>' +
-                '<span style="flex:1;font-size:14px;font-weight:600;color:#333;">' + g.name + '</span>' +
-                '<span style="font-size:12px;color:#aaa;">' + g.unitIds.length + ' unit' + (g.unitIds.length !== 1 ? 's' : '') + '</span>' +
-                '<button onclick="confirmDeleteGroup(event, \'' + g.id + '\')" data-confirming="false" style="background:none;border:1.5px solid transparent;border-radius:6px;color:#f44336;cursor:pointer;font-size:1.1rem;padding:2px 6px;" title="Delete group">&#x2715;</button>' +
-                '</div>'
-            ).join('');
+
+            if (_ucmSelectedFolderId && !groups.some(function(g) { return g.id === _ucmSelectedFolderId; })) {
+                _ucmSelectedFolderId = null;
+            }
+
+            var hasNews = news.length > 0;
+            container.innerHTML = groups.map(function(g) {
+                var count = (g.unitIds || []).length;
+                var selected = hasNews && _ucmSelectedFolderId === g.id;
+                var dropAttrs = hasNews
+                    ? ' ondragover="ucmFolderDragOver(event,this)" ondragleave="ucmFolderDragLeave(this)" ondrop="ucmFolderDrop(event,\'' + g.id + '\',this)"' +
+                      ' onclick="selectFolderForPending(\'' + g.id + '\')"'
+                    : '';
+                var pickBtn = hasNews
+                    ? '<button type="button" class="ucm-folder-pick" style="display:' + (selected ? 'block' : 'none') + ';"' +
+                      ' onclick="event.stopPropagation();assignPendingToFolder(\'' + g.id + '\')">Add to here?</button>'
+                    : '';
+                var countLabel = count + ' deck' + (count !== 1 ? 's' : '');
+                return '<div class="ucm-folder-row ucm-folder-target' + (selected ? ' is-selected' : '') + '"' +
+                    ' data-group-id="' + g.id + '"' + dropAttrs + '>' +
+                    '<div class="ucm-folder-target-head">' +
+                    '<span style="font-size:1.05rem;" aria-hidden="true">&#128193;</span>' +
+                    '<span style="flex:1;font-size:14px;font-weight:700;color:#2c2c2c;">' + escapeHtmlLite(g.name) + '</span>' +
+                    '<span class="ucm-folder-count-pill">' + countLabel + '</span>' +
+                    '<button onclick="confirmDeleteGroup(event, \'' + g.id + '\')" data-confirming="false" style="background:none;border:1.5px solid transparent;border-radius:6px;color:#f44336;cursor:pointer;font-size:1.1rem;padding:2px 6px;" title="Delete group">&#x2715;</button>' +
+                    '</div>' +
+                    pickBtn +
+                    '</div>';
+            }).join('');
+
+            bindFoldersScrollChrome();
+            requestAnimationFrame(() => updateFoldersScrollChrome());
+            updateFoldersPendingUI();
+            updateFoldersFinishButton();
         }
 
         // ── Manage Side Panel ──
@@ -10823,12 +11723,12 @@
             try {
                 const units = await loadUnitsFromDB();
                 if (!units || units.length === 0) {
-                    list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>⚙️ Manage My Decks</strong> above to add your first JSON file.</div>';
+                    list.innerHTML = '<div class="msp-empty">No decks in your library yet.<br><br>Tap <strong>⚙️ Manage</strong> above, then <strong>Import a deck</strong> to add a JSON file.</div>';
                     return;
                 }
                 renderMspList(units);
             } catch(e) {
-                list.innerHTML = '<div class="msp-empty">Error loading units.</div>';
+                list.innerHTML = '<div class="msp-empty">Error loading decks.</div>';
                 console.error('openManageSidePanel error:', e);
             }
         }
@@ -10913,7 +11813,7 @@
                 }
                 html += uncat.map(makeUnitRow).join('');
             }
-            list.innerHTML = html || '<div class="msp-empty">No units added yet.</div>';
+            list.innerHTML = html || '<div class="msp-empty">No decks in your library yet.</div>';
             setupMspTouchDrag(list);
         }
 
@@ -11228,7 +12128,7 @@
                         if (row) row.remove();
                         var list = document.getElementById('mspList');
                         if (list && list.querySelectorAll('.msp-unit-row').length === 0) {
-                            list.innerHTML = '<div class="msp-empty">No units added yet.<br><br>Tap <strong>⚙️ Manage My Decks</strong> above to add your first JSON file.</div>';
+                            list.innerHTML = '<div class="msp-empty">No decks in your library yet.<br><br>Tap <strong>⚙️ Manage</strong> above, then <strong>Import a deck</strong>.</div>';
                         }
                         syncUnitsEverywhere();
                     }).catch(function(){ showToast('⚠️ Error deleting unit', 2000); });
@@ -11314,6 +12214,407 @@
             }
         }
 
+        // Pending unit from the current import wizard (Organize Create/Group + Folders assign)
+        var _ucmPendingUnit = null; // { id, name }
+        var _ucmActiveTab = 'import';
+        var _ucmImportBusy = false;
+
+        function switchUcmTab(tab) {
+            _ucmActiveTab = tab || 'import';
+            // Leaving Organize (or switching tabs) always exits edit mode → names only
+            if (_ucmActiveTab !== 'organize' && _ucmOrganizeEdit) {
+                _ucmOrganizeEdit = false;
+            }
+            // Leaving Import (or any tab switch): never leave the UI stuck on "Importing…"
+            // If a real import is still running, busy flag may still be true until finally —
+            // but always restore the visible button label so the screen isn't frozen.
+            if (!_ucmImportBusy) {
+                resetImportPickButton();
+            } else {
+                // Soft reset of label only if button still shows Importing while phase is done
+                var pickBtn = document.getElementById('importDeckPickBtn');
+                var done = document.getElementById('importPhaseDone');
+                if (pickBtn && done && done.style.display !== 'none' && /Importing/i.test(pickBtn.textContent || '')) {
+                    resetImportPickButton();
+                    _ucmImportBusy = false;
+                }
+            }
+            updateOrganizeEditUI();
+            var tabs = ['import', 'organize', 'folders'];
+            tabs.forEach(function(t) {
+                var panel = document.getElementById('ucmTab' + t.charAt(0).toUpperCase() + t.slice(1));
+                var btn = document.getElementById('ucmTabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (panel) panel.classList.toggle('active', t === _ucmActiveTab);
+                if (btn) {
+                    btn.classList.toggle('active', t === _ucmActiveTab);
+                    btn.setAttribute('aria-selected', t === _ucmActiveTab ? 'true' : 'false');
+                }
+            });
+            setFolderDockVisible(false);
+            if (_ucmActiveTab === 'import') {
+                // Mid-session: keep individual import cards; only blank pick when session is empty
+                clearImportBusyState(); // safe when returning to Import tab
+                if (_ucmSessionImports && _ucmSessionImports.length) renderImportSessionList();
+                else showImportPhase('pick');
+            }
+            if (_ucmActiveTab === 'organize') {
+                loadUnitsList().then(function() {
+                    highlightPendingUnitRow();
+                    updateOrganizePendingUI();
+                });
+            }
+            if (_ucmActiveTab === 'folders') {
+                renderGroupsList();
+                updateFoldersPendingUI();
+                updateFoldersFinishButton();
+            }
+            updateOrganizePendingUI();
+            updateFoldersPendingUI();
+        }
+
+        function updateOrganizePendingUI() {
+            var banner = document.getElementById('organizePendingBanner');
+            var actions = document.getElementById('organizeImportActions');
+            var hint = document.getElementById('organizeCreateHint');
+            // No "Just added: …" banner — only Create / Group when a pending import exists
+            if (banner) {
+                banner.style.display = 'none';
+                banner.innerHTML = '';
+            }
+            if (_ucmPendingUnit) {
+                if (actions) actions.style.display = 'flex';
+                if (hint) hint.style.display = 'block';
+            } else {
+                if (actions) actions.style.display = 'none';
+                if (hint) hint.style.display = 'none';
+            }
+        }
+
+        function updateFoldersPendingUI() {
+            // Banner removed — newly imported names render in foldersPendingFile only
+            var banner = document.getElementById('foldersPendingBanner');
+            if (banner) {
+                banner.style.display = 'none';
+                banner.innerHTML = '';
+            }
+        }
+
+        function escapeHtmlLite(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function highlightPendingUnitRow() {
+            // Solid green styling via .is-pending — no flash animation
+            if (!_ucmPendingUnit) return;
+            var row = document.querySelector('#unitsList .ucm-unit-row[data-unit-id="' + _ucmPendingUnit.id + '"]');
+            if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // Files imported during this Deck Library open (keeps list; no return to blank import page)
+        var _ucmSessionImports = [];
+        var _ucmManageDirty = false; // any manage-window work this open → tab-close warning
+
+        function markUcmManageDirty() {
+            _ucmManageDirty = true;
+        }
+
+        function ucmHasManageWork() {
+            if (_ucmManageDirty) return true;
+            if (_ucmSessionImports && _ucmSessionImports.length) return true;
+            if (_ucmPendingUnit) return true;
+            if (_ucmUndo) return true;
+            if (_ucmOrganizeEdit) return true;
+            return false;
+        }
+
+        function showImportPhase(phase) {
+            var pick = document.getElementById('importPhasePick');
+            var done = document.getElementById('importPhaseDone');
+            if (pick) pick.style.display = phase === 'pick' ? 'block' : 'none';
+            if (done) done.style.display = phase === 'done' ? 'block' : 'none';
+        }
+
+        function resetImportFlow() {
+            // Full reset only when opening/closing library — not after mid-session "Import another"
+            clearImportDeckForm();
+            _ucmSessionImports = [];
+            showImportPhase('pick');
+            var list = document.getElementById('importSessionList');
+            if (list) list.innerHTML = '';
+            var fileInput = document.getElementById('newUnitFile');
+            if (fileInput) fileInput.value = '';
+        }
+
+        function importAnotherKeepList() {
+            // Stay on the session list; only open the file picker
+            var fileInput = document.getElementById('newUnitFile');
+            if (fileInput) {
+                fileInput.value = '';
+                fileInput.click();
+            }
+        }
+
+        function renderImportSessionList() {
+            var list = document.getElementById('importSessionList');
+            if (!list) return;
+            if (!_ucmSessionImports.length) {
+                showImportPhase('pick');
+                list.innerHTML = '';
+                return;
+            }
+            showImportPhase('done');
+            list.innerHTML = _ucmSessionImports.map(function(item) {
+                var dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '';
+                var cards = item.cardCount != null ? item.cardCount : 0;
+                var meta = dateStr + (dateStr ? ' · ' : '') + cards + ' card' + (cards !== 1 ? 's' : '');
+                // Name + meta; small ✕ for quick remove from this session (+ library)
+                return (
+                    '<div class="ucm-file-card" data-import-id="' + item.id + '" id="importCard-' + item.id + '" style="position:relative;padding-right:40px;">' +
+                    '<button type="button" class="ucm-import-remove" title="Remove" aria-label="Remove"' +
+                    ' onclick="event.stopPropagation();removeSessionImport(' + item.id + ')"' +
+                    ' style="position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;border-radius:8px;' +
+                    'background:transparent;color:#999;font-size:1.15rem;line-height:1;cursor:pointer;padding:0;' +
+                    'display:flex;align-items:center;justify-content:center;">×</button>' +
+                    '<div class="ucm-import-name" id="importNameDisplay-' + item.id + '">' + escapeHtmlLite(item.name) + '</div>' +
+                    '<div class="ucm-import-meta" id="importMeta-' + item.id + '">' + escapeHtmlLite(meta) + '</div>' +
+                    '</div>'
+                );
+            }).join('');
+        }
+
+        // Quick-remove a just-imported file from the Import list (and library, with Undo)
+        function removeSessionImport(unitId) {
+            unitId = Number(unitId);
+            if (!unitId) return;
+            markUcmManageDirty();
+            // Optimistic UI remove; handleUnitDelete also syncs session list + Undo
+            _ucmSessionImports = (_ucmSessionImports || []).filter(function(x) {
+                return Number(x.id) !== unitId;
+            });
+            if (_ucmPendingUnit && Number(_ucmPendingUnit.id) === unitId) {
+                _ucmPendingUnit = _ucmSessionImports.length
+                    ? { id: _ucmSessionImports[_ucmSessionImports.length - 1].id, name: _ucmSessionImports[_ucmSessionImports.length - 1].name }
+                    : null;
+            }
+            renderImportSessionList();
+            updateOrganizePendingUI();
+            handleUnitDelete(unitId, null);
+        }
+
+        // Import → Organize (after reviewing session cards)
+        function importGoNext() {
+            if (_ucmSessionImports && _ucmSessionImports.length) {
+                // Prefer the most recently added file as the pending “just imported” deck
+                var last = _ucmSessionImports[_ucmSessionImports.length - 1];
+                _ucmPendingUnit = { id: last.id, name: last.name };
+            }
+            markUcmManageDirty();
+            switchUcmTab('organize');
+        }
+
+        function focusSelectInput(input) {
+            if (!input) return;
+            function go() {
+                input.focus();
+                try { input.setSelectionRange(0, input.value.length); } catch (e) { input.select(); }
+            }
+            setTimeout(go, 30);
+            setTimeout(go, 180);
+        }
+
+        function startImportRename(unitId) {
+            unitId = unitId != null ? unitId : (_ucmPendingUnit && _ucmPendingUnit.id);
+            if (unitId == null) return;
+            // Close any other inline rename first
+            document.querySelectorAll('#importSessionList .ucm-import-name-slot.is-editing').forEach(function(slot) {
+                var id = (slot.id || '').replace('importNameSlot-', '');
+                if (String(id) !== String(unitId)) cancelImportRename(id);
+            });
+            var card = document.getElementById('importCard-' + unitId);
+            var slot = document.getElementById('importNameSlot-' + unitId);
+            var nameEl = document.getElementById('importNameDisplay-' + unitId);
+            var input = document.getElementById('importNameInput-' + unitId);
+            var meta = document.getElementById('importMeta-' + unitId);
+            var item = _ucmSessionImports.find(function(x) { return Number(x.id) === Number(unitId); });
+            if (!input || !slot) return;
+            if (card) card.classList.add('is-renaming');
+            if (meta) meta.style.display = 'none'; // free space; name field stays in place
+            slot.classList.add('is-editing');
+            input.value = (item && item.name) || (nameEl ? nameEl.textContent : '') || '';
+            focusSelectInput(input);
+        }
+
+        function cancelImportRename(unitId) {
+            var card = document.getElementById('importCard-' + unitId);
+            var slot = document.getElementById('importNameSlot-' + unitId);
+            var meta = document.getElementById('importMeta-' + unitId);
+            var input = document.getElementById('importNameInput-' + unitId);
+            if (card) card.classList.remove('is-renaming');
+            if (slot) slot.classList.remove('is-editing');
+            if (meta) meta.style.display = '';
+            if (input) input._ucmIgnoreBlur = false;
+        }
+
+        async function confirmImportRename(unitId, fromBlur) {
+            unitId = unitId != null ? unitId : (_ucmPendingUnit && _ucmPendingUnit.id);
+            if (unitId == null) return;
+            var slot = document.getElementById('importNameSlot-' + unitId);
+            if (!slot || !slot.classList.contains('is-editing')) return;
+            var input = document.getElementById('importNameInput-' + unitId);
+            if (input && input._ucmSaving) return;
+            var newName = input ? input.value.trim() : '';
+            if (!newName) {
+                if (fromBlur) { cancelImportRename(unitId); return; }
+                showToast('⚠️ Please enter a name', 2000);
+                focusSelectInput(input);
+                return;
+            }
+            try {
+                if (input) input._ucmSaving = true;
+                var item = _ucmSessionImports.find(function(x) { return Number(x.id) === Number(unitId); });
+                var oldName = item ? item.name : '';
+                if (newName !== oldName) {
+                    await updateUnitNameInDB(unitId, newName);
+                    if (item) item.name = newName;
+                    if (_ucmPendingUnit && Number(_ucmPendingUnit.id) === Number(unitId)) {
+                        _ucmPendingUnit.name = newName;
+                    }
+                    var nameEl = document.getElementById('importNameDisplay-' + unitId);
+                    if (nameEl) nameEl.textContent = newName;
+                    syncUnitsEverywhere();
+                    showToast('✅ Renamed', 1500);
+                }
+                cancelImportRename(unitId);
+                // After rename (Enter/Save intent), go Organize — blur alone just closes field
+                if (!fromBlur) {
+                    _ucmPendingUnit = { id: Number(unitId), name: newName };
+                    goToOrganizeAfterName();
+                } else {
+                    _ucmPendingUnit = { id: Number(unitId), name: newName };
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('⚠️ Could not rename', 2000);
+            } finally {
+                if (input) input._ucmSaving = false;
+            }
+        }
+
+        function importNameSkip(unitId) {
+            unitId = unitId != null ? unitId : (_ucmPendingUnit && _ucmPendingUnit.id);
+            if (unitId != null) {
+                var item = _ucmSessionImports.find(function(x) { return Number(x.id) === Number(unitId); });
+                _ucmPendingUnit = {
+                    id: Number(unitId),
+                    name: item ? item.name : (_ucmPendingUnit && _ucmPendingUnit.name) || ''
+                };
+            }
+            goToOrganizeAfterName();
+        }
+
+        function goToOrganizeAfterName() {
+            switchUcmTab('organize');
+        }
+
+        function organizeCreate() {
+            // Leave in default (uncategorized) area of the side panel
+            if (_ucmPendingUnit) {
+                markUcmManageDirty();
+                showToast('✅ "' + _ucmPendingUnit.name + '" ready in library', 2500);
+            }
+            _ucmPendingUnit = null;
+            updateOrganizePendingUI();
+            updateFoldersPendingUI();
+            loadUnitsList();
+            if (document.getElementById('manageSidePanel') && document.getElementById('manageSidePanel').classList.contains('open')) {
+                loadUnitsFromDB().then(function(units) { renderMspList(units); });
+            }
+        }
+
+        function organizeGroup() {
+            if (!_ucmPendingUnit) {
+                showToast('Import a deck first, then use Group', 2500);
+                return;
+            }
+            switchUcmTab('folders');
+        }
+
+        function assignPendingToFolder(groupId, unitIdOpt) {
+            var news = getUcmNewImportList();
+            if (!news.length) return;
+            var unitId = unitIdOpt != null ? Number(unitIdOpt)
+                : (_ucmFolderActiveUnitId != null ? Number(_ucmFolderActiveUnitId) : Number(news[0].id));
+            var item = news.find(function(n) { return Number(n.id) === unitId; }) || news[0];
+            unitId = Number(item.id);
+            var groups = loadGroups();
+            groups.forEach(function(g) {
+                g.unitIds = (g.unitIds || []).filter(function(id) { return Number(id) !== unitId; });
+            });
+            var tgt = groups.find(function(g) { return g.id === groupId; });
+            if (!tgt) {
+                showToast('⚠️ Folder not found', 2000);
+                return;
+            }
+            tgt.unitIds = [unitId].concat(tgt.unitIds || []);
+            saveGroups(groups);
+            markUcmManageDirty();
+            var doneName = item.name;
+            var folderName = tgt.name;
+
+            // Remove from session new list so it no longer appears as “new” on Folders
+            if (_ucmSessionImports) {
+                _ucmSessionImports = _ucmSessionImports.filter(function(s) { return Number(s.id) !== unitId; });
+            }
+            if (_ucmPendingUnit && Number(_ucmPendingUnit.id) === unitId) {
+                _ucmPendingUnit = _ucmSessionImports.length
+                    ? { id: _ucmSessionImports[_ucmSessionImports.length - 1].id, name: _ucmSessionImports[_ucmSessionImports.length - 1].name }
+                    : null;
+            }
+            _ucmSelectedFolderId = null;
+            _ucmFolderActiveUnitId = null;
+            updateFoldersPendingUI();
+            updateOrganizePendingUI();
+            renderGroupsList();
+            if (document.getElementById('manageSidePanel') && document.getElementById('manageSidePanel').classList.contains('open')) {
+                loadUnitsFromDB().then(function(units) { renderMspList(units); });
+            }
+            // Stay on Folders until user taps Finish (never auto-leave after drag/place)
+            showFoldersFinishButton();
+            showToast('✅ "' + doneName + '" → ' + folderName, 2000);
+        }
+
+        var _ucmFoldersShowFinish = false;
+
+        function showFoldersFinishButton() {
+            _ucmFoldersShowFinish = true;
+            updateFoldersFinishButton();
+        }
+
+        function updateFoldersFinishButton() {
+            var btn = document.getElementById('foldersFinishBtn');
+            if (!btn) return;
+            btn.style.display = _ucmFoldersShowFinish ? 'block' : 'none';
+        }
+
+        function finishFoldersTab() {
+            // Done with Folders editing → main app + manage side panel open
+            _ucmFoldersShowFinish = false;
+            updateFoldersFinishButton();
+            _ucmSelectedFolderId = null;
+            _ucmFolderActiveUnitId = null;
+            // Close Deck Library (restores default or flashcard view underneath)
+            if (typeof closeUnitConfigModal === 'function') closeUnitConfigModal();
+            // Open manage slider panel on top of whatever main page was behind
+            if (typeof openManageSidePanel === 'function') {
+                openManageSidePanel();
+            }
+            showToast('✅ Folders updated', 1500);
+        }
+
         // Open Unit Configuration Modal
         function openUnitConfigModal() {
             console.log('Opening Unit Config Modal');
@@ -11326,13 +12627,17 @@
                     return;
                 }
                 modal.classList.add('active');
-                console.log('Modal classes:', modal.classList);
-                console.log('Calling loadUnitsList...');
+                _ucmPendingUnit = null;
+                _ucmSelectedFolderId = null;
+                _ucmOrganizeEdit = false;
+                _ucmManageDirty = false;
+                _ucmFoldersShowFinish = false;
+                resetImportFlow();
+                switchUcmTab('import');
+                updateOrganizeEditUI();
+                updateFoldersFinishButton();
                 loadUnitsList();
                 renderGroupsList();
-                // Sync sort button label
-                const mBtn = document.getElementById('manageSortBtn');
-                if (mBtn) mBtn.textContent = _mspSortMode === 'date' ? 'Sort: Date' : 'Sort: Name';
             } catch (error) {
                 console.error('Error in openUnitConfigModal:', error);
                 alert('Error opening Unit Config Modal: ' + error.message);
@@ -11343,6 +12648,15 @@
         function closeUnitConfigModal() {
             document.body.style.overflow = '';
             document.getElementById('unitConfigModal').classList.remove('active');
+            setFolderDockVisible(false);
+            closeNewFolderModal();
+            _ucmPendingUnit = null;
+            _ucmImportBusy = false;
+            _ucmOrganizeEdit = false;
+            _ucmManageDirty = false;
+            // Next open starts fresh on the blank import button page
+            _ucmSessionImports = [];
+            clearUcmUndo();
         }
 
         // Toggle source input (URL vs File)
@@ -11360,180 +12674,324 @@
             }
         }
 
-        // Add new unit
-        // Handle file selection for new unit - extract filename
-        function onUnitFileSelected() {
-            const fileInput = document.getElementById('newUnitFile');
-            const filenamePreview = document.getElementById('filenamePreview');
-            const filenamePreviewText = document.getElementById('filenamePreviewText');
-            const useFilename = document.getElementById('useFilenameAsUnit');
-            const extras = document.getElementById('newUnitExtras');
+        function resetImportPickButton(label) {
+            // Always restore default Import button (fixes stuck "Importing…")
+            const pickBtn = document.getElementById('importDeckPickBtn');
+            if (!pickBtn) return;
+            pickBtn.disabled = false;
+            pickBtn.style.opacity = '1';
+            pickBtn.style.pointerEvents = '';
+            pickBtn.innerHTML = label || '<span>📂</span><span>Import deck(s) (JSON)</span>';
+        }
 
-            if (fileInput.files && fileInput.files.length > 0) {
-                const fullName = fileInput.files[0].name;
-                const nameWithoutExt = fullName.replace(/\.json$/i, '');
-                if (extras) extras.style.display = 'block';
-                filenamePreviewText.textContent = nameWithoutExt;
-                if (useFilename.checked) filenamePreview.style.display = 'block';
-                document.getElementById('newUnitName').value = nameWithoutExt;
-            } else {
-                if (extras) extras.style.display = 'none';
-                filenamePreview.style.display = 'none';
-                filenamePreviewText.textContent = '';
+        function clearImportBusyState() {
+            _ucmImportBusy = false;
+            resetImportPickButton();
+        }
+
+        function clearImportDeckForm() {
+            const fileInput = document.getElementById('newUnitFile');
+            if (fileInput) fileInput.value = '';
+            const nameInput = document.getElementById('newUnitName');
+            if (nameInput) nameInput.value = '';
+            const meta = document.getElementById('importFileMeta');
+            if (meta) meta.textContent = '';
+            const addedName = document.getElementById('importAddedName');
+            if (addedName) addedName.textContent = '';
+            const renameInput = document.getElementById('importRenameInput');
+            if (renameInput) renameInput.value = '';
+            const renameBox = document.getElementById('importRenameBox');
+            if (renameBox) renameBox.style.display = 'none';
+            const actions = document.getElementById('importNameActions');
+            if (actions) actions.style.display = 'flex';
+            clearImportBusyState();
+        }
+
+        function toggleImportAdvanced() {
+            // Legacy no-op (advanced options removed from Import tab UI)
+        }
+
+        // Handle file selection — import one or many JSON files (multi-select on PC)
+        async function onUnitFileSelected() {
+            const fileInput = document.getElementById('newUnitFile');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                clearImportDeckForm();
+                return;
+            }
+            if (_ucmImportBusy) {
+                // Previous import still running — don't stack; ensure UI not stuck forever
+                return;
+            }
+            _ucmImportBusy = true;
+            const pickBtn = document.getElementById('importDeckPickBtn');
+            const files = Array.from(fileInput.files);
+            if (pickBtn) {
+                pickBtn.disabled = true;
+                pickBtn.style.opacity = '0.85';
+                pickBtn.innerHTML = '<span>⏳</span><span>Importing' + (files.length > 1 ? ' ' + files.length + '…' : '…') + '</span>';
+            }
+            // Safety: never leave "Importing…" forever if something hangs
+            var safetyTimer = setTimeout(function() {
+                if (_ucmImportBusy) {
+                    console.warn('Import busy timeout — clearing stuck Importing state');
+                    clearImportBusyState();
+                }
+            }, 120000);
+            try {
+                await addNewUnit();
+            } catch (err) {
+                console.error('onUnitFileSelected error:', err);
+                showToast('⚠️ Import failed', 2500);
+            } finally {
+                clearTimeout(safetyTimer);
+                // Always restore label + busy flag (was leaving "Importing…" text before)
+                clearImportBusyState();
+                // Clear file input so the same files can be re-picked if needed
+                if (fileInput) fileInput.value = '';
             }
         }
-        
+
+        function toggleLibrarySection() {
+            const sec = document.getElementById('librarySection');
+            if (!sec) return;
+            sec.classList.toggle('library-collapsed');
+            // When expanding, refresh more/fade indicator
+            if (!sec.classList.contains('library-collapsed')) {
+                setTimeout(updateLibraryScrollChrome, 50);
+            }
+        }
+
+        function toggleFoldersSection() {
+            const sec = document.getElementById('foldersSection');
+            if (!sec) return;
+            sec.classList.toggle('folders-collapsed');
+            if (!sec.classList.contains('folders-collapsed')) {
+                setTimeout(updateFoldersScrollChrome, 50);
+            }
+        }
+
+        function updateLibraryScrollChrome() {
+            const list = document.getElementById('unitsList');
+            const fade = document.getElementById('libraryMoreFade');
+            const label = document.getElementById('libraryMoreLabel');
+            const badge = document.getElementById('libraryCountBadge');
+            if (!list) return;
+            const rows = list.querySelectorAll('.ucm-unit-row');
+            const count = rows.length;
+            if (badge) badge.textContent = count ? '(' + count + ')' : '';
+
+            if (!fade || !label) return;
+            // Toggle via class/opacity only — never display changes (keeps modal height static)
+            let showMore = false;
+            if (count > 0) {
+                const canScroll = list.scrollHeight > list.clientHeight + 4;
+                const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 8;
+                showMore = canScroll && !atBottom;
+            }
+            fade.classList.toggle('is-visible', showMore);
+            label.classList.toggle('is-visible', showMore);
+            fade.setAttribute('aria-hidden', showMore ? 'false' : 'true');
+            label.setAttribute('aria-hidden', showMore ? 'false' : 'true');
+        }
+
+        function bindLibraryScrollChrome() {
+            const list = document.getElementById('unitsList');
+            if (!list || list._libraryScrollBound) return;
+            list._libraryScrollBound = true;
+            list.addEventListener('scroll', updateLibraryScrollChrome, { passive: true });
+        }
+
+        function updateFoldersScrollChrome() {
+            const list = document.getElementById('groupsList');
+            const fade = document.getElementById('foldersMoreFade');
+            const label = document.getElementById('foldersMoreLabel');
+            const badge = document.getElementById('foldersCountBadge');
+            if (!list) return;
+            const rows = list.querySelectorAll('.ucm-folder-row');
+            const count = rows.length;
+            if (badge) badge.textContent = count ? '(' + count + ')' : '';
+
+            if (!fade || !label) return;
+            if (count <= 3) {
+                fade.style.display = 'none';
+                label.style.display = 'none';
+                return;
+            }
+            const canScroll = list.scrollHeight > list.clientHeight + 4;
+            const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 8;
+            const showMore = canScroll && !atBottom;
+            fade.style.display = showMore ? 'block' : 'none';
+            label.style.display = showMore ? 'block' : 'none';
+        }
+
+        function bindFoldersScrollChrome() {
+            const list = document.getElementById('groupsList');
+            if (!list || list._foldersScrollBound) return;
+            list._foldersScrollBound = true;
+            list.addEventListener('scroll', updateFoldersScrollChrome, { passive: true });
+        }
+
         // Toggle between using filename or custom name
         function toggleUnitNameInput() {
             const useFilename = document.getElementById('useFilenameAsUnit').checked;
             const customContainer = document.getElementById('customUnitNameContainer');
-            const filenamePreview = document.getElementById('filenamePreview');
+            const filenamePreviewText = document.getElementById('filenamePreviewText');
             const fileInput = document.getElementById('newUnitFile');
-            
+            const nameEl = document.getElementById('newUnitName');
+
             if (useFilename) {
-                // Hide custom input, show filename preview if file selected
-                customContainer.style.display = 'none';
-                if (fileInput.files && fileInput.files.length > 0) {
-                    filenamePreview.style.display = 'block';
+                if (customContainer) customContainer.style.display = 'none';
+                if (fileInput.files && fileInput.files.length > 0 && filenamePreviewText) {
+                    filenamePreviewText.textContent = fileInput.files[0].name.replace(/\.json$/i, '');
                 }
             } else {
-                // Show custom input, hide filename preview
-                customContainer.style.display = 'block';
-                filenamePreview.style.display = 'none';
+                if (customContainer) customContainer.style.display = 'block';
+                if (nameEl && filenamePreviewText) {
+                    filenamePreviewText.textContent = nameEl.value.trim() || '(enter a name below)';
+                }
+                if (nameEl) {
+                    nameEl.oninput = function () {
+                        const pt = document.getElementById('filenamePreviewText');
+                        if (pt) pt.textContent = nameEl.value.trim() || '(enter a name below)';
+                    };
+                }
             }
         }
 
+        function flattenImageToWhite(dataUrl) {
+            return new Promise(resolve => {
+                if (!dataUrl || !dataUrl.startsWith('data:image/png')) { resolve(dataUrl); return; }
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/jpeg', 0.92));
+                };
+                img.onerror = () => resolve(dataUrl);
+                img.src = dataUrl;
+            });
+        }
+
+        // Import a single File object → { id, name, cardCount, createdAt } or null
+        async function importOneUnitFile(file, existingUnits) {
+            const name = file.name.replace(/\.json$/i, '');
+            const text = await file.text();
+            const jsonData = JSON.parse(text);
+
+            let normalizedData;
+            if (Array.isArray(jsonData)) {
+                normalizedData = { cards: jsonData };
+            } else if (jsonData.cards && Array.isArray(jsonData.cards)) {
+                normalizedData = jsonData;
+            } else {
+                throw new Error('JSON must contain a cards array');
+            }
+            if (!normalizedData.cards.length) throw new Error('JSON contains no cards');
+
+            normalizedData.cards = await Promise.all(normalizedData.cards.map(async card => {
+                if (card.frontImage) card.frontImage = await flattenImageToWhite(card.frontImage);
+                if (card.backImage) card.backImage = await flattenImageToWhite(card.backImage);
+                return card;
+            }));
+
+            const unit = {
+                name: name,
+                sourceType: 'file',
+                fileData: JSON.stringify(normalizedData),
+                createdAt: Date.now()
+            };
+
+            const isDuplicate = (existingUnits || []).some(u => {
+                if (u.name === name) return true;
+                if (u.fileData === unit.fileData) return true;
+                return false;
+            });
+            if (isDuplicate) throw new Error('duplicate');
+
+            const newId = await saveUnitToDB(unit);
+            existingUnits.push({ id: newId, name: name, fileData: unit.fileData });
+            return {
+                id: newId,
+                name: name,
+                cardCount: normalizedData.cards.length,
+                createdAt: unit.createdAt
+            };
+        }
+
         async function addNewUnit() {
-            const useFilename = document.getElementById('useFilenameAsUnit').checked;
             const fileInput = document.getElementById('newUnitFile');
 
-            if (!fileInput.files || fileInput.files.length === 0) {
-                showToast('⚠️ Please select a JSON file', 2000);
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                showToast('⚠️ Please choose a JSON deck file first', 2000);
                 return;
             }
 
-            const file = fileInput.files[0];
-            
-            // Determine unit name based on checkbox
-            let name;
-            if (useFilename) {
-                // Use filename without .json extension
-                name = file.name.replace(/\.json$/i, '');
-            } else {
-                // Use custom name from input
-                name = document.getElementById('newUnitName').value.trim();
-                if (!name) {
-                    showToast('⚠️ Please enter a unit name', 2000);
-                    return;
-                }
-            }
+            const files = Array.from(fileInput.files);
+            showToast(files.length > 1 ? '⏳ Processing ' + files.length + ' files…' : '⏳ Processing…', 1500);
 
-            // Validate JSON
             try {
-                const text = await file.text();
-                const jsonData = JSON.parse(text);
-
-                // Validate and normalize JSON format
-                // Accept both: [cards...] OR { cards: [cards...] }
-                let normalizedData;
-                
-                if (Array.isArray(jsonData)) {
-                    // Direct array format: [cards...]
-                    normalizedData = { cards: jsonData };
-                } else if (jsonData.cards && Array.isArray(jsonData.cards)) {
-                    // Object format: { cards: [cards...] }
-                    normalizedData = jsonData;
-                } else {
-                    showToast('⚠️ JSON file must contain cards array', 3000);
-                    return;
-                }
-                
-                // Basic validation of card structure
-                if (normalizedData.cards.length === 0) {
-                    showToast('⚠️ JSON file contains no cards', 3000);
-                    return;
-                }
-
-                // Flatten transparent PNG backgrounds to white at import time
-                function flattenImageToWhite(dataUrl) {
-                    return new Promise(resolve => {
-                        if (!dataUrl || !dataUrl.startsWith('data:image/png')) { resolve(dataUrl); return; }
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = img.naturalWidth;
-                            canvas.height = img.naturalHeight;
-                            const ctx = canvas.getContext('2d');
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            ctx.drawImage(img, 0, 0);
-                            resolve(canvas.toDataURL('image/jpeg', 0.92));
-                        };
-                        img.onerror = () => resolve(dataUrl);
-                        img.src = dataUrl;
-                    });
-                }
-
-                showToast('⏳ Processing images…', 1500);
-                normalizedData.cards = await Promise.all(normalizedData.cards.map(async card => {
-                    if (card.frontImage) card.frontImage = await flattenImageToWhite(card.frontImage);
-                    if (card.backImage)  card.backImage  = await flattenImageToWhite(card.backImage);
-                    return card;
-                }));
-
-                // Store in IndexedDB with normalized format
-                const unit = {
-                    name: name,
-                    sourceType: 'file',
-                    fileData: JSON.stringify(normalizedData), // Store normalized format
-                    createdAt: Date.now()
-                };
-
-                // Check for duplicates by name or identical file content
                 const existingUnits = await loadUnitsFromDB();
-                const isDuplicate = existingUnits.some(u => {
-                    // Same name
-                    if (u.name === name) return true;
-                    // Same file content (regardless of name)
-                    if (u.fileData === unit.fileData) return true;
-                    return false;
-                });
+                const results = [];
+                const errors = [];
 
-                if (isDuplicate) {
-                    showToast('⚠️ This unit is already in your Quick Load list', 3000);
+                for (let i = 0; i < files.length; i++) {
+                    try {
+                        const r = await importOneUnitFile(files[i], existingUnits);
+                        if (r) results.push(r);
+                    } catch (err) {
+                        const msg = (err && err.message) ? err.message : 'error';
+                        errors.push(files[i].name + (msg === 'duplicate' ? ' (already in library)' : ''));
+                        console.error('Import failed for', files[i].name, err);
+                    }
+                }
+
+                if (!results.length) {
+                    showToast(errors.length ? '⚠️ No decks imported' : '⚠️ Invalid JSON file', 3000);
+                    if (_ucmSessionImports.length) renderImportSessionList();
+                    else resetImportFlow();
                     return;
                 }
 
-                await saveUnitToDB(unit);
-                showToast('✅ Unit added successfully', 2000);
+                // Each file as its own card; stay on list (no blank import page mid-session)
+                results.forEach(function(r) {
+                    _ucmSessionImports.push({
+                        id: r.id,
+                        name: r.name,
+                        cardCount: r.cardCount,
+                        createdAt: r.createdAt
+                    });
+                });
+                const primary = results[results.length - 1];
+                _ucmPendingUnit = { id: primary.id, name: primary.name };
+                _ucmFlashIds = results.map(function(r) { return r.id; });
+                markUcmManageDirty();
 
-                // Clear form
-                document.getElementById('newUnitName').value = '';
-                fileInput.value = '';
-                document.getElementById('useFilenameAsUnit').checked = true;
-                document.getElementById('customUnitNameContainer').style.display = 'none';
-                document.getElementById('filenamePreview').style.display = 'none';
-                document.getElementById('filenamePreviewText').textContent = '';
-                document.getElementById('newUnitExtras').style.display = 'none';
+                renderImportSessionList();
+                // Ensure pick button is not left on "Importing…" under the done phase
+                resetImportPickButton();
 
-                // Reload list then flash-highlight the new row
+                const hiddenName = document.getElementById('newUnitName');
+                if (hiddenName) hiddenName.value = primary.name;
+
                 syncUnitsEverywhere();
                 await loadUnitsList();
-                // Find the row matching the new unit name and flash it
-                const rows = document.querySelectorAll('#unitsList .ucm-unit-row');
-                rows.forEach(function(row) {
-                    const nameEl = row.querySelector('[style*="font-weight:600"]') || row.querySelector('div > div');
-                    if (nameEl && nameEl.textContent.includes(name)) {
-                        row.style.animation = 'none';
-                        row.style.borderColor = '#35654D';
-                        row.style.animation = 'unitHighlight 3s ease-out forwards';
-                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                });
+                flashUcmRowsByIds(_ucmFlashIds);
+
+                var toastMsg = '✅ ' + results.length + ' file' + (results.length !== 1 ? 's' : '') + ' added';
+                if (errors.length) toastMsg += ' (' + errors.length + ' skipped)';
+                showToast(toastMsg, 2200);
 
             } catch (error) {
                 console.error('JSON parse error:', error);
                 showToast('⚠️ Invalid JSON file', 2000);
+                if (_ucmSessionImports.length) renderImportSessionList();
+                else resetImportFlow();
+                resetImportPickButton();
             }
         }
 
@@ -11560,48 +13018,100 @@
                 
                 console.log('Loading units from DB...');
                 const rawUnits = await loadUnitsFromDB();
-                const units = [...rawUnits].sort((a, b) => {
-                    if (_mspSortMode === 'name') return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
-                    return (b.createdAt || 0) - (a.createdAt || 0);
-                });
-                console.log('Units loaded:', units.length);
+                function isNewUnit(unit) {
+                    return (_ucmPendingUnit && Number(unit.id) === Number(_ucmPendingUnit.id)) ||
+                        (_ucmSessionImports && _ucmSessionImports.some(function(s) { return Number(s.id) === Number(unit.id); }));
+                }
+                function sortUnits(list) {
+                    return [...list].sort(function(a, b) {
+                        if (_mspSortMode === 'date') return (b.createdAt || 0) - (a.createdAt || 0);
+                        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+                    });
+                }
+                // New session imports always stay on top; older decks follow default name sort (or date if chosen)
+                const newUnits = sortUnits(rawUnits.filter(isNewUnit));
+                // Prefer session import order for "new" block (latest batch order), fall back to sort
+                let newOrdered = newUnits;
+                if (_ucmSessionImports && _ucmSessionImports.length) {
+                    const orderMap = {};
+                    _ucmSessionImports.forEach(function(s, i) { orderMap[String(s.id)] = i; });
+                    newOrdered = newUnits.slice().sort(function(a, b) {
+                        const ai = orderMap[String(a.id)];
+                        const bi = orderMap[String(b.id)];
+                        if (ai != null && bi != null) return ai - bi;
+                        if (ai != null) return -1;
+                        if (bi != null) return 1;
+                        return 0;
+                    });
+                }
+                const oldUnits = sortUnits(rawUnits.filter(function(u) { return !isNewUnit(u); }));
+                console.log('Units loaded:', rawUnits.length, 'new:', newOrdered.length, 'old:', oldUnits.length);
+                _ucmLibraryCount = rawUnits.length;
+                updateOrganizeEditUI();
 
-                if (units.length === 0) {
-                    listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666; background: #f5f5f5; border-radius: 8px;">No units configured yet. Add your first unit above!</div>';
+                if (rawUnits.length === 0) {
+                    listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666; background: #f5f5f5; border-radius: 8px;">No decks saved yet. Use the Import tab to add a JSON file.</div>';
                 } else {
-                    listContainer.innerHTML = units.map(unit => {
-                        const escapedName = unit.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    // Side-panel style icon buttons (icon only)
+                    const svgTrash = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+                    // New rename (pencil) icon matching manage panel stroke style
+                    const svgRename = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path></svg>';
+                    const editMode = !!_ucmOrganizeEdit;
+
+                    function renderUnitRow(unit, isPending) {
+                        const escapedName = unit.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                        const attrName = String(unit.name)
+                            .replace(/&/g, '&amp;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/</g, '&lt;');
+                        const safeDisplayName = escapeHtmlLite(unit.name);
+                        const dateHtml = (editMode && unit.createdAt)
+                            ? `<div class="ucm-unit-date">${new Date(unit.createdAt).toLocaleDateString()}</div>`
+                            : '';
+                        const actionsHtml = editMode
+                            ? `<button type="button" class="msp-btn" title="Rename" style="border-color:#2196F3;color:#2196F3;"
+                                    onclick="event.stopPropagation();renameUnit(${unit.id},'${escapedName}')">${svgRename}</button>
+                               <button type="button" class="msp-del-btn" title="Delete"
+                                    onclick="event.stopPropagation();handleUnitDelete(${unit.id},this)"
+                                    ontouchend="event.stopPropagation();event.preventDefault();handleUnitDelete(${unit.id},this)">${svgTrash}</button>`
+                            : '';
+                        const icon = unit.sourceType === 'url' ? '☁️' : '💾';
+                        // NEW! only in view mode (after Done) — hidden while Edit is open
+                        const newBadge = (isPending && !editMode) ? ' <span class="ucm-new-badge">NEW!</span>' : '';
                         return `
-                        <div class="ucm-unit-row" data-unit-id="${unit.id}" onclick="toggleUcmRow(this, ${unit.id}, '${escapedName}')"
-                            style="background:white;border:1px solid #ddd;border-radius:8px;padding:10px 14px;
-                                   margin-bottom:8px;cursor:pointer;user-select:none;transition:border-color 0.15s;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <div>
-                                    <div style="font-weight:600;font-size:15px;">
-                                        ${unit.sourceType === 'url' ? '☁️' : '💾'} ${unit.name}
-                                    </div>
-                                    ${unit.createdAt ? `<div style="font-size:12px;color:#999;margin-top:2px;">Added: ${new Date(unit.createdAt).toLocaleDateString()}</div>` : ''}
+                        <div class="ucm-unit-row${isPending ? ' is-pending' : ''}" data-unit-id="${unit.id}">
+                            <div class="ucm-unit-info">
+                                <div class="ucm-unit-name-slot" id="ucmNameSlot-${unit.id}">
+                                    <div class="ucm-unit-name-text" id="ucmNameDisplay-${unit.id}">${icon} ${safeDisplayName}${newBadge}</div>
+                                    <input type="text" class="ucm-unit-name-input" id="ucmNameInput-${unit.id}"
+                                        value="${attrName}"
+                                        inputmode="text" enterkeyhint="done" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                                 </div>
-                                <span style="color:#bbb;font-size:18px;line-height:1;">›</span>
+                                ${dateHtml}
                             </div>
-                            <div class="ucm-unit-actions" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid #eee;display:none;gap:8px;">
-                                <button onclick="event.stopPropagation();renameUnit(${unit.id},'${escapedName}')"
-                                    style="flex:1;background:#2196F3;color:white;border:none;border-radius:6px;
-                                           padding:8px;cursor:pointer;font-size:14px;font-weight:600;">
-                                    ✏️ Rename
-                                </button>
-                                <button onclick="event.stopPropagation();handleUnitDelete(${unit.id},this)"
-                                    ontouchend="event.stopPropagation();event.preventDefault();handleUnitDelete(${unit.id},this)"
-                                    style="flex:1;background:#f44336;color:white;border:none;border-radius:6px;
-                                           padding:8px;cursor:pointer;font-size:14px;font-weight:600;">
-                                    🗑️ Delete
-                                </button>
-                            </div>
+                            ${actionsHtml}
                         </div>`;
-                    }).join('');
+                    }
+
+                    let html = '';
+                    if (newOrdered.length) {
+                        html += newOrdered.map(function(u) { return renderUnitRow(u, true); }).join('');
+                        if (oldUnits.length) {
+                            html += '<div class="ucm-new-divider" aria-hidden="true">Earlier</div>';
+                        }
+                    }
+                    if (oldUnits.length) {
+                        html += oldUnits.map(function(u) { return renderUnitRow(u, false); }).join('');
+                    }
+                    listContainer.innerHTML = html;
+                    bindInlineRenameHandlers();
                 }
                 
                 console.log('Units list rendered successfully');
+                bindLibraryScrollChrome();
+                requestAnimationFrame(() => updateLibraryScrollChrome());
+                updateOrganizePendingUI();
+                _ucmFlashIds = [];
             } catch (error) {
                 console.error('Error loading units list:', error);
                 const listContainer = document.getElementById('unitsList');
@@ -11626,183 +13136,265 @@
                 listContainer.removeEventListener('click', oldHandler);
             }
 
-            // Add new click handler with event delegation
+            // Let native onclick handlers run — do not re-parse/intercept (broke rename confirm on PC)
             const clickHandler = function(e) {
-                const target = e.target;
-
-                // Check if clicked on a button or its content (emoji/text)
-                const button = target.closest('button');
-                if (!button) return;
-
-                // Get the onclick attribute
-                const onclickAttr = button.getAttribute('onclick');
-                if (!onclickAttr) return;
-
-                // Prevent default
-                e.preventDefault();
-                e.stopPropagation();
-
-                // Parse and execute the function call
-                try {
-                    // Extract function name and parameters
-                    if (onclickAttr.includes('renameUnit')) {
-                        const match = onclickAttr.match(/renameUnit\((\d+),\s*'([^']*)'\)/);
-                        if (match) {
-                            const unitId = parseInt(match[1]);
-                            const currentName = match[2].replace(/\'/g, "'");
-                            renameUnit(unitId, currentName);
-                        }
-                    } else if (onclickAttr.includes('deleteUnit')) {
-                        const match = onclickAttr.match(/deleteUnit\((\d+)\)/);
-                        if (match) {
-                            const unitId = parseInt(match[1]);
-                            deleteUnit(unitId);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error executing button action:', error);
-                }
+                // No-op reserved for future non-button delegation
             };
 
             listContainer.addEventListener('click', clickHandler);
             listContainer.unitsClickHandler = clickHandler;
         }
 
-        // Shared delete handler for dropdown and empty state panel - touch safe, no confirm()
+        // Delete immediately (no Sure?) — Undo appears in Edit toolbar
         function handleUnitDelete(unitId, btn) {
-            if (btn.dataset.confirming === 'true') {
-                // Second tap - execute delete
-                btn.dataset.confirming = 'false';
-                deleteUnitFromDB(unitId).then(() => {
-                    showToast('✅ Unit deleted', 2000);
-                    syncUnitsEverywhere();
-                }).catch(() => showToast('⚠️ Error deleting unit', 2000));
-            } else {
-                // First tap - show inline confirmation
-                btn.dataset.originalHtml = btn.innerHTML; btn.dataset.originalBg = btn.style.background; btn.dataset.originalColor = btn.style.color; btn.dataset.originalBorderColor = btn.style.borderColor; btn.dataset.confirming = 'true';
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<span style="font-size:10px;font-weight:700;line-height:1.2;text-align:center;pointer-events:none;">Sure?</span>';
-                btn.style.background = '#c62828';
-                setTimeout(() => {
-                    if (btn.dataset.confirming === 'true') {
-                        btn.dataset.confirming = 'false';
-                        btn.innerHTML = originalHTML;
-                        btn.style.background = '#f44336';
+            loadUnitsFromDB().then(function(units) {
+                var unit = units.find(function(u) { return Number(u.id) === Number(unitId); });
+                if (!unit) {
+                    showToast('⚠️ Deck not found', 1500);
+                    return;
+                }
+                var groups = loadGroups();
+                var groupIds = groups.filter(function(g) {
+                    return (g.unitIds || []).map(Number).indexOf(Number(unitId)) !== -1;
+                }).map(function(g) { return g.id; });
+                var unitCopy = Object.assign({}, unit);
+                var oldId = unitCopy.id;
+                delete unitCopy.id;
+                // Merge with existing delete undo (not rename) if multi-delete before timeout
+                var prevItems = (_ucmUndo && _ucmUndo.type !== 'rename' && _ucmUndo.items)
+                    ? _ucmUndo.items.slice() : [];
+                prevItems.push({ unit: unitCopy, oldId: oldId, groupIds: groupIds });
+                setUcmUndo({
+                    type: 'delete',
+                    items: prevItems,
+                    groupsSnapshot: (_ucmUndo && _ucmUndo.type !== 'rename' && _ucmUndo.groupsSnapshot)
+                        ? _ucmUndo.groupsSnapshot : groups,
+                    wasDeleteAll: false
+                });
+
+                deleteUnitFromDB(unitId).then(function() {
+                    groups.forEach(function(g) {
+                        g.unitIds = (g.unitIds || []).filter(function(id) { return Number(id) !== Number(unitId); });
+                    });
+                    saveGroups(groups);
+                    if (_ucmPendingUnit && Number(_ucmPendingUnit.id) === Number(unitId)) {
+                        _ucmPendingUnit = null;
+                        updateOrganizePendingUI();
+                        updateFoldersPendingUI();
                     }
-                }, 3000);
-            }
+                    // Keep other session imports; only drop this id from the Import list
+                    if (_ucmSessionImports && _ucmSessionImports.length) {
+                        _ucmSessionImports = _ucmSessionImports.filter(function(x) {
+                            return Number(x.id) !== Number(unitId);
+                        });
+                        if (typeof renderImportSessionList === 'function') renderImportSessionList();
+                    }
+                    // If unit was loaded into play, unload it
+                    if (typeof loadedUnitIds !== 'undefined' && loadedUnitIds.has(Number(unitId))) {
+                        loadedUnitIds.delete(Number(unitId));
+                    }
+                    markUcmManageDirty();
+                    showToast('✅ Deleted — tap Undo to restore', 2800);
+                    syncUnitsEverywhere();
+                    if (typeof loadUnitsList === 'function') loadUnitsList();
+                    updateUcmUndoBtn();
+                }).catch(function() { showToast('⚠️ Error deleting unit', 2000); });
+            });
         }
 
         // Delete unit - called from Manage Units window
         function deleteUnit(unitId) {
-            const btn = document.querySelector(`#unitsList button[onclick*="deleteUnit(${unitId})"]`);
-            if (btn) {
-                handleUnitDelete(unitId, btn);
-            } else {
-                handleUnitDelete(unitId, { dataset: { confirming: 'true' }, innerHTML: '', style: {} });
-            }
+            handleUnitDelete(unitId, null);
         }
 
-        // Variables for rename modal
+        // Variables kept for any legacy callers
         let renameUnitId = null;
         let renameOriginalName = '';
+        var _ucmRenameOutsideBound = false;
 
-        // Open rename unit modal
+        // Bind Enter / Escape / blur once per input after list render
+        function bindInlineRenameHandlers() {
+            document.querySelectorAll('#unitsList .ucm-unit-name-input').forEach(function(input) {
+                if (input._ucmRenameBound) return;
+                input._ucmRenameBound = true;
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var id = input.id && input.id.replace('ucmNameInput-', '');
+                        confirmInlineUnitRename(id, false);
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var id2 = input.id && input.id.replace('ucmNameInput-', '');
+                        cancelInlineUnitRename(id2);
+                    }
+                });
+                // Blur = click outside field (PC + mobile)
+                input.addEventListener('blur', function() {
+                    var id = input.id && input.id.replace('ucmNameInput-', '');
+                    // Defer so a click on Save/another control can run first if needed
+                    setTimeout(function() {
+                        var slot = document.getElementById('ucmNameSlot-' + id);
+                        if (slot && slot.classList.contains('is-editing')) {
+                            confirmInlineUnitRename(id, true);
+                        }
+                    }, 0);
+                });
+            });
+            // Click/tap outside the input commits rename (more reliable on PC than blur alone)
+            if (!_ucmRenameOutsideBound) {
+                _ucmRenameOutsideBound = true;
+                document.addEventListener('mousedown', function(e) {
+                    if (renameUnitId == null) return;
+                    var input = document.getElementById('ucmNameInput-' + renameUnitId);
+                    if (!input) return;
+                    var slot = document.getElementById('ucmNameSlot-' + renameUnitId);
+                    if (!slot || !slot.classList.contains('is-editing')) return;
+                    if (input === e.target || input.contains(e.target)) return;
+                    // Commit before focus moves away
+                    confirmInlineUnitRename(renameUnitId, true);
+                }, true);
+            }
+        }
+
+        // Inline rename in Organize — same spot as the file name (no modal)
         function renameUnit(unitId, currentName) {
             renameUnitId = unitId;
-            renameOriginalName = currentName;
-
-            const modal = document.getElementById('renameUnitModal');
-            const input = document.getElementById('renameUnitInput');
-
-            input.value = currentName;
-            modal.style.display = 'flex';
-
-            // Focus and select text after a short delay for mobile compatibility
-            setTimeout(() => {
-                input.focus();
-                input.select();
-            }, 100);
-        }
-
-        // Close rename unit modal
-        function closeRenameUnitModal() {
-            const modal = document.getElementById('renameUnitModal');
-            modal.style.display = 'none';
-            renameUnitId = null;
-            renameOriginalName = '';
-        }
-
-        // Confirm rename
-        async function confirmRenameUnit() {
-            const input = document.getElementById('renameUnitInput');
-            const newName = input.value.trim();
-
-            if (newName === '' || newName === renameOriginalName) {
-                closeRenameUnitModal();
+            renameOriginalName = currentName || '';
+            // Cancel other inline renames
+            document.querySelectorAll('#unitsList .ucm-unit-name-slot.is-editing').forEach(function(slot) {
+                var id = (slot.id || '').replace('ucmNameSlot-', '');
+                if (String(id) !== String(unitId)) cancelInlineUnitRename(id);
+            });
+            var slot = document.getElementById('ucmNameSlot-' + unitId);
+            var display = document.getElementById('ucmNameDisplay-' + unitId);
+            var input = document.getElementById('ucmNameInput-' + unitId);
+            var dateEl = slot && slot.parentElement ? slot.parentElement.querySelector('.ucm-unit-date') : null;
+            if (!slot || !input) {
+                showToast('⚠️ Could not open rename', 1500);
                 return;
             }
+            var plain = currentName || '';
+            if (!plain && display) {
+                plain = display.textContent.replace(/^[☁️💾]\s*/, '').replace(/\s*NEW!?\s*$/, '').trim();
+            }
+            if (dateEl) dateEl.style.display = 'none';
+            slot.classList.add('is-editing');
+            input.value = plain;
+            renameOriginalName = plain;
+            focusSelectInput(input);
+        }
 
+        function cancelInlineUnitRename(unitId) {
+            var slot = document.getElementById('ucmNameSlot-' + unitId);
+            var dateEl = slot && slot.parentElement ? slot.parentElement.querySelector('.ucm-unit-date') : null;
+            if (slot) slot.classList.remove('is-editing');
+            if (dateEl) dateEl.style.display = '';
+            if (Number(renameUnitId) === Number(unitId)) {
+                renameUnitId = null;
+                renameOriginalName = '';
+            }
+        }
+
+        async function confirmInlineUnitRename(unitId, fromBlur) {
+            unitId = unitId != null ? unitId : renameUnitId;
+            if (unitId == null) return;
+            var slot = document.getElementById('ucmNameSlot-' + unitId);
+            if (!slot || !slot.classList.contains('is-editing')) return;
+            var input = document.getElementById('ucmNameInput-' + unitId);
+            if (input && input._ucmSaving) return;
+            var newName = input ? input.value.trim() : '';
+            if (!newName) {
+                if (fromBlur) { cancelInlineUnitRename(unitId); return; }
+                showToast('⚠️ Please enter a name', 2000);
+                focusSelectInput(input);
+                return;
+            }
+            var oldName = renameOriginalName;
+            if (!oldName) {
+                var disp = document.getElementById('ucmNameDisplay-' + unitId);
+                if (disp) oldName = disp.textContent.replace(/^[☁️💾]\s*/, '').replace(/\s*NEW!?\s*$/, '').trim();
+            }
+            if (newName === oldName) {
+                cancelInlineUnitRename(unitId);
+                return;
+            }
             try {
-                await updateUnitNameInDB(renameUnitId, newName);
-                showToast('✅ Unit renamed', 2000);
+                if (input) input._ucmSaving = true;
+                await updateUnitNameInDB(Number(unitId), newName);
+                if (_ucmPendingUnit && Number(_ucmPendingUnit.id) === Number(unitId)) {
+                    _ucmPendingUnit.name = newName;
+                }
+                if (_ucmSessionImports) {
+                    var si = _ucmSessionImports.find(function(x) { return Number(x.id) === Number(unitId); });
+                    if (si) si.name = newName;
+                }
+                // Update display immediately so UI stays correct even if list refresh is slow
+                var nameEl = document.getElementById('ucmNameDisplay-' + unitId);
+                if (nameEl) {
+                    var icon = nameEl.textContent.trim().charAt(0);
+                    if (icon !== '☁' && icon !== '💾') icon = '💾';
+                    // Keep emoji prefix if present
+                    var prefix = /^[☁️💾]/.test(nameEl.textContent.trim()) ? nameEl.textContent.trim().split(/\s/)[0] + ' ' : '💾 ';
+                    nameEl.textContent = prefix + newName;
+                }
+                // Store rename for Undo (same Edit toolbar ↩ Undo button)
+                setUcmUndo({
+                    type: 'rename',
+                    unitId: Number(unitId),
+                    oldName: oldName,
+                    newName: newName
+                });
+                showToast('✅ Renamed — tap Undo to reverse', 2500);
+                markUcmManageDirty();
                 syncUnitsEverywhere();
-                closeRenameUnitModal();
+                cancelInlineUnitRename(unitId);
+                if (typeof loadUnitsList === 'function') loadUnitsList();
             } catch (error) {
                 console.error('Error renaming unit:', error);
                 showToast('⚠️ Error renaming unit', 2000);
+            } finally {
+                if (input) input._ucmSaving = false;
             }
         }
 
-        // Handle Enter key in rename input
-        document.addEventListener('DOMContentLoaded', function() {
-            const renameInput = document.getElementById('renameUnitInput');
-            if (renameInput) {
-                renameInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        confirmRenameUnit();
-                    } else if (e.key === 'Escape') {
-                        closeRenameUnitModal();
-                    }
-                });
-            }
-        });
+        // Legacy modal stubs (no longer used — keep for safety)
+        function closeRenameUnitModal() {
+            const modal = document.getElementById('renameUnitModal');
+            if (modal) modal.style.display = 'none';
+            renameUnitId = null;
+            renameOriginalName = '';
+        }
+        async function confirmRenameUnit() {
+            if (renameUnitId != null) await confirmInlineUnitRename(renameUnitId);
+            else closeRenameUnitModal();
+        }
 
         // Update unit name in database
         function updateUnitNameInDB(id, newName) {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open('FlashcardUnitsDB', 1);
+                // Must use the same BurstCardDB / global `db` as save/load (not FlashcardUnitsDB)
+                if (!db) {
+                    reject(new Error('Database not ready'));
+                    return;
+                }
+                const transaction = db.transaction([UNITS_STORE], 'readwrite');
+                const objectStore = transaction.objectStore(UNITS_STORE);
+                const getRequest = objectStore.get(Number(id));
 
-                request.onsuccess = function(event) {
-                    const db = event.target.result;
-                    const transaction = db.transaction(['units'], 'readwrite');
-                    const objectStore = transaction.objectStore('units');
-                    const getRequest = objectStore.get(id);
-
-                    getRequest.onsuccess = function(event) {
-                        const unit = event.target.result;
-                        if (unit) {
-                            unit.name = newName;
-                            const updateRequest = objectStore.put(unit);
-                            updateRequest.onsuccess = function() {
-                                resolve();
-                            };
-                            updateRequest.onerror = function() {
-                                reject(updateRequest.error);
-                            };
-                        } else {
-                            reject(new Error('Unit not found'));
-                        }
-                    };
-
-                    getRequest.onerror = function() {
-                        reject(getRequest.error);
-                    };
+                getRequest.onsuccess = function() {
+                    const unit = getRequest.result;
+                    if (unit) {
+                        unit.name = newName;
+                        const updateRequest = objectStore.put(unit);
+                        updateRequest.onsuccess = function() { resolve(); };
+                        updateRequest.onerror = function() { reject(updateRequest.error); };
+                    } else {
+                        reject(new Error('Unit not found'));
+                    }
                 };
-
-                request.onerror = function() {
-                    reject(request.error);
-                };
+                getRequest.onerror = function() { reject(getRequest.error); };
             });
         }
 
