@@ -3244,31 +3244,6 @@
             }
         }
 
-        /* Mobile (iPhone): smaller scale to fit screen — Bomb only */
-        @media (max-width: 767px) {
-            #revealCard {
-                width: 150px !important;
-                height: 150px !important;
-                margin-left: -75px !important;
-                margin-top: -75px !important;
-                animation: expand-flip-mobile 0.8s ease-out forwards !important;
-            }
-        }
-
-        /* Use larger expansion on tablets only (not desktop) — Bomb only */
-        @media (min-width: 768px) and (max-width: 1024px) {
-            #revealCard {
-                animation: expand-flip-tablet 0.8s ease-out forwards !important;
-            }
-        }
-
-        /* Desktop: use moderate scale — Bomb only */
-        @media (min-width: 1025px) {
-            #revealCard {
-                animation: expand-flip 0.8s ease-out forwards !important;
-            }
-        }
-
         /* Guess the Word reveal: card is 1.3× the old visual size; ✓/✗ bar stays put */
         @keyframes gtw_card_pop {
             from { transform: scale(0.77); }
@@ -3278,7 +3253,8 @@
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        #guessRevealCard {
+        #guessRevealCard,
+        #revealCard {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -3293,7 +3269,9 @@
             margin: 0 !important;
             animation: none !important;
         }
-        #guessRevealCard .guess-reveal-face {
+        #revealCard { z-index: 99999; cursor: pointer; }
+        #guessRevealCard .guess-reveal-face,
+        #revealCard .bomb-reveal-face {
             flex-shrink: 0;
             animation: gtw_card_pop 0.35s ease-out both;
         }
@@ -3309,7 +3287,8 @@
             animation: gtw_slideup 0.3s 0.5s ease-out both;
         }
         /* Phone: old visual card 210px → 273px; bar stays 210×48 */
-        #guessRevealCard .guess-reveal-face {
+        #guessRevealCard .guess-reveal-face,
+        #revealCard .bomb-reveal-face {
             width: 273px;
             height: 273px;
         }
@@ -3322,7 +3301,8 @@
         }
         /* Tablet / iPad portrait: old visual card 500px → 650px; bar stays 500×85 */
         @media (min-width: 768px) and (max-width: 1024px) {
-            #guessRevealCard .guess-reveal-face {
+            #guessRevealCard .guess-reveal-face,
+            #revealCard .bomb-reveal-face {
                 width: 650px;
                 height: 650px;
             }
@@ -3337,7 +3317,8 @@
         }
         /* Desktop / iPad landscape: old visual card 440px → 572px; bar stays 440×75 */
         @media (min-width: 1025px) {
-            #guessRevealCard .guess-reveal-face {
+            #guessRevealCard .guess-reveal-face,
+            #revealCard .bomb-reveal-face {
                 width: 572px;
                 height: 572px;
             }
@@ -3383,18 +3364,21 @@
             transform-style: preserve-3d;
         }
 
-        /* Guess the Word: let JS size square tiles to the real play area */
-        #guessGameModal.modal.active {
+        /* Guess the Word + Bomb: let JS size square tiles to the real play area */
+        #guessGameModal.modal.active,
+        #bombGameModal.modal.active {
             padding: 0;
         }
-        #guessGameModal > div {
+        #guessGameModal > div,
+        #bombGameModal > div {
             max-width: 100% !important;
             width: 100% !important;
             padding-top: 0 !important;
             height: 100%;
             justify-content: center;
         }
-        #guessGameModal .modal-content {
+        #guessGameModal .modal-content,
+        #bombGameModal .modal-content {
             max-height: none;
             overflow: visible;
             max-width: none;
@@ -3521,7 +3505,8 @@
             width: 100%;
         }
         .bomb-tile-emoji {
-            font-size: clamp(4rem, 15vw, 7rem);
+            font-size: 60%;
+            line-height: 1;
             color: white;
         }
         /* Landscape on touch-height screens: size tiles by height so all 9 fit without scrolling */
@@ -4374,7 +4359,7 @@
     </div>
 
     <div class="modal" id="bombGameModal">
-        <div style="position: relative; width: 100%; max-width: 900px; margin: 0 auto; padding-top: clamp(10px, 2vh, 20px); display: flex; flex-direction: column; align-items: center;">
+        <div style="position: relative; width: 100%; max-width: 100%; margin: 0 auto; padding-top: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
             <!-- Floating pill toolbar (mirrors Guess the Word: size toggle + actions) -->
             <div id="bombGameControls" style="position: absolute; top: clamp(10px, 2vh, 18px); left: 50%; transform: translateX(-50%); z-index: 30; display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);">
                 <div id="bombGridToggle" style="display:inline-flex; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
@@ -15276,6 +15261,9 @@
                     if (document.getElementById('guessGameModal')?.classList.contains('active')) {
                         rerenderGuessGameForResize();
                     }
+                    if (document.getElementById('bombGameModal')?.classList.contains('active')) {
+                        if (typeof renderBombGame === 'function') renderBombGame();
+                    }
                 }, 80);
             });
         }
@@ -16740,11 +16728,11 @@
          * area (visual viewport / modal box). The top pill floats over the
          * grid so tiles can grow into that leftover margin.
          */
-        function getGuessPlayBox() {
+        function getGamePlayBox(modalId) {
             const vv = window.visualViewport;
             let w = (vv && vv.width) ? vv.width : window.innerWidth;
             let h = (vv && vv.height) ? vv.height : window.innerHeight;
-            const modal = document.getElementById('guessGameModal');
+            const modal = document.getElementById(modalId);
             if (modal && modal.classList.contains('active')) {
                 const r = modal.getBoundingClientRect();
                 if (r.width > 80 && r.height > 80) {
@@ -16774,7 +16762,7 @@
             // use a vertical bar on the right so the menu does not cover cards.
             const useSidePill = !isTouchPortrait || size === 12 || size === 15;
             const pillW = useSidePill ? 56 : 0;
-            const box = getGuessPlayBox();
+            const box = getGamePlayBox('guessGameModal');
             const availW = Math.max(160, Math.floor(box.w - pillW - inset * 2));
             const availH = Math.max(160, Math.floor(box.h - inset * 2));
             const tile = Math.max(36, Math.floor(Math.min(
@@ -17185,28 +17173,51 @@
 
         function getBombGridLayout() {
             const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+            const isTouchPortrait = !isLandscape && (('ontouchstart' in window) || navigator.maxTouchPoints > 0);
             const size = bombGameState.gridSize || bombGridSize || 9;
             let gridCols, gridRows;
             if (size === 9) {
                 gridCols = 3; gridRows = 3;
-            } else if (size === 12) {
+            } else {
+                // 12 and 15 share one visible frame so 15 tiles stay the same size as 12.
                 gridCols = isLandscape ? 4 : 3;
                 gridRows = isLandscape ? 3 : 4;
-            } else if (isLandscape) {
-                // 15 landscape — same frame as 12 (4×3); extra tiles scroll
-                gridCols = 4; gridRows = 3;
-            } else {
-                gridCols = 3; gridRows = 5;
             }
+            const gap = 8;
+            const inset = 8;
+            const useSidePill = !isTouchPortrait || size === 12 || size === 15;
+            const pillW = useSidePill ? 56 : 0;
+            const box = getGamePlayBox('bombGameModal');
+            const availW = Math.max(160, Math.floor(box.w - pillW - inset * 2));
+            const availH = Math.max(160, Math.floor(box.h - inset * 2));
+            const tile = Math.max(36, Math.floor(Math.min(
+                (availW - gap * (gridCols - 1)) / gridCols,
+                (availH - gap * (gridRows - 1)) / gridRows
+            )));
             return {
                 isLandscape,
+                isTouchPortrait,
+                useSidePill,
                 gridCols,
                 gridRows,
-                gridAspect: gridCols + ' / ' + gridRows,
-                landscapeScroll15: isLandscape && size === 15,
+                scroll15: size === 15,
                 fillByHeight: isLandscape,
-                isTouchPortrait: !isLandscape && (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+                gap,
+                tile,
+                gridW: tile * gridCols + gap * (gridCols - 1),
+                gridH: tile * gridRows + gap * (gridRows - 1)
             };
+        }
+
+        /** Bomb 💣 / 💥 size: same 60% fraction of the square they sit in. */
+        function bombEmojiPx(squarePx) {
+            return Math.max(28, Math.round(squarePx * 0.6));
+        }
+        function bombRevealFacePx() {
+            const w = window.innerWidth;
+            if (w <= 767) return 273;
+            if (w <= 1024) return 650;
+            return 572;
         }
 
         /** Scale bomb-count reduction thresholds with grid size (original was for 9). */
@@ -17246,11 +17257,11 @@
             applyBombSizeButtonStyles(bombGridSize);
 
             const layout = getBombGridLayout();
-            const { isLandscape, gridCols, gridRows, gridAspect, landscapeScroll15, fillByHeight, isTouchPortrait } = layout;
+            const { isLandscape, gridCols, gridRows, scroll15, fillByHeight, isTouchPortrait, useSidePill, gap, tile, gridW, gridH } = layout;
 
-            // Position the HTML pill: top-center on touch portrait; hidden (inline used) otherwise
+            // Top pill only for portrait 9. 12/15 portrait, landscape, and desktop use a right-side bar.
             if (controls) {
-                if (isTouchPortrait && cardsRemaining > 0) {
+                if (!useSidePill && cardsRemaining > 0) {
                     controls.style.cssText = 'position: absolute; top: clamp(10px, 2vh, 18px); left: 50%; right: auto; transform: translateX(-50%); z-index: 30; display: inline-flex; flex-direction: row; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
                     const divider = controls.querySelector('span[style*="height:1px"], span[style*="height: 18px"], span[style*="height:18px"]');
                     if (divider) divider.style.cssText = 'width:1px; height:18px; background:#e0e0e0;';
@@ -17264,10 +17275,12 @@
             const contentEl = document.querySelector('#bombGameModal .modal-content');
             const wrapperEl = contentEl ? contentEl.parentElement : null;
             if (contentEl) {
-                contentEl.style.padding = isTouchPortrait ? 'clamp(56px, 8vh, 78px) 5px 5px' : '8px';
+                contentEl.style.padding = '4px';
             }
             if (wrapperEl) {
-                wrapperEl.style.maxWidth = isTouchPortrait ? '900px' : '100%';
+                wrapperEl.style.maxWidth = '100%';
+                wrapperEl.style.width = '100%';
+                wrapperEl.style.paddingTop = '0px';
             }
 
             // Win state
@@ -17288,11 +17301,9 @@
                 return;
             }
 
-            const outerStyle = fillByHeight
-                ? 'position: relative; height: 90vh; max-height: 90vh; aspect-ratio: ' + gridAspect + '; max-width: calc(100vw - 100px);'
-                : 'position: relative; width: min(95vw, 700px); max-height: calc(100vh - 130px); margin: 0 auto; aspect-ratio: ' + gridAspect + ';';
+            const outerStyle = 'position: relative; width: ' + gridW + 'px; height: ' + gridH + 'px;';
 
-            const inlinePillHtml = isTouchPortrait ? '' : `
+            const inlinePillHtml = useSidePill ? `
                 <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px; background:rgba(255,255,255,0.96); border-radius:999px; padding:12px 7px; box-shadow:0 4px 22px rgba(0,0,0,0.28); margin-left:10px; flex-shrink:0; align-self:center;">
                     <div id="bombGridToggleInline" style="display:inline-flex; flex-direction:column; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
                         <button onclick="setBombGridSize(9)"  style="${bombGridSizeBtnStyle(9,  bombGridSize===9)}">9</button>
@@ -17311,25 +17322,27 @@
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     </button>
                 </div>
-            `;
+            ` : '';
 
             // Fill fixed-size grid: live tiles first, empty shells for removed slots
             const totalSlots = bombGameState.gridSize || bombGridSize;
             const tileHtmls = [];
+            const cellStyle = 'width:' + tile + 'px;height:' + tile + 'px;';
+            const emojiPx = bombEmojiPx(tile);
             for (let i = 0; i < totalSlots; i++) {
                 if (i < gameCards.length) {
                     tileHtmls.push(`
-                        <div style="position:relative;width:100%;aspect-ratio:1;">
+                        <div style="position:relative;${cellStyle}">
                             <div onclick="selectBombCard(${i})" style="cursor:pointer;width:100%;height:100%;animation:bomb-pulse ${2 + (i * 0.15)}s ease-in-out infinite;">
                                 <div style="width:100%;height:100%;background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);border-radius:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-                                    <span style="font-size:clamp(2.2rem,10vw,4.5rem);color:white;">💣</span>
+                                    <span style="font-size:${emojiPx}px;line-height:1;color:white;">💣</span>
                                 </div>
                             </div>
                         </div>
                     `);
                 } else {
                     tileHtmls.push(`
-                        <div style="position:relative;width:100%;aspect-ratio:1;">
+                        <div style="position:relative;${cellStyle}">
                             <div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.35);background:transparent;box-sizing:border-box;pointer-events:none;"></div>
                         </div>
                     `);
@@ -17339,13 +17352,13 @@
             content.innerHTML = `
                 <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
                     <div style="${outerStyle}">
-                        <div id="bombGridScroll" style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); ${landscapeScroll15 ? 'grid-auto-rows: calc((100% - 16px) / 3); align-content: start; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;' : 'grid-template-rows: repeat(' + gridRows + ', 1fr);'} gap: 8px; width: 100%; height: 100%; box-sizing: border-box;">
+                        <div id="bombGridScroll" style="display: grid; grid-template-columns: repeat(${gridCols}, ${tile}px); ${scroll15 ? 'grid-auto-rows: ' + tile + 'px; align-content: start; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;' : 'grid-template-rows: repeat(' + gridRows + ', ' + tile + 'px);'} gap: ${gap}px; width: 100%; height: 100%; box-sizing: border-box;">
                             ${tileHtmls.join('')}
                         </div>
-                        ${landscapeScroll15 ? `
-                        <div id="bombScrollHint" style="display:none; position:absolute; left:0; right:0; bottom:0; height:56px; pointer-events:none; z-index:25; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:8px; box-sizing:border-box; opacity:1; transition:opacity 0.28s ease;">
-                            <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(30,50,40,0.92) 0%, rgba(30,50,40,0.45) 50%, transparent 100%); border-radius:0 0 12px 12px;"></div>
-                            <div style="position:relative; z-index:1; display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:999px; background:rgba(229,57,53,0.95); color:#fff; font-size:0.8rem; font-weight:650; box-shadow:0 2px 10px rgba(0,0,0,0.25);">
+                        ${scroll15 ? `
+                        <div id="bombScrollHint" style="display:flex; position:absolute; left:0; right:0; bottom:0; height:48px; pointer-events:none; z-index:25; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:6px; box-sizing:border-box; opacity:1; transition:opacity 0.28s ease;">
+                            <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(20,35,28,0.88) 0%, rgba(20,35,28,0.35) 55%, transparent 100%); border-radius:0 0 12px 12px;"></div>
+                            <div style="position:relative; z-index:1; display:inline-flex; align-items:center; gap:6px; padding:6px 16px; border-radius:999px; background:rgba(229,57,53,0.96); color:#fff; font-size:0.85rem; font-weight:650; box-shadow:0 2px 10px rgba(0,0,0,0.25);">
                                 <span>↓</span><span>More</span>
                             </div>
                         </div>` : ''}
@@ -17395,18 +17408,18 @@
             const content = document.getElementById('bombGameContent');
             const card = bombGameState.gameCards[cardIndex];
             const layout = getBombGridLayout();
-            const { gridCols, gridRows, gridAspect, landscapeScroll15, fillByHeight, isTouchPortrait } = layout;
+            const { gridCols, gridRows, scroll15, isTouchPortrait, useSidePill, gap, tile, gridW, gridH } = layout;
             const totalSlots = bombGameState.gridSize || bombGridSize;
+            const cellStyle = 'width:' + tile + 'px;height:' + tile + 'px;';
+            const emojiPx = bombEmojiPx(tile);
+            const revealEmojiPx = bombEmojiPx(bombRevealFacePx());
 
-            // Hide static pill during reveal on desktop/landscape
             const controls = document.getElementById('bombGameControls');
-            if (controls && !isTouchPortrait) controls.style.cssText = 'display: none;';
+            if (controls && useSidePill) controls.style.cssText = 'display: none;';
 
-            const outerStyle = fillByHeight
-                ? 'position: relative; height: 90vh; max-height: 90vh; aspect-ratio: ' + gridAspect + '; max-width: calc(100vw - 100px);'
-                : 'position: relative; width: min(95vw, 700px); max-height: calc(100vh - 130px); margin: 0 auto; aspect-ratio: ' + gridAspect + ';';
+            const outerStyle = 'position: relative; width: ' + gridW + 'px; height: ' + gridH + 'px;';
 
-            const inlinePillHtml = isTouchPortrait ? '' : `
+            const inlinePillHtml = useSidePill ? `
                 <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px; background:rgba(255,255,255,0.96); border-radius:999px; padding:12px 7px; box-shadow:0 4px 22px rgba(0,0,0,0.28); margin-left:10px; flex-shrink:0; align-self:center;">
                     <div style="display:inline-flex; flex-direction:column; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
                         <button onclick="setBombGridSize(9)"  style="${bombGridSizeBtnStyle(9,  bombGridSize===9)}">9</button>
@@ -17425,22 +17438,22 @@
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     </button>
                 </div>
-            `;
+            ` : '';
 
             const tileHtmls = [];
             for (let i = 0; i < totalSlots; i++) {
                 if (i < bombGameState.gameCards.length) {
                     const hidden = i === cardIndex ? 'visibility:hidden;' : '';
                     tileHtmls.push(`
-                        <div style="position:relative;width:100%;aspect-ratio:1;${hidden}">
+                        <div style="position:relative;${cellStyle}${hidden}">
                             <div style="width:100%;height:100%;background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);border-radius:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-                                <span style="font-size:clamp(2.2rem,10vw,4.5rem);color:white;">💣</span>
+                                <span style="font-size:${emojiPx}px;line-height:1;color:white;">💣</span>
                             </div>
                         </div>
                     `);
                 } else {
                     tileHtmls.push(`
-                        <div style="position:relative;width:100%;aspect-ratio:1;">
+                        <div style="position:relative;${cellStyle}">
                             <div style="width:100%;height:100%;border-radius:15px;border:3px dashed rgba(255,255,255,0.35);background:transparent;box-sizing:border-box;pointer-events:none;"></div>
                         </div>
                     `);
@@ -17450,47 +17463,45 @@
             content.innerHTML = `
                 <div style="width: 100%; display: flex; align-items: center; justify-content: center;">
                     <div style="${outerStyle}">
-                        <div style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); ${landscapeScroll15 ? 'grid-auto-rows: calc((100% - 16px) / 3); align-content: start; overflow-y: auto; overflow-x: hidden;' : 'grid-template-rows: repeat(' + gridRows + ', 1fr);'} gap: 8px; width: 100%; height: 100%; box-sizing: border-box;">
+                        <div id="bombGridScroll" style="display: grid; grid-template-columns: repeat(${gridCols}, ${tile}px); ${scroll15 ? 'grid-auto-rows: ' + tile + 'px; align-content: start; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;' : 'grid-template-rows: repeat(' + gridRows + ', ' + tile + 'px);'} gap: ${gap}px; width: 100%; height: 100%; box-sizing: border-box;">
                             ${tileHtmls.join('')}
                         </div>
+                        ${scroll15 ? `
+                        <div id="bombScrollHint" style="display:flex; position:absolute; left:0; right:0; bottom:0; height:48px; pointer-events:none; z-index:25; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:6px; box-sizing:border-box; opacity:1; transition:opacity 0.28s ease;">
+                            <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(20,35,28,0.88) 0%, rgba(20,35,28,0.35) 55%, transparent 100%); border-radius:0 0 12px 12px;"></div>
+                            <div style="position:relative; z-index:1; display:inline-flex; align-items:center; gap:6px; padding:6px 16px; border-radius:999px; background:rgba(229,57,53,0.96); color:#fff; font-size:0.85rem; font-weight:650; box-shadow:0 2px 10px rgba(0,0,0,0.25);">
+                                <span>↓</span><span>More</span>
+                            </div>
+                        </div>` : ''}
 
-                        <!-- Expanding and flipping card overlay -->
-                        <div id="revealCard" style="position: fixed;
-                             top: 50%;
-                             left: 50%;
-                             width: 200px;
-                             height: 200px;
-                             margin-left: -100px;
-                             margin-top: -100px;
-                             z-index: 99999;
-                             cursor: pointer;
-                             pointer-events: none;
-                             animation: expand-flip 0.8s ease-out forwards;">
-                            <div style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: card-flip 0.8s ease-out forwards;">
-                                <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-                                            background: linear-gradient(135deg, #35654D 0%, #2d5542 100%);
-                                            border-radius: 15px;
-                                            display: flex;
-                                            align-items: center;
-                                            justify-content: center;
-                                            box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-                                    <span style="font-size: clamp(4rem, 15vw, 6rem); color: white;">💣</span>
-                                </div>
-                                <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-                                            background: white;
-                                            border-radius: 15px;
-                                            display: flex;
-                                            flex-direction: column;
-                                            align-items: center;
-                                            justify-content: center;
-                                            padding: 10px;
-                                            transform: rotateY(180deg);
-                                            box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-                                    ${isBomb ?
-                                        `<p style="font-size: clamp(3rem, 12vw, 5rem); margin: 0;">💥</p>
-                                         <p style="font-size: clamp(1.2rem, 4vw, 1.8rem); color: #ff6b6b; margin: 10px 0 0 0; font-weight: bold;">BOOM!</p>` :
-                                        `<img src="${gifSrc(card.frontImage)}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;" onerror="console.error('Image failed to load:', this.src)">`
-                                    }
+                        <div id="revealCard">
+                            <div class="bomb-reveal-face">
+                                <div style="width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: card-flip 0.8s ease-out forwards;">
+                                    <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+                                                background: linear-gradient(135deg, #35654D 0%, #2d5542 100%);
+                                                border-radius: 15px;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+                                        <span style="font-size: ${revealEmojiPx}px; line-height: 1; color: white;">💣</span>
+                                    </div>
+                                    <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+                                                background: white;
+                                                border-radius: 15px;
+                                                display: flex;
+                                                flex-direction: column;
+                                                align-items: center;
+                                                justify-content: center;
+                                                padding: 10px;
+                                                transform: rotateY(180deg);
+                                                box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+                                        ${isBomb ?
+                                            `<p style="font-size: ${revealEmojiPx}px; line-height: 1; margin: 0;">💥</p>
+                                             <p style="font-size: clamp(1.2rem, 4vw, 1.8rem); color: #ff6b6b; margin: 10px 0 0 0; font-weight: bold;">BOOM!</p>` :
+                                            `<img src="${gifSrc(card.frontImage)}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px;" onerror="console.error('Image failed to load:', this.src)">`
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
