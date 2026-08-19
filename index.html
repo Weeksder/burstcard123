@@ -2822,7 +2822,8 @@
         }
         body.reorder-active-drag .modal,
         body.reorder-active-drag .modal-content,
-        body.reorder-active-drag #imagePreviewGrid {
+        body.reorder-active-drag #imagePreviewGrid,
+        body.reorder-active-drag #previewOverlayGrid {
             overflow: hidden !important;
             touch-action: none !important;
             overscroll-behavior: none !important;
@@ -2885,8 +2886,108 @@
 
         /* ✕ only visible while Reorder & Remove mode is active (dotted outline mode) */
         #createModal.reorder-mode-on .preview-image-container .preview-image-delete,
+        #previewOverlayModal.reorder-mode-on .preview-image-container .preview-image-delete,
         .preview-image-container.reorder-enabled .preview-image-delete {
             display: flex;
+        }
+
+        #previewOverlayToolbar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 14px 0;
+            flex-shrink: 0;
+        }
+        #previewOverlayBody {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+        #previewOverlayGrid {
+            scrollbar-width: none;
+        }
+        #previewOverlayGrid::-webkit-scrollbar {
+            display: none;
+        }
+        #previewOverlayScroll {
+            display: none;
+            width: 10px !important;
+            min-width: 10px !important;
+            max-width: 10px !important;
+            flex: 0 0 10px !important;
+            position: relative;
+            background: #eef1f4;
+            border-left: 1px solid #e0e4e8;
+            touch-action: none;
+            cursor: pointer;
+            z-index: 6;
+        }
+        #previewOverlayModal.reorder-mode-on #previewOverlayScroll {
+            width: 12px !important;
+            min-width: 12px !important;
+            max-width: 12px !important;
+            flex-basis: 12px !important;
+            background: #ece8f8;
+            border-left-color: #d4c8f0;
+        }
+        #previewOverlayScrollThumb {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            top: 0;
+            min-height: 40px;
+            border-radius: 6px;
+            background: #35654D;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            touch-action: none;
+            cursor: grab;
+        }
+        #previewOverlayModal.reorder-mode-on #previewOverlayScrollThumb {
+            background: #6d28d9;
+        }
+        #previewOverlayGrid .session-preview-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 12px;
+            min-width: 0;
+        }
+        #previewOverlayGrid .session-preview-item.is-current {
+            background: #f0f9f4;
+            outline: 2.5px solid #35654D;
+        }
+        #previewOverlayGrid .session-preview-item.reorder-enabled {
+            cursor: grab;
+            outline: 2px dashed #8b5cf6;
+            outline-offset: 2px;
+            touch-action: none;
+            -ms-touch-action: none;
+            -webkit-touch-action: none;
+        }
+        #previewOverlayModal.reorder-mode-on #previewOverlayGrid {
+            overscroll-behavior: contain;
+        }
+        #previewOverlayModal.reorder-mode-on #previewOverlayGrid .preview-image-container {
+            overflow: visible;
+        }
+        #previewOverlayGrid .session-preview-label {
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            padding: 0 2px;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        #previewOverlayGrid .session-preview-item.is-current .session-preview-label {
+            color: #35654D;
         }
 
         /* Preview toolbar: Add More + Reorder & Remove */
@@ -5336,7 +5437,15 @@
                 <span style="color:white; font-weight:700; font-size:17px;">👁️ Card Preview</span>
                 <button onclick="closePreviewOverlay()" style="background:rgba(255,255,255,0.2); border:none; color:white; font-size:18px; cursor:pointer; border-radius:8px; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">✕</button>
             </div>
-            <div id="previewOverlayGrid" style="flex:1; overflow-y:auto; padding:14px; -webkit-overflow-scrolling:touch; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; min-height:0; align-content:start;"></div>
+            <div id="previewOverlayToolbar">
+                <button type="button" class="preview-toolbar-btn arrange" id="previewArrangeBtn" onclick="toggleSessionPreviewArrange(event)">🔀 Reorder &amp; Remove</button>
+            </div>
+            <div id="previewOverlayBody">
+                <div id="previewOverlayGrid" style="flex:1; overflow-y:auto; padding:14px; -webkit-overflow-scrolling:touch; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; min-height:0; align-content:start;"></div>
+                <div id="previewOverlayScroll" title="Scroll" style="width:10px;">
+                    <div id="previewOverlayScrollThumb"></div>
+                </div>
+            </div>
             <div style="padding:10px 16px; border-top:1px solid #eee; flex-shrink:0; text-align:right;">
                 <button onclick="closePreviewOverlay()" class="btn btn-secondary" style="padding:8px 24px;">Close</button>
             </div>
@@ -6966,12 +7075,14 @@
             }
         }
 
-        function saveCards() {
+        function saveCards(opts) {
             try {
                 sessionStorage.setItem('flashcards', JSON.stringify(cards));
             } catch (e) {
                 console.error('Error saving cards:', e);
-                showToast('⚠️ Could not save — storage may be full or disabled', 3000);
+                if (!opts || !opts.silent) {
+                    showToast('⚠️ Could not save — storage may be full or disabled', 3000);
+                }
             }
         }
 
@@ -8705,6 +8816,8 @@
                     document.getElementById('createModal'),
                     document.getElementById('createModalContent'),
                     document.getElementById('imagePreviewGrid'),
+                    document.getElementById('previewOverlayModal'),
+                    document.getElementById('previewOverlayGrid'),
                     document.scrollingElement || document.documentElement
                 ].filter(Boolean);
             }
@@ -8754,15 +8867,23 @@
                 });
             }
 
+            function getDragGrid() {
+                if (_dragEl && _dragEl.parentElement) return _dragEl.parentElement;
+                return document.getElementById('imagePreviewGrid') || document.getElementById('previewOverlayGrid');
+            }
+
             function getGridItems() {
-                const grid = document.getElementById('imagePreviewGrid');
+                const grid = getDragGrid();
                 if (!grid) return [];
-                return Array.from(grid.querySelectorAll('.preview-image-container'));
+                if (grid.id === 'previewOverlayGrid') {
+                    return Array.from(grid.querySelectorAll(':scope > .session-preview-item'));
+                }
+                return Array.from(grid.querySelectorAll(':scope > .preview-image-container'));
             }
 
             // FLIP animate siblings as the dragged card's slot moves in the grid
             function liveReorderTo(toIdx) {
-                const grid = document.getElementById('imagePreviewGrid');
+                const grid = getDragGrid();
                 if (!grid || !_dragEl) return;
                 const items = getGridItems();
                 const fromIdx = items.indexOf(_dragEl);
@@ -8815,7 +8936,7 @@
             }
 
             function onDown(e) {
-                if (!isDragReorderMode) return;
+                if (!isDragReorderMode && !_previewArrangeMode) return;
                 if (e.pointerType === 'mouse' && e.button !== 0) return;
                 if (e.target && e.target.closest && e.target.closest('.preview-image-delete')) return;
                 e.preventDefault();
@@ -8878,7 +8999,7 @@
                 const el = document.elementFromPoint(e.clientX, e.clientY);
                 _clone.style.visibility = '';
 
-                const hit = el ? el.closest('.preview-image-container.reorder-enabled') : null;
+                const hit = el ? (el.closest('.session-preview-item.reorder-enabled') || el.closest('.preview-image-container.reorder-enabled')) : null;
                 if (!hit) return;
 
                 const items = getGridItems();
@@ -8927,7 +9048,9 @@
 
                 // Commit data from DOM order — no re-compress / no image refresh
                 if (moved) {
-                    commitPreviewOrderFromDom();
+                    const grid = document.getElementById('previewOverlayGrid');
+                    if (grid && _previewArrangeMode) commitSessionPreviewOrderFromDom();
+                    else commitPreviewOrderFromDom();
                 }
             }
 
@@ -10541,9 +10664,15 @@
         function openPreview() {
             if (previewMode === 'overlay') {
                 const modal = document.getElementById('previewOverlayModal');
+                const toolbar = document.getElementById('previewOverlayToolbar');
+                if (toolbar) toolbar.style.display = 'none';
+                modal.classList.remove('reorder-mode-on');
                 modal.style.display = 'flex';
                 // Defer grid build so overlay is fully painted before images load
-                requestAnimationFrame(() => buildPreviewGrid('previewOverlayGrid'));
+                requestAnimationFrame(() => {
+                    buildPreviewGrid('previewOverlayGrid');
+                    setupPreviewOverlayScroll();
+                });
             } else {
                 const panel = document.getElementById('previewExpandPanel');
                 if (panel.style.display === 'block') {
@@ -10556,6 +10685,8 @@
         }
 
         // Preview all currently loaded session cards — reuses the same overlay
+        let _previewArrangeMode = false;
+
         function openSessionPreview() {
             const menu = document.getElementById('settingsMenu');
             if (menu) menu.style.display = 'none';
@@ -10563,38 +10694,219 @@
 
             if (cards.length === 0) { showToast('⚠️ No cards to preview', 2000); return; }
 
+            _previewArrangeMode = false;
             const modal = document.getElementById('previewOverlayModal');
-            const title = modal.querySelector('span');
-            if (title) title.textContent = `👁️ Card Preview (${cards.length})`;
+            const toolbar = document.getElementById('previewOverlayToolbar');
+            if (toolbar) toolbar.style.display = 'flex';
+            modal.classList.remove('reorder-mode-on');
             modal.style.display = 'flex';
+            renderSessionPreviewGrid();
+        }
 
+        function renderSessionPreviewGrid() {
+            const modal = document.getElementById('previewOverlayModal');
             const grid = document.getElementById('previewOverlayGrid');
-            requestAnimationFrame(() => {
-                grid.innerHTML = cards.map((card, i) => {
-                    const rawLabel = (card.backText || '')
-                        .replace(/<[^>]*>/g, '')
-                        .replace(/[\r\n]+/g, ' ')
-                        .trim();
-                    const label = rawLabel !== '' ? rawLabel : `Card ${i + 1}`;
-                    const isCurrent = i === currentIndex;
-                    return `
-                    <div style="display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;
-                                border-radius:12px; padding:4px;
-                                ${isCurrent ? 'background:#f0f9f4; outline:2.5px solid #35654D;' : ''}"
-                         onclick="closePreviewOverlay(); currentIndex=${i}; isFlipped=false; renderDisplay();">
-                        <img src="${gifSrc(card.frontImage)}" style="width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:8px;
-                                    border:${isCurrent ? '2px solid #35654D' : '1px solid #eee'};">
-                        <div style="width:100%; box-sizing:border-box; text-align:center; font-size:1rem; font-weight:600;
-                                    color:${isCurrent ? '#35654D' : '#1a1a1a'}; padding:0 2px; word-break:break-word; line-height:1.3;">
-                            ${label}
-                        </div>
-                    </div>`;
-                }).join('');
+            const title = modal ? modal.querySelector('span') : null;
+            const arrangeBtn = document.getElementById('previewArrangeBtn');
+            if (!grid) return;
+
+            if (title) title.textContent = '👁️ Card Preview (' + cards.length + ')';
+            if (arrangeBtn) {
+                arrangeBtn.textContent = _previewArrangeMode ? '✓ Done' : '🔀 Reorder & Remove';
+                arrangeBtn.classList.toggle('active', !!_previewArrangeMode);
+            }
+            if (modal) modal.classList.toggle('reorder-mode-on', !!_previewArrangeMode);
+
+            grid.innerHTML = cards.map((card, i) => {
+                const rawLabel = (card.backText || '')
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/[\r\n]+/g, ' ')
+                    .trim();
+                const label = rawLabel !== '' ? rawLabel : ('Card ' + (i + 1));
+                const isCurrent = i === currentIndex;
+                const del = _previewArrangeMode
+                    ? '<div class="preview-image-delete" title="Remove" onclick="event.preventDefault(); event.stopPropagation(); deleteSessionPreviewCard(' + i + ');" onpointerdown="event.stopPropagation();">✕</div>'
+                    : '';
+                return '<div class="session-preview-item' + (isCurrent ? ' is-current' : '') + (_previewArrangeMode ? ' reorder-enabled' : '') + '" data-index="' + i + '" data-orig-index="' + i + '">' +
+                    '<div class="preview-image-container has-preview-img">' +
+                    '<img src="' + gifSrc(card.frontImage) + '" alt="" draggable="false" style="border:' + (isCurrent ? '2px solid #35654D' : '1px solid #eee') + ';">' +
+                    '<div class="preview-card-num">' + (i + 1) + '</div>' +
+                    del +
+                    '</div>' +
+                    '<div class="session-preview-label">' + label + '</div>' +
+                    '</div>';
+            }).join('');
+
+            Array.from(grid.querySelectorAll('.session-preview-item')).forEach(function (item) {
+                if (_previewArrangeMode) {
+                    item.onclick = null;
+                    item.ondragstart = function (e) { e.preventDefault(); return false; };
+                    if (cards.length >= 2 && typeof _attachReorderPointerEvents === 'function') {
+                        _attachReorderPointerEvents(item);
+                    }
+                } else {
+                    item.onclick = function () {
+                        const idx = parseInt(item.dataset.index, 10);
+                        if (isNaN(idx)) return;
+                        closePreviewOverlay();
+                        currentIndex = idx;
+                        isFlipped = false;
+                        renderDisplay();
+                    };
+                }
+            });
+            setupPreviewOverlayScroll();
+        }
+
+        function setupPreviewOverlayScroll() {
+            const grid = document.getElementById('previewOverlayGrid');
+            const rail = document.getElementById('previewOverlayScroll');
+            const thumb = document.getElementById('previewOverlayScrollThumb');
+            if (!grid || !rail || !thumb) return;
+
+            function syncThumb() {
+                const view = grid.clientHeight;
+                const full = grid.scrollHeight;
+                const overflow = full > view + 6;
+                rail.style.display = overflow ? 'block' : 'none';
+                if (!overflow) return;
+                const thumbH = Math.max(40, Math.round(view * (view / full)));
+                const maxTop = Math.max(0, view - thumbH);
+                const maxScroll = Math.max(1, full - view);
+                const top = (grid.scrollTop / maxScroll) * maxTop;
+                thumb.style.height = thumbH + 'px';
+                thumb.style.top = Math.max(0, Math.min(maxTop, top)) + 'px';
+            }
+
+            if (grid._previewScrollSync) grid.removeEventListener('scroll', grid._previewScrollSync);
+            grid._previewScrollSync = syncThumb;
+            grid.addEventListener('scroll', syncThumb, { passive: true });
+            requestAnimationFrame(syncThumb);
+            setTimeout(syncThumb, 80);
+            setTimeout(syncThumb, 400);
+
+            if (rail._previewScrollBound) return;
+            rail._previewScrollBound = true;
+            let dragging = false;
+            let startY = 0;
+            let startScroll = 0;
+
+            function scrollFromPointer(clientY, fromThumb) {
+                const view = grid.clientHeight;
+                const full = grid.scrollHeight;
+                const maxScroll = Math.max(1, full - view);
+                const railRect = rail.getBoundingClientRect();
+                const thumbH = thumb.offsetHeight || 40;
+                if (fromThumb) {
+                    const dy = clientY - startY;
+                    const maxTop = Math.max(1, view - thumbH);
+                    grid.scrollTop = startScroll + (dy / maxTop) * maxScroll;
+                } else {
+                    const y = clientY - railRect.top - thumbH / 2;
+                    const maxTop = Math.max(1, view - thumbH);
+                    grid.scrollTop = (y / maxTop) * maxScroll;
+                }
+            }
+
+            rail.addEventListener('pointerdown', function (e) {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                dragging = true;
+                startY = e.clientY;
+                startScroll = grid.scrollTop;
+                const onThumb = !!(e.target && e.target.closest && e.target.closest('#previewOverlayScrollThumb'));
+                if (!onThumb) scrollFromPointer(e.clientY, false);
+                try { rail.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+                function onMove(ev) {
+                    if (!dragging) return;
+                    ev.preventDefault();
+                    scrollFromPointer(ev.clientY, onThumb);
+                }
+                function onUp() {
+                    dragging = false;
+                    rail.removeEventListener('pointermove', onMove);
+                    rail.removeEventListener('pointerup', onUp);
+                    rail.removeEventListener('pointercancel', onUp);
+                }
+                rail.addEventListener('pointermove', onMove);
+                rail.addEventListener('pointerup', onUp);
+                rail.addEventListener('pointercancel', onUp);
+            });
+        }
+
+        function toggleSessionPreviewArrange(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (cards.length === 0) return;
+            _previewArrangeMode = !_previewArrangeMode;
+            renderSessionPreviewGrid();
+        }
+
+        function deleteSessionPreviewCard(index) {
+            if (index < 0 || index >= cards.length) return;
+            const deletedCard = cards[index];
+            if (deletedCard && deletedCard.frontImage) {
+                try {
+                    const hash = fastHash(deletedCard.frontImage);
+                    imageHashCache.delete(hash);
+                } catch (e) { /* ignore */ }
+            }
+            const deletedUnitId = deletedCard && deletedCard._unitId;
+            cards.splice(index, 1);
+            if (deletedUnitId !== undefined) {
+                const stillHasCards = cards.some(function (c) { return c._unitId === deletedUnitId; });
+                if (!stillHasCards) {
+                    loadedUnitIds.delete(deletedUnitId);
+                    if (currentLoadedUnitId === deletedUnitId) currentLoadedUnitId = null;
+                }
+            }
+            if (currentIndex >= cards.length) currentIndex = Math.max(0, cards.length - 1);
+            if (cards.length === 0) {
+                closePreviewOverlay();
+                showToast('All cards removed', 2000);
+                return;
+            }
+            renderSessionPreviewGrid();
+        }
+
+        function commitSessionPreviewOrderFromDom() {
+            const grid = document.getElementById('previewOverlayGrid');
+            if (!grid || !cards.length) return;
+            const nodes = Array.from(grid.querySelectorAll(':scope > .session-preview-item'));
+            if (!nodes.length) return;
+            const old = cards.slice();
+            const currentCard = old[currentIndex];
+            const next = [];
+            nodes.forEach(function (node, i) {
+                let orig = parseInt(node.dataset.origIndex, 10);
+                if (isNaN(orig) || orig < 0 || orig >= old.length) orig = parseInt(node.dataset.index, 10);
+                if (isNaN(orig) || orig < 0 || orig >= old.length) orig = i;
+                next.push(old[orig]);
+                node.dataset.origIndex = String(i);
+                node.dataset.index = String(i);
+                const num = node.querySelector('.preview-card-num');
+                if (num) num.textContent = String(i + 1);
+            });
+            cards = next;
+            const found = cards.indexOf(currentCard);
+            currentIndex = found >= 0 ? found : 0;
+            nodes.forEach(function (node, i) {
+                node.classList.toggle('is-current', i === currentIndex);
             });
         }
 
         function closePreviewOverlay() {
-            document.getElementById('previewOverlayModal').style.display = 'none';
+            _previewArrangeMode = false;
+            const modal = document.getElementById('previewOverlayModal');
+            if (modal) {
+                modal.classList.remove('reorder-mode-on');
+                modal.style.display = 'none';
+            }
+            if (typeof saveCards === 'function') saveCards({ silent: true });
+            if (typeof renderDisplay === 'function') renderDisplay();
             showCardOverlays();
         }
 
