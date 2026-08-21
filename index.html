@@ -958,12 +958,25 @@
             visibility: hidden;
         }
 
-        .card.swiping ~ .card-next,
-        .card-stack.swiping .card-next,
-        .card.swiping ~ .card-prev,
-        .card-stack.swiping .card-prev {
+        /* Peek only the card you are swiping toward (not both at once) */
+        .card-stack.swipe-show-next .card-next,
+        .card-stack.swipe-show-prev .card-prev {
             opacity: 1;
             visibility: visible;
+        }
+        /* Sideways carousel: neighbors sit off-screen and slide in with the finger */
+        .card-stack.swipe-carousel {
+            overflow: hidden;
+        }
+        .card-stack.swipe-carousel .card-next,
+        .card-stack.swipe-carousel .card-prev {
+            opacity: 1;
+            visibility: visible;
+            z-index: 4;
+            pointer-events: none;
+        }
+        .card-stack.swipe-carousel .card {
+            z-index: 10;
         }
 
         .card.swiping {
@@ -1211,6 +1224,40 @@
         .vowel {
             color: #ff9500;
             pointer-events: auto;
+        }
+
+        /* Match the Picture: consonants use the same letter font as vowels */
+        #matchGameModal [id^="matchLabel"],
+        #matchGameModal [id^="matchLabel"] .vowel {
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
+            font-weight: var(--spell-letter-weight, 400) !important;
+        }
+        #matchGameModal .match-mark-layer {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 52px;
+            pointer-events: none;
+            z-index: 3;
+        }
+        #matchGameModal .match-mark-layer svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12));
+        }
+        #matchGameModal .match-draw {
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            animation: match-draw-stroke 0.4s ease-out forwards;
+        }
+        #matchGameModal .match-draw-x2 {
+            animation-delay: 0.14s;
+        }
+        @keyframes match-draw-stroke {
+            to { stroke-dashoffset: 0; }
         }
 
         .hint {
@@ -4145,9 +4192,9 @@
                     </svg>
                     Lock Side (Back Only)
                 </button>
-                <button id="swipeDirBtn" disabled
-                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#bbb; cursor:not-allowed; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0; opacity:0.5;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <button id="swipeDirBtn" onclick="event.stopPropagation(); toggleSwipeDirection()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleSwipeDirection()"
+                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 18 21 12 15 6"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="9 6 3 12 9 18"/>
                     </svg>
                     Swipe Forward: ON
@@ -6509,6 +6556,48 @@
             const PEAK_DRAG_SUPPRESS_FLIP = 20;
             let peakDist = 0;
 
+            function swipeEls() {
+                return {
+                    card: document.querySelector('.card'),
+                    stack: document.querySelector('.card-stack'),
+                    prev: document.querySelector('.card-prev'),
+                    next: document.querySelector('.card-next')
+                };
+            }
+
+            function applySideCarousel(x, withTransition) {
+                const els = swipeEls();
+                const w = (els.stack && els.stack.offsetWidth) || window.innerWidth;
+                const t = withTransition ? 'transform 0.28s ease-out' : 'none';
+                const flipRot = isFlipped ? ' rotateY(180deg)' : '';
+                if (els.stack) els.stack.classList.add('swipe-carousel', 'swiping');
+                if (els.card) {
+                    els.card.classList.add('swiping');
+                    els.card.style.transition = t;
+                    els.card.style.transform = 'translateX(' + x + 'px)' + flipRot;
+                }
+                if (els.next) {
+                    els.next.style.transition = t;
+                    els.next.style.transform = 'translateX(' + (w + x) + 'px)';
+                }
+                if (els.prev) {
+                    els.prev.style.transition = t;
+                    els.prev.style.transform = 'translateX(' + (-w + x) + 'px)';
+                }
+            }
+
+            function clearSideCarousel() {
+                const els = swipeEls();
+                if (els.stack) els.stack.classList.remove('swiping', 'swipe-carousel', 'swipe-show-next', 'swipe-show-prev');
+                if (els.card) {
+                    els.card.classList.remove('swiping');
+                    els.card.style.transform = '';
+                    els.card.style.transition = '';
+                }
+                if (els.next) { els.next.style.transform = ''; els.next.style.transition = ''; }
+                if (els.prev) { els.prev.style.transform = ''; els.prev.style.transition = ''; }
+            }
+
             function getPos(e) {
                 if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
                 return { x: e.clientX, y: e.clientY };
@@ -6560,15 +6649,21 @@
 
                 if (dist > 10) {
                     const cardEl = document.querySelector('.card');
+                    const cardStack = document.querySelector('.card-stack');
                     if (cardEl) {
-                        const rotation = dragX * 0.03;
-                        const tiltY = dragY * 0.01;
-                        // Keep flip rotation so back side stays visible during drag
-                        const flipRot = isFlipped ? ' rotateY(180deg)' : '';
-                        cardEl.style.transform = `translateX(${dragX}px) translateY(${dragY}px) rotateZ(${rotation}deg) rotateX(${-tiltY}deg)${flipRot}`;
-                        cardEl.classList.add('swiping');
-                        const cardStack = document.querySelector('.card-stack');
-                        if (cardStack) cardStack.classList.add('swiping');
+                        if (!swipeForwardOnly) {
+                            applySideCarousel(dragX, false);
+                        } else {
+                            const rotation = dragX * 0.03;
+                            const tiltY = dragY * 0.01;
+                            const flipRot = isFlipped ? ' rotateY(180deg)' : '';
+                            cardEl.style.transform = `translateX(${dragX}px) translateY(${dragY}px) rotateZ(${rotation}deg) rotateX(${-tiltY}deg)${flipRot}`;
+                            cardEl.classList.add('swiping');
+                            if (cardStack) {
+                                cardStack.classList.add('swiping', 'swipe-show-next');
+                                cardStack.classList.remove('swipe-show-prev');
+                            }
+                        }
                     }
                 }
             }
@@ -6598,48 +6693,60 @@
 
                 // Tap
                 if (elapsed < MAX_TAP_TIME && peakDist < PEAK_DRAG_SUPPRESS_FLIP && finalDist < MIN_DRAG_TO_SUPPRESS_FLIP) {
-                    if (cardEl) { cardEl.classList.remove('swiping'); cardEl.style.transform = ''; }
-                    if (cardStack) cardStack.classList.remove('swiping');
+                    clearSideCarousel();
                     lastTouchTime = Date.now();
                     requestAnimationFrame(() => flipCard());
                     return;
                 }
 
                 const absX = Math.abs(dragX), absY = Math.abs(dragY);
+                const sidewaysOnly = !swipeForwardOnly;
+                const isSwipe = sidewaysOnly ? (absX >= MIN_SWIPE) : (finalDist >= MIN_SWIPE);
 
-                if (finalDist >= MIN_SWIPE) {
-                    const flyX = absX >= absY ? (dragX > 0 ? window.innerWidth * 1.2 : -window.innerWidth * 1.2) : 0;
+                if (isSwipe && sidewaysOnly) {
+                    const w = (cardStack && cardStack.offsetWidth) || window.innerWidth;
+                    const goingNext = dragX < 0;
+                    applySideCarousel(goingNext ? -w : w, true);
+                    document.body.style.overflow = 'hidden';
+                    setTimeout(() => {
+                        clearSideCarousel();
+                        if (goingNext) nextCard(); else prevCard();
+                    }, 280);
+                } else if (isSwipe) {
+                    const flyX = absX >= absY
+                        ? (dragX > 0 ? window.innerWidth * 1.2 : -window.innerWidth * 1.2)
+                        : 0;
                     const flyY = absX < absY ? (dragY > 0 ? window.innerHeight * 1.2 : -window.innerHeight * 1.2) : 0;
                     const flyRot = dragX * 0.15;
-                    // Preserve flip rotation so back side stays visible during fly-off
                     const flipRot = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
                     if (cardEl) {
-                        cardEl.classList.remove('flipped'); // remove CSS class so we control transform manually
+                        cardEl.classList.remove('flipped');
                         cardEl.style.transition = 'transform 0.28s ease-in';
                         cardEl.style.transform = `translateX(${flyX}px) translateY(${flyY}px) rotateZ(${flyRot}deg) ${flipRot}`;
                     }
-                    if (cardStack) cardStack.classList.remove('swiping');
 
                     document.body.style.overflow = 'visible';
 
                     setTimeout(() => {
                         document.body.style.overflow = 'hidden';
-                        if (absX >= absY) {
-                            if (dragX > 0) { swipeForwardOnly ? nextCard() : prevCard(); } else { nextCard(); }
-                        } else {
-                            if (dragY > 0) { swipeForwardOnly ? nextCard() : prevCard(); } else { nextCard(); }
-                        }
+                        if (cardStack) cardStack.classList.remove('swiping', 'swipe-show-next', 'swipe-show-prev');
+                        nextCard();
                     }, 290);
+                } else if (sidewaysOnly) {
+                    applySideCarousel(0, true);
+                    setTimeout(() => {
+                        clearSideCarousel();
+                        document.body.style.overflow = 'hidden';
+                    }, 280);
                 } else {
-                    // Snap back
                     if (cardEl) {
                         cardEl.style.transition = 'transform 0.25s ease';
                         cardEl.style.transform = '';
                         cardEl.classList.remove('swiping');
                         setTimeout(() => { if (cardEl) cardEl.style.transition = ''; }, 260);
                     }
-                    if (cardStack) cardStack.classList.remove('swiping');
+                    if (cardStack) cardStack.classList.remove('swiping', 'swipe-show-next', 'swipe-show-prev');
                 }
 
                 startX = 0; startY = 0; dragX = 0; dragY = 0; peakDist = 0;
@@ -6673,16 +6780,12 @@
                 const cardEl = document.querySelector('.card');
                 const cardStack = document.querySelector('.card-stack');
                 const cardContainer = document.querySelector('.card-container');
+                clearSideCarousel();
                 if (cardEl) {
-                    cardEl.style.transition = 'transform 0.25s ease';
-                    cardEl.style.transform = '';
-                    cardEl.classList.remove('swiping');
                     cardEl.style.zIndex = '';
                     cardEl.style.userSelect = '';
                     cardEl.style.webkitUserSelect = '';
-                    setTimeout(() => { if (cardEl) cardEl.style.transition = ''; }, 260);
                 }
-                if (cardStack) cardStack.classList.remove('swiping');
                 if (cardContainer) cardContainer.style.zIndex = '';
                 document.body.style.overflow = 'hidden';
             }, { passive: true });
@@ -6696,8 +6799,8 @@
                     const cardEl = document.querySelector('.card');
                     const cardStack = document.querySelector('.card-stack');
                     const cardContainer = document.querySelector('.card-container');
-                    if (cardEl) { cardEl.style.transform = ''; cardEl.style.transition = ''; cardEl.classList.remove('swiping'); cardEl.style.zIndex = ''; }
-                    if (cardStack) cardStack.classList.remove('swiping');
+                    clearSideCarousel();
+                    if (cardEl) cardEl.style.zIndex = '';
                     if (cardContainer) cardContainer.style.zIndex = '';
                     document.body.style.overflow = 'hidden';
                 }
@@ -10135,6 +10238,25 @@
         }
 
         let swipeForwardOnly = true;
+        try {
+            const savedSwipe = localStorage.getItem('flashabc_swipe_forward');
+            if (savedSwipe === '0') swipeForwardOnly = false;
+            if (savedSwipe === '1') swipeForwardOnly = true;
+        } catch (e) {}
+
+        function updateSwipeDirButton() {
+            const btn = document.getElementById('swipeDirBtn');
+            if (!btn) return;
+            const on = swipeForwardOnly;
+            btn.disabled = false;
+            btn.style.cursor = 'pointer';
+            btn.style.opacity = '1';
+            btn.style.background = on ? '#ffd0d0' : 'white';
+            btn.style.color = on ? '#8a1515' : '#333';
+            const stroke = on ? '#8a1515' : '#35654D';
+            btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 21 12 15 6"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="9 6 3 12 9 18"/></svg>Swipe Forward: ' + (on ? 'ON' : 'OFF');
+        }
+
         function openHelpMenu() {
             document.body.style.overflow = 'hidden';
             document.getElementById('helpMenuModal').classList.add('active');
@@ -10152,13 +10274,12 @@
 
         function toggleSwipeDirection() {
             swipeForwardOnly = !swipeForwardOnly;
-            const btn = document.getElementById('swipeDirBtn');
-            if (btn) {
-                const svgEl = btn.querySelector('svg');
-                const svgHTML = svgEl ? svgEl.outerHTML : '';
-                btn.innerHTML = svgHTML + (swipeForwardOnly ? ' Swipe: Forward Only' : ' Swipe: Both Ways');
-            }
+            try { localStorage.setItem('flashabc_swipe_forward', swipeForwardOnly ? '1' : '0'); } catch (e) {}
+            updateSwipeDirButton();
+            const menu = document.getElementById('settingsMenu');
+            if (menu) menu.style.display = 'none';
         }
+        updateSwipeDirButton();
 
         function nextCard() {
             if (isShuffling) return;
@@ -16221,9 +16342,13 @@
         function stwClose() {
             stwStopAll();
             window.removeEventListener('resize', stwSizeGrid);
-            document.getElementById('stwModal').style.display = 'none';
-            document.getElementById('stwPickerOverlay').style.display = 'none';
-            document.body.style.overflow = '';
+            const settings = document.getElementById('stwSettingsOverlay');
+            if (settings) settings.style.display = 'none';
+            const picker = document.getElementById('stwPickerOverlay');
+            if (picker) picker.style.display = 'none';
+            const modal = document.getElementById('stwModal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = 'hidden';
             openGameMenu();
         }
 
@@ -16256,7 +16381,13 @@
                            background:${on?'#35654D':'white'};color:${on?'white':'#35654D'};">${lbl}</button>`;
             }).join('');
             el.innerHTML = `
-                <h3 style="margin:0;color:#35654D;text-align:center;font-size:1.2rem;">⚙️ Game Settings</h3>
+                <div style="position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;">
+                    <h3 style="margin:0;color:#35654D;text-align:center;font-size:1.2rem;">⚙️ Game Settings</h3>
+                    <button type="button" onclick="stwClose()" title="Cancel"
+                        style="position:absolute;top:50%;right:0;transform:translateY(-50%);
+                               background:#f3f4f6;border:none;color:#555;font-size:18px;cursor:pointer;
+                               border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;line-height:1;">✕</button>
+                </div>
                 <div>
                     <div style="font-weight:700;color:#333;margin-bottom:10px;font-size:0.95rem;">Cards</div>
                     <div style="display:flex;gap:8px;">${cardBtns}</div>
@@ -16830,9 +16961,6 @@
 
             const q = questions[currentQ];
 
-            const tickSVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-            const crossSVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
-
             // Touch devices: landscape only when rotated (height < 600)
             // PC/desktop: landscape whenever window is wider than tall
             const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
@@ -16841,48 +16969,53 @@
             const isLandscape = window.innerWidth > window.innerHeight && (!isTouchDevice || (window.innerWidth / window.innerHeight) > 1.2);
 
             const choicesHTML = q.options.map((opt, idx) => {
-                const isMultiWord = opt.trim().includes(' ');
                 return `
                 <button id="matchOpt${idx}"
                     onclick="checkMatchAnswer('${opt.replace(/'/g,"\\'")}', ${idx})"
-                    style="border:3px solid #e53935;border-radius:16px;background:white;
-                           padding:10px 14px;cursor:pointer;display:flex;align-items:center;
-                           justify-content:center;gap:6px;transition:all 0.18s;
-                           box-shadow:0 3px 10px rgba(0,0,0,0.15);width:100%;height:auto;">
-                    <span id="matchIcon${idx}L" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0;"></span>
-                    <span id="matchLabel${idx}" style="font-family:'Fredoka',Arial,sans-serif;font-size:5rem;
-                          font-weight:400;color:#1a1a1a;line-height:1.2;text-align:center;
-                          white-space:normal;word-break:normal;overflow-wrap:normal;min-width:0;flex:1;">
+                    style="position:relative;border:none;border-bottom:3px solid #222;border-radius:0;background:transparent;
+                           padding:10px 8px 8px;cursor:pointer;display:flex;align-items:center;
+                           justify-content:center;transition:background 0.15s;
+                           box-shadow:none;width:100%;height:auto;overflow:visible;">
+                    <span id="matchLabel${idx}" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-size:2.6rem;
+                          font-weight:var(--spell-letter-weight,400);color:#1a1a1a;line-height:1.25;text-align:center;
+                          white-space:normal;word-break:break-word;overflow-wrap:break-word;min-width:0;flex:1;">
                         ${highlightVowelsFront(opt)}
                     </span>
-                    <span id="matchIcon${idx}R" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0;"></span>
+                    <span id="matchMark${idx}" class="match-mark-layer" aria-hidden="true"></span>
                 </button>`;
             }).join('');
 
+            const shellBorder = isLandscape ? '#e53935' : '#35654D';
+            const shellDir = isLandscape ? 'row' : 'column';
+            const choicesWrap = isLandscape
+                ? 'width:42%;flex-shrink:0;justify-content:center;padding:28px 12px 12px;gap:6px;'
+                : 'width:100%;flex-shrink:0;justify-content:flex-start;padding:4px 28px 22px;gap:4px;';
+            const imageWrap = isLandscape
+                ? 'flex:1;min-width:0;min-height:0;border:3px solid #35654D;border-radius:14px;overflow:hidden;'
+                : 'flex:1 1 auto;min-height:0;width:100%;overflow:hidden;';
+            const imageBlock = `
+                    <div style="${imageWrap}">
+                        <img src="${gifSrc(q.card.frontImage)}"
+                             style="width:100%;height:100%;object-fit:contain;display:block;">
+                    </div>`;
+            const choicesBlock = `
+                    <div style="display:flex;flex-direction:column;${choicesWrap}">
+                        ${choicesHTML}
+                    </div>`;
+
             content.innerHTML = `
                 <div style="width:100%;height:100%;background:white;border-radius:20px;
-                            box-shadow:0 10px 40px rgba(0,0,0,0.2);border:3px solid #e53935;
-                            display:flex;flex-direction:row;gap:10px;
-                            padding:10px;box-sizing:border-box;overflow:hidden;position:relative;">
+                            box-shadow:0 10px 40px rgba(0,0,0,0.2);border:3px solid ${shellBorder};
+                            display:flex;flex-direction:${shellDir};gap:${isLandscape ? '10px' : '0'};
+                            padding:${isLandscape ? '10px' : '8px 8px 0'};box-sizing:border-box;overflow:hidden;position:relative;">
 
-                    <!-- Index badge -->
                     <span style="position:absolute;top:8px;left:12px;z-index:3;
                                  background:rgba(0,0,0,0.15);color:#555;font-size:0.72rem;font-weight:700;
                                  border-radius:5px;padding:2px 7px;line-height:1.6;">
                         ${currentQ + 1} / ${questions.length}
                     </span>
 
-                    <!-- Left: stacked bubbles -->
-                    <div style="display:flex;flex-direction:column;justify-content:center;gap:10px;
-                                width:42%;flex-shrink:0;padding-top:22px;">
-                        ${choicesHTML}
-                    </div>
-
-                    <!-- Right: image -->
-                    <div style="flex:1;min-width:0;border:3px solid #35654D;border-radius:14px;overflow:hidden;">
-                        <img src="${gifSrc(q.card.frontImage)}"
-                             style="width:100%;height:100%;object-fit:contain;display:block;">
-                    </div>
+                    ${isLandscape ? choicesBlock + imageBlock : imageBlock + choicesBlock}
 
                 </div>`;
 
@@ -16890,57 +17023,35 @@
         }
 
         function scaleMatchLabels() {
-            const MAX_SIZE = 5.0;
-            const MIN_SIZE = 0.7;
+            const MAX_SIZE = 3.2;
+            const MIN_SIZE = 1.15;
             const STEP = 0.05;
             const numOpts = matchGameState.questions[matchGameState.currentQ]?.options.length ?? 3;
-
-            const probe = document.createElement('span');
-            probe.style.cssText = "position:absolute;visibility:hidden;top:-9999px;left:-9999px;" +
-                "font-family:'Fredoka',Arial,sans-serif;font-weight:400;white-space:nowrap;";
-            document.body.appendChild(probe);
-
             let globalMin = MAX_SIZE;
 
             for (let i = 0; i < numOpts; i++) {
-                const el = document.getElementById(`matchLabel${i}`);
+                const el = document.getElementById('matchLabel' + i);
                 if (!el) continue;
                 const btn = el.closest('button');
                 if (!btn) continue;
-                const available = btn.clientWidth - 28;
+                const available = btn.clientWidth - 12;
                 if (available <= 0) continue;
-
-                const words = el.textContent.trim().split(/\s+/).filter(Boolean);
-                const longest = words.reduce((a, b) => a.length >= b.length ? a : b, '');
-
-                // Step 1: shrink until longest word fits on one line
+                el.style.whiteSpace = 'normal';
+                el.style.overflowWrap = 'break-word';
+                el.style.wordBreak = 'break-word';
                 let size = MAX_SIZE;
-                while (size > MIN_SIZE) {
-                    probe.style.fontSize = size + 'rem';
-                    probe.textContent = longest;
-                    if (probe.scrollWidth <= available) break;
-                    size = Math.round((size - STEP) * 100) / 100;
-                }
-
-                // Step 2: apply size and check rendered height doesn't exceed 2 lines
-                el.style.fontSize = size + 'rem';
-                const rootFS = parseFloat(getComputedStyle(document.documentElement).fontSize);
-                const oneLineH = size * 1.2 * rootFS;
                 let attempts = 0;
-                while (el.scrollHeight > Math.ceil(oneLineH * 2) + 6 && size > MIN_SIZE && attempts < 60) {
-                    size = Math.round((size - STEP) * 100) / 100;
+                while (size > MIN_SIZE && attempts < 80) {
                     el.style.fontSize = size + 'rem';
+                    if (el.scrollWidth <= available + 2) break;
+                    size = Math.round((size - STEP) * 100) / 100;
                     attempts++;
                 }
-
                 if (size < globalMin) globalMin = size;
             }
 
-            document.body.removeChild(probe);
-
-            // Equalise all labels to the smallest size
             for (let i = 0; i < numOpts; i++) {
-                const el = document.getElementById(`matchLabel${i}`);
+                const el = document.getElementById('matchLabel' + i);
                 if (el) el.style.fontSize = globalMin + 'rem';
             }
         }
@@ -16955,18 +17066,15 @@
             const btns = document.querySelectorAll('[id^="matchOpt"]');
             btns.forEach(b => { b.onclick = null; b.style.cursor = 'default'; });
 
-            const tickSVG = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
-            const crossSVG = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+            const tickSVG = `<svg viewBox="0 0 100 100" fill="none"><path class="match-draw" d="M12 56 C 28 70, 36 86, 43 88 C 52 66, 72 32, 92 14" stroke="#22e35a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            const crossSVG = `<svg viewBox="0 0 100 100" fill="none"><path class="match-draw" d="M18 16 C 40 40, 60 64, 84 86" stroke="#ff3b30" stroke-width="12" stroke-linecap="round"/><path class="match-draw match-draw-x2" d="M84 16 C 62 40, 40 64, 18 86" stroke="#ff3b30" stroke-width="12" stroke-linecap="round"/></svg>`;
 
             const label = document.getElementById(`matchLabel${btnIdx}`);
-            const iconL = document.getElementById(`matchIcon${btnIdx}L`);
-            const iconR = document.getElementById(`matchIcon${btnIdx}R`);
+            const mark = document.getElementById(`matchMark${btnIdx}`);
 
             if (isCorrect) {
                 const chosenBtn = document.getElementById(`matchOpt${btnIdx}`);
-                if (label) label.style.color = '#2e7d32';
-                if (iconL) { iconL.innerHTML = tickSVG; iconL.style.opacity = '1'; }
-                if (iconR) { iconR.innerHTML = tickSVG; iconR.style.opacity = '1'; }
+                if (mark) mark.innerHTML = tickSVG;
                 if (chosenBtn) {
                     chosenBtn.style.background = 'rgba(46,125,50,0.12)';
                     chosenBtn.style.transition = 'background 0.15s ease';
@@ -16981,10 +17089,7 @@
             } else {
                 matchGameState.wrongAttempt = true;
                 const chosenBtn = document.getElementById(`matchOpt${btnIdx}`);
-                if (label) label.style.color = '#c62828';
-                if (iconL) { iconL.innerHTML = crossSVG; iconL.style.opacity = '1'; }
-                if (iconR) { iconR.innerHTML = crossSVG; iconR.style.opacity = '1'; }
-                // Brief red background flash on the row
+                if (mark) mark.innerHTML = crossSVG;
                 if (chosenBtn) {
                     chosenBtn.style.background = 'rgba(198,40,40,0.12)';
                     chosenBtn.style.transition = 'background 0.15s ease';
@@ -16992,8 +17097,7 @@
                 playSound('errorSound');
                 setTimeout(() => {
                     if (label) label.style.color = '#1a1a1a';
-                    if (iconL) { iconL.innerHTML = ''; iconL.style.opacity = '0'; }
-                    if (iconR) { iconR.innerHTML = ''; iconR.style.opacity = '0'; }
+                    if (mark) mark.innerHTML = '';
                     if (chosenBtn) {
                         chosenBtn.style.background = 'transparent';
                     }
