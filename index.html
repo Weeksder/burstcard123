@@ -7183,7 +7183,8 @@
                 sessionStorage.setItem('flashcards', JSON.stringify(cards));
             } catch (e) {
                 console.error('Error saving cards:', e);
-                if (!opts || !opts.silent) {
+                const quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+                if (!quota && (!opts || !opts.silent)) {
                     showToast('⚠️ Could not save — storage may be full or disabled', 3000);
                 }
             }
@@ -8053,7 +8054,10 @@
                     const canvas = document.createElement('canvas');
                     canvas.width = img.naturalWidth;
                     canvas.height = img.naturalHeight;
-                    canvas.getContext('2d').drawImage(img, 0, 0);
+                    const pctx = canvas.getContext('2d');
+                    pctx.fillStyle = '#ffffff';
+                    pctx.fillRect(0, 0, canvas.width, canvas.height);
+                    pctx.drawImage(img, 0, 0);
                     canvas.toBlob(b => {
                         URL.revokeObjectURL(url);
                         if (b) resolve(new File([b], 'pasted-image.png', { type: 'image/png' }));
@@ -9555,6 +9559,8 @@
 
                         canvas.width = width;
                         canvas.height = height;
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, width, height);
                         ctx.drawImage(img, 0, 0, width, height);
 
                         // Try different quality levels to get under maxSizeKB
