@@ -1138,17 +1138,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6px 10px 4px;
+            padding: 8px 10px 16px;
             font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
             font-size: 6rem;
             font-weight: var(--spell-letter-weight, 400) !important;
             color: #1a1a1a;
             text-align: center;
-            line-height: 1.1;
+            line-height: 1.3;
             white-space: normal;
             word-break: normal;
             overflow-wrap: break-word;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .card-front-text .vowel {
@@ -1198,14 +1198,14 @@
             margin: 0;
             font-weight: var(--spell-letter-weight, 400) !important;
             font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
-            line-height: 1.3;
+            line-height: 1.35;
             max-width: 100%;
             width: 100%;
             word-wrap: break-word;
             overflow-wrap: break-word;
             word-break: normal;
             hyphens: none;
-            padding: 0;
+            padding: 0 0 0.14em;
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -1349,6 +1349,33 @@
             transform: translateY(-2px);
         }
 
+        /* Tinder-style: chrome shrinks away while a card swipe is in progress */
+        #navIndexLabel, #navHintLabel {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            transform-origin: center;
+        }
+        #cardOverlaySettings .fullscreen-btn,
+        #cardOverlayLock .fullscreen-btn,
+        #cardOverlayTTS .tts-card-btn {
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            transform-origin: center;
+        }
+        body.swipe-chrome-hide .nav-btn,
+        body.swipe-chrome-hide .nav-btn:hover,
+        body.swipe-chrome-hide .nav-btn:active,
+        body.swipe-chrome-hide #navIndexLabel,
+        body.swipe-chrome-hide #navHintLabel,
+        body.swipe-chrome-hide #settingsGearBtn,
+        body.swipe-chrome-hide #settingsGearBtn:hover,
+        body.swipe-chrome-hide #cardOverlayLock,
+        body.swipe-chrome-hide #cardOverlayLock .fullscreen-btn,
+        body.swipe-chrome-hide #cardOverlayTTS .tts-card-btn,
+        body.swipe-chrome-hide #cardOverlayTTS .tts-card-btn:hover {
+            transform: scale(0) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
         .nav-btn svg {
             width: 28px;
             height: 28px;
@@ -1423,6 +1450,43 @@
 
         .audio-btn:active {
             transform: scale(0.95);
+        }
+
+        /* Card TTS overlay — 2× current size, ring tight to the icon */
+        #cardOverlayTTS .tts-card-btn {
+            width: 100px !important;
+            height: 100px !important;
+            border-radius: 50%;
+            background: white !important;
+            border: 3px solid #f5a623;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            color: #f5a623;
+            opacity: 1;
+            padding: 0;
+        }
+        #cardOverlayTTS .tts-card-btn svg {
+            width: 70px;
+            height: 70px;
+        }
+        #cardOverlayTTS .tts-card-btn:hover {
+            background: white !important;
+            transform: scale(1.04);
+            opacity: 1;
+        }
+        @media (max-width: 480px) {
+            #cardOverlayTTS .tts-card-btn {
+                width: 88px !important;
+                height: 88px !important;
+            }
+            #cardOverlayTTS .tts-card-btn svg { width: 62px; height: 62px; }
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            #cardOverlayTTS .tts-card-btn {
+                width: 76px !important;
+                height: 76px !important;
+                border-width: 2.5px;
+            }
+            #cardOverlayTTS .tts-card-btn svg { width: 54px; height: 54px; }
         }
 
         .fullscreen-btn {
@@ -2624,8 +2688,9 @@
             }
 
             #gameMenuModal h2 {
-                font-size: 1.3rem;
+                font-size: 1.45rem;
                 margin-bottom: 12px;
+                text-align: center;
             }
 
             #gameMenuModal p {
@@ -3569,10 +3634,16 @@
             .fullscreen-btn { width: 44px; height: 44px; }
             .counter { font-size: 0.95rem; padding: 8px 16px; }
             /* Settings menu fits on small screen */
-            #settingsMenu { min-width: 140px; }
-            #settingsMenu button:not(.resize-btn), #settingsMenu > div:not(.resize-row) {
+            #settingsMenu { min-width: 0; }
+            #settingsMenu .settings-menu-main button:not(.resize-btn) {
                 font-size: 13px !important;
                 padding: 10px 12px !important;
+            }
+            #settingsMenu .settings-cc-btn {
+                width: 44px;
+                height: 44px;
+                min-width: 44px;
+                min-height: 44px;
             }
             .nav-btn { width: 28px; height: 28px; }
             .nav-btn svg { width: 22px; height: 22px; }
@@ -3608,14 +3679,235 @@
             }
             .empty-action-btn svg { width: 48px; height: 48px; }
             .empty-action-btn span { font-size: 1.1rem; }
-            #settingsMenu { min-width: 180px; }
-            #settingsMenu button:not(.resize-btn), #settingsMenu > div:not(.resize-row) {
+            #settingsMenu { min-width: 0; }
+            #settingsMenu .settings-menu-main button:not(.resize-btn) {
                 font-size: 15px !important;
                 padding: 13px 16px !important;
             }
             .fullscreen-btn { width: 54px; height: 54px; }
             .counter { font-size: 1.15rem; padding: 12px 24px; }
             .audio-btn { width: 54px; height: 54px; }
+        }
+
+        /* Gear menu ON: inset green so a white gap shows around the selection */
+        .word-size-row {
+            padding: 12px 16px 14px;
+            border-bottom: 1px solid #f0f0f0;
+            background: white;
+            box-sizing: border-box;
+        }
+        .word-size-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .word-size-slider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .word-size-a-sm {
+            font-size: 13px;
+            font-weight: 700;
+            color: #8e8e93;
+            line-height: 1;
+            flex-shrink: 0;
+            width: 16px;
+            text-align: center;
+        }
+        .word-size-a-lg {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1c1c1e;
+            line-height: 1;
+            flex-shrink: 0;
+            width: 22px;
+            text-align: center;
+        }
+        .word-size-track {
+            position: relative;
+            flex: 1;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+        }
+        .word-size-track::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            height: 4px;
+            background: #d1d1d6;
+            border-radius: 2px;
+        }
+        .word-size-ticks {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .word-size-ticks i {
+            display: block;
+            width: 3px;
+            height: 10px;
+            background: #c7c7cc;
+            border-radius: 1px;
+        }
+        .word-size-thumb {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #fff;
+            border: none;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(0,0,0,0.12);
+            left: 8px;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            padding: 0;
+            cursor: grab;
+            z-index: 2;
+            touch-action: none;
+        }
+        .word-size-thumb:active { cursor: grabbing; }
+
+        #settingsBackdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            background: rgba(18, 18, 20, 0.16);
+            -webkit-backdrop-filter: blur(8px) saturate(120%);
+            backdrop-filter: blur(8px) saturate(120%);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.28s ease, visibility 0.28s ease;
+        }
+        #settingsBackdrop.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        body.settings-menu-open #cardOverlaySettings {
+            z-index: 10002;
+        }
+        body.settings-menu-open #cardOverlayTTS {
+            z-index: 9997 !important;
+            pointer-events: none;
+        }
+        body.settings-menu-open #settingsMenu {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 10px;
+            background: transparent;
+            box-shadow: none;
+            overflow: visible;
+            min-width: 0;
+        }
+        .settings-menu-main {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.35);
+        }
+        .settings-cc-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        #settingsMenu .settings-cc-btn {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            min-height: 48px;
+            padding: 0 !important;
+            border: none;
+            border-radius: 50%;
+            background: white;
+            color: #35654D;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+            flex-shrink: 0;
+            font-size: 0 !important;
+        }
+        #settingsMenu .settings-cc-btn svg {
+            width: 22px !important;
+            height: 22px !important;
+            flex-shrink: 0;
+        }
+        #settingsMenu .settings-cc-btn.settings-on {
+            background: #f5ead0 !important;
+            color: #6b4e1a !important;
+            margin: 0 !important;
+            width: 48px !important;
+            border-radius: 50% !important;
+            border-bottom-color: transparent !important;
+        }
+
+        #settingsMenu .settings-menu-main button.settings-on {
+            background: #f5ead0 !important;
+            margin: 4px 8px !important;
+            width: calc(100% - 16px) !important;
+            border-radius: 8px;
+            border-bottom-color: transparent !important;
+            box-sizing: border-box;
+        }
+
+        /* Gear menu: 1.2× type/icons, no wrapping — tablet & PC only (not iPhone) */
+        @media (min-width: 700px) and (min-height: 520px) {
+            #settingsMenu {
+                min-width: 0;
+            }
+            #settingsMenu .settings-menu-main {
+                min-width: 248px;
+            }
+            #settingsMenu .settings-menu-main button:not(.resize-btn) {
+                font-size: 18px !important;
+                padding: 16px 18px !important;
+                white-space: nowrap;
+                gap: 12px;
+            }
+            #settingsMenu .settings-menu-main button:not(.resize-btn) svg {
+                width: 22px !important;
+                height: 22px !important;
+                flex-shrink: 0;
+            }
+            #settingsMenu .settings-cc-btn {
+                width: 56px;
+                height: 56px;
+                min-width: 56px;
+                min-height: 56px;
+            }
+            #settingsMenu .settings-cc-btn.settings-on {
+                width: 56px !important;
+            }
+            #settingsMenu .settings-cc-btn svg {
+                width: 26px !important;
+                height: 26px !important;
+            }
+            #settingsMenu .word-size-label {
+                font-size: 18px !important;
+            }
+            #settingsMenu .word-size-a-sm { font-size: 15px !important; }
+            #settingsMenu .word-size-a-lg { font-size: 26px !important; }
+            #settingsMenu .word-size-thumb {
+                width: 32px;
+                height: 32px;
+            }
         }
 
         /* Landscape phones — compact everything */
@@ -4114,6 +4406,7 @@
                 </svg>
             </button>
         </div>
+        <div id="settingsBackdrop" onclick="closeSettingsMenu()" ontouchend="event.preventDefault(); closeSettingsMenu()"></div>
         <!-- Fixed card overlays: always in DOM, unaffected by card-container size or overflow -->
         <div id="cardOverlaySettings" style="display:none; position:fixed; z-index:10000;">
             <button id="settingsGearBtn" class="fullscreen-btn" style="position:relative; bottom:auto; left:auto; color:#35654D;"
@@ -4125,26 +4418,17 @@
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
             </button>
-            <div id="settingsMenu" style="display:none; position:absolute; bottom:60px; left:0; background:white; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,0.25); overflow:hidden; min-width:160px;">
-                <button onclick="event.stopPropagation(); openCropTool()" ontouchend="event.stopPropagation(); event.preventDefault(); openCropTool()"
-                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
-                    </svg>
-                    Clip Image
-                </button>
-                <div class="resize-row" style="width:100%; background:white; border-bottom:1px solid #f0f0f0; box-sizing:border-box; display:flex; align-items:center;">
-                    <div style="padding:13px 16px; display:flex; align-items:center; gap:10px; flex:1;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block;">
-                            <polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>
-                        </svg>
-                        <span style="font-size:15px; font-weight:600; color:#333;">Resize</span>
-                    </div>
-                    <div style="display:flex; align-items:stretch; border-left:1px solid #e8e8e8; align-self:stretch;">
-                        <button class="resize-btn" onclick="event.stopPropagation(); decreaseCardTextSize()" ontouchend="event.stopPropagation(); event.preventDefault(); decreaseCardTextSize()"
-                            style="background:none; border:none; border-right:1px solid #e8e8e8; color:#888; font-weight:700; cursor:pointer; padding:0 10px; font-size:13px; display:flex; align-items:center; justify-content:center;">A</button>
-                        <button class="resize-btn" onclick="event.stopPropagation(); increaseCardTextSize()" ontouchend="event.stopPropagation(); event.preventDefault(); increaseCardTextSize()"
-                            style="background:none; border:none; color:#444; font-weight:700; cursor:pointer; padding:0 10px; font-size:19px; display:flex; align-items:center; justify-content:center;">A</button>
+            <div id="settingsMenu" style="display:none; position:absolute; bottom:60px; left:0;">
+                <div class="settings-menu-main">
+                <div class="word-size-row" onclick="event.stopPropagation()">
+                    <div class="word-size-label">Word size</div>
+                    <div class="word-size-slider">
+                        <span class="word-size-a-sm" aria-hidden="true">A</span>
+                        <div class="word-size-track" id="wordSizeTrack" role="slider" aria-label="Word size" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0">
+                            <span class="word-size-ticks" aria-hidden="true"><i></i><i></i><i></i></span>
+                            <button type="button" class="word-size-thumb" id="wordSizeThumb" tabindex="-1" aria-hidden="true"></button>
+                        </div>
+                        <span class="word-size-a-lg" aria-hidden="true">A</span>
                     </div>
                 </div>
                 <button onclick="event.stopPropagation(); openSessionPreview()" ontouchend="event.stopPropagation(); event.preventDefault(); openSessionPreview()"
@@ -4154,59 +4438,75 @@
                     </svg>
                     Preview Cards
                 </button>
-                <button id="hideUIBtn" onclick="event.stopPropagation(); toggleHideUI()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleHideUI()"
+                <button id="showCharBtn" onclick="event.stopPropagation(); toggleCharOnCard()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleCharOnCard()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                        <line x1="1" y1="1" x2="23" y2="23"/>
+                        <rect x="2" y="2" width="20" height="20" rx="2"/>
+                        <text x="3.5" y="13.5" font-family="serif" font-size="10" font-weight="700" fill="#35654D" stroke="none">Aa</text>
                     </svg>
-                    Hide Buttons
+                    Letters
                 </button>
-                <div class="resize-row" style="width:100%; background:white; border-bottom:1px solid #f0f0f0; box-sizing:border-box; display:flex; align-items:center;">
-                    <div style="padding:13px 16px; display:flex; align-items:center; gap:10px; flex:1;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block;">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
-                        </svg>
-                        <span style="font-size:15px; font-weight:600; color:#333;">Show</span>
-                    </div>
-                    <div style="display:flex; align-items:stretch; border-left:1px solid #e8e8e8; align-self:stretch;">
-                        <button id="showCharBtn" onclick="event.stopPropagation(); toggleCharOnCard()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleCharOnCard()"
-                            style="background:white; border:none; border-right:1px solid #e8e8e8; cursor:pointer; padding:0 8px; display:flex; align-items:center; justify-content:center;">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="2" width="20" height="20" rx="2"/>
-                                <text x="3.5" y="13.5" font-family="serif" font-size="10" font-weight="700" fill="#35654D" stroke="none">Aa</text>
-                            </svg>
-                        </button>
-                        <button id="showTextBtn" onclick="event.stopPropagation(); toggleTextOnFront()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleTextOnFront()"
-                            style="background:white; border:none; cursor:pointer; padding:0 8px; display:flex; align-items:center; justify-content:center;">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <button id="lockSideBtn" onclick="event.stopPropagation(); toggleLockSide()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleLockSide()"
+                <button id="showTextBtn" onclick="event.stopPropagation(); toggleTextOnFront()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleTextOnFront()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
                     </svg>
-                    Lock Side (Back Only)
+                    Caption
                 </button>
                 <button id="swipeDirBtn" onclick="event.stopPropagation(); toggleSwipeDirection()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleSwipeDirection()"
-                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
+                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 18 21 12 15 6"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="9 6 3 12 9 18"/>
                     </svg>
-                    Swipe Forward: ON
+                    Swipe goes next
                 </button>
-                <button id="muteBtn" onclick="event.stopPropagation(); toggleMute()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleMute()"
-                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
-                    <svg id="muteIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                    </svg>
-                    Mute Sounds
-                </button>
+                </div>
+                <div class="settings-cc-col">
+                    <button type="button" class="settings-cc-btn" title="Crop"
+                        onclick="event.stopPropagation(); openCropTool()"
+                        ontouchend="event.stopPropagation(); event.preventDefault(); openCropTool()">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
+                            <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="settings-cc-btn" id="hideUIBtn" title="Hide buttons"
+                        onclick="event.stopPropagation(); toggleHideUI()"
+                        ontouchend="event.stopPropagation(); event.preventDefault(); toggleHideUI()">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="settings-cc-btn" id="ttsToggleBtn" title="Speak"
+                        onclick="event.stopPropagation(); toggleTtsButton()"
+                        ontouchend="event.stopPropagation(); event.preventDefault(); toggleTtsButton()">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="8.2" y="1.6" width="7.6" height="13" rx="3.8"/>
+                            <path d="M10.35 4.35v2.8"/>
+                            <path d="M5.2 11.1v.7a6.8 6.8 0 0 0 13.6 0v-.7"/>
+                            <line x1="12" y1="18.6" x2="12" y2="21.15"/>
+                            <line x1="8.1" y1="21.5" x2="15.9" y2="21.5"/>
+                            <line x1="3" y1="3" x2="21" y2="21"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="settings-cc-btn" id="muteBtn" title="Mute"
+                        onclick="event.stopPropagation(); toggleMute()"
+                        ontouchend="event.stopPropagation(); event.preventDefault(); toggleMute()">
+                        <svg id="muteIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="settings-cc-btn" id="lockSideBtn" title="Stay on back"
+                        onclick="event.stopPropagation(); toggleLockSide()"
+                        ontouchend="event.stopPropagation(); event.preventDefault(); toggleLockSide()">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V8a5 5 0 0 1 9.9-1"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
         <!-- TTS button: bottom right, mirroring settings button -->
@@ -4230,28 +4530,24 @@
             <span class="msp-title">📚 Deck Library</span>
             <button class="msp-close" onclick="closeManageSidePanel()">×</button>
         </div>
-        <div style="padding:6px 10px;border-bottom:1px solid #eee;flex-shrink:0;display:flex;gap:5px;flex-wrap:nowrap;overflow:visible;">
-            <button class="btn btn-success" style="flex-shrink:0;width:72px;padding:6px 4px;font-size:0.75rem;justify-content:center;flex-direction:row;"
-                onclick="closeManageSidePanel(); openUnitConfigModal();">
-                ⚙️ Manage
+        <div class="msp-toolbar">
+            <button id="mspManageBtn" class="msp-tool-btn" type="button" title="Manage"
+                onclick="openUnitConfigModal();">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
             </button>
-            <button onclick="mspCloseAll()"
-                style="flex-shrink:0;width:72px;padding:6px 4px;background:white;border:1.5px solid #7b2d8b;
-                       border-radius:8px;color:#7b2d8b;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;">
-                Unload All
+            <button id="mspCloseAllBtn" class="msp-tool-btn" type="button" onclick="mspCloseAll()">
+                Clear All
             </button>
-            <button id="mspSortBtn" type="button"
-                style="flex-shrink:0;width:76px;padding:6px 4px;background:white;border:1.5px solid #35654D;border-radius:8px;
-                       color:#35654D;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;"
-                onclick="mspToggleSort()">
+            <button id="mspSortBtn" class="msp-tool-btn" type="button" onclick="mspToggleSort()">
                 Sort: Name
             </button>
-
-            <button id="mspUndoBtn" onclick="mspUndoDelete()"
-                title="Undo last delete"
-                style="display:none;flex-shrink:0;width:52px;padding:6px 4px;background:white;
-                       border:1.5px solid #888;border-radius:8px;color:#555;
-                       font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;position:relative;z-index:30002;">
+            <button id="mspEditBtn" class="msp-tool-btn" type="button" onclick="toggleMspEdit()">
+                Edit
+            </button>
+            <button id="mspUndoBtn" class="msp-tool-btn" type="button" onclick="mspUndoDelete()" title="Undo last delete">
                 Undo
             </button>
         </div>
@@ -4405,14 +4701,7 @@
             <button onclick="closeGameMenu()" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:#aaa;padding:4px;display:flex;align-items:center;justify-content:center;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
-            <div style="display:flex;align-items:center;gap:8px;margin:0 0 14px 0;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/>
-                    <line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/>
-                    <rect x="2" y="6" width="20" height="12" rx="2"/>
-                </svg>
-                <h2 style="font-size:1rem;font-weight:700;color:#35654D;margin:0;">Game Menu</h2>
-            </div>
+            <h2 style="font-size:1.55rem;font-weight:700;color:#35654D;margin:0 28px 16px;text-align:center;">Games</h2>
 
             <div style="display:flex;flex-direction:column;gap:8px;">
 
@@ -4762,6 +5051,117 @@
             overflow: visible;
         }
         #manageSidePanel.open { left: 0; }
+        #manageSidePanel.behind-modal { z-index: 15000; }
+        #manageSidePanelOverlay.behind-modal { z-index: 14999; }
+        #manageSidePanel:not(.msp-edit-mode) .msp-del-btn { display: none; }
+        #manageSidePanel.msp-edit-mode .msp-deck-btn { display: none; }
+        #manageSidePanel .msp-toolbar {
+            padding: 6px 10px;
+            border-bottom: 1px solid #eee;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+            overflow: visible;
+        }
+        #manageSidePanel .msp-tool-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            height: 32px;
+            min-height: 32px;
+            padding: 0 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: inherit;
+            line-height: 1;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            touch-action: manipulation;
+        }
+        #manageSidePanel .msp-tool-btn:active { transform: scale(0.96); }
+        #manageSidePanel #mspManageBtn {
+            width: 32px;
+            min-width: 32px;
+            padding: 0;
+            background: white;
+            border: 1.5px solid #888;
+            color: #888;
+            box-shadow: none;
+        }
+        #manageSidePanel #mspManageBtn svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+        }
+        #manageSidePanel #mspEditBtn {
+            background: white;
+            border: 1.5px solid #35654D;
+            color: #35654D;
+        }
+        #manageSidePanel #mspEditBtn.is-active {
+            background: #35654D;
+            border-color: #35654D;
+            color: #fff;
+        }
+        #manageSidePanel #mspCloseAllBtn {
+            display: none;
+            background: white;
+            border: 1.5px solid #7b2d8b;
+            color: #7b2d8b;
+        }
+        #manageSidePanel #mspSortBtn {
+            display: none;
+            background: white;
+            border: 1.5px solid #35654D;
+            color: #35654D;
+        }
+        #manageSidePanel.msp-edit-mode #mspCloseAllBtn,
+        #manageSidePanel.msp-edit-mode #mspSortBtn {
+            display: inline-flex;
+        }
+        #manageSidePanel #mspUndoBtn {
+            display: none;
+            background: white;
+            border: 1.5px solid #888;
+            color: #555;
+            position: relative;
+            z-index: 30002;
+        }
+        #manageSidePanel .msp-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            padding: 0;
+        }
+        #manageSidePanel .msp-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        #manageSidePanel .msp-del-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            border-radius: 8px;
+            padding: 0;
+        }
+        #manageSidePanel .msp-del-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+        @media (max-width: 700px) {
+            #manageSidePanel {
+                left: -85vw;
+                width: 80vw;
+                max-width: 80vw;
+            }
+        }
         #mspResizeHandle {
             position: absolute;
             top: 0; right: -10px;
@@ -4840,7 +5240,15 @@
             padding: 12px 14px;
             border-bottom: 1px solid #f0f0f0;
         }
-        .msp-unit-row.loaded { background: #f5f0e8; border-left: 5px solid #1e4d35; }
+        .msp-unit-row.loaded {
+            background: #f5ead0;
+            margin: 4px 8px;
+            border-radius: 8px;
+            border-left: none;
+            border-bottom-color: transparent;
+            width: auto;
+            box-sizing: border-box;
+        }
         .msp-unit-info { flex: 1; min-width: 0; }
         .msp-unit-name {
             font-size: 0.95rem;
@@ -4849,13 +5257,13 @@
             white-space: normal;
             word-break: break-word;
         }
-        .msp-unit-row.loaded .msp-unit-name { color: #1e4d35; font-weight: 700; }
+        .msp-unit-row.loaded .msp-unit-name { color: #6b4e1a; font-weight: 700; }
         .msp-unit-count {
             font-size: 0.75rem;
             color: #999;
             margin-top: 2px;
         }
-        .msp-unit-row.loaded .msp-unit-count { color: #1e4d35; opacity: 0.85; }
+        .msp-unit-row.loaded .msp-unit-count { color: #6b4e1a; opacity: 0.85; }
         .msp-btn {
             width: 36px; height: 36px;
             border: 2px solid #35654D;
@@ -5567,9 +5975,6 @@
                                box-shadow:0 2px 10px rgba(53,101,77,0.28);display:flex;align-items:center;justify-content:center;gap:10px;">
                         <span>📂</span><span>Import deck(s) (JSON)</span>
                     </button>
-                    <p style="margin:14px 0 0;text-align:center;font-size:0.82rem;color:#999;line-height:1.4;">
-                        Saved in your browser — load from the side panel anytime.
-                    </p>
                 </div>
 
                 <!-- Session imports: each file as its own card (no full-page reset mid-session) -->
@@ -5931,6 +6336,33 @@
             return currentLoadedFileName;
         }
         let isMuted = false;
+        let showTtsButton = false; // TTS overlay hidden until enabled in settings
+        function ttsMicSvg(size, color) {
+            return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block">' +
+                '<rect x="8.2" y="1.6" width="7.6" height="13" rx="3.8"/>' +
+                '<path d="M10.35 4.35v2.8"/>' +
+                '<path d="M5.2 11.1v.7a6.8 6.8 0 0 0 13.6 0v-.7"/>' +
+                '<line x1="12" y1="18.6" x2="12" y2="21.15"/>' +
+                '<line x1="8.1" y1="21.5" x2="15.9" y2="21.5"/>' +
+                '</svg>';
+        }
+        function ttsMicOffSvg(size, color) {
+            return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block">' +
+                '<rect x="8.2" y="1.6" width="7.6" height="13" rx="3.8"/>' +
+                '<path d="M10.35 4.35v2.8"/>' +
+                '<path d="M5.2 11.1v.7a6.8 6.8 0 0 0 13.6 0v-.7"/>' +
+                '<line x1="12" y1="18.6" x2="12" y2="21.15"/>' +
+                '<line x1="8.1" y1="21.5" x2="15.9" y2="21.5"/>' +
+                '<line x1="3" y1="3" x2="21" y2="21"/>' +
+                '</svg>';
+        }
+        function ttsLockSvg(size, color, locked) {
+            const shackle = locked
+                ? '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+                : '<path d="M7 11V8a5 5 0 0 1 9.9-1"/>';
+            return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block">' +
+                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' + shackle + '</svg>';
+        }
         let showTextOnFront = false; // overlay back text on card front
         let showCharOnCard = false;  // show first character top-right corner
         let cachedFrontTextSize = null; // cached font size so all cards scale consistently
@@ -5939,6 +6371,7 @@
         function hideCardOverlays() {
             ['cardOverlaySettings','cardOverlayLock','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
                 .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+            closeSettingsMenu();
         }
 
         function showCardOverlays() {
@@ -5948,7 +6381,11 @@
             document.getElementById('cardOverlayLock').style.display =
                 (lockSide === 'back') ? 'block' : 'none';
             const card = cards[currentIndex];
-            if (card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
+            if (showTtsButton && card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
+            else {
+                const ttsHide = document.getElementById('cardOverlayTTS');
+                if (ttsHide) ttsHide.style.display = 'none';
+            }
             requestAnimationFrame(() => positionNavOverlay());
         }
 
@@ -5972,9 +6409,16 @@
                 lockOverlay.style.bottom = (window.innerHeight - rect.bottom + offset + 58) + 'px';
                 lockOverlay.style.left   = (rect.left + offset) + 'px';
             }
-            if (tts) {
-                tts.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
-                tts.style.right  = (window.innerWidth - rect.right + offset) + 'px';
+            if (tts && showTtsButton) {
+                tts.style.right = 'auto';
+                tts.style.left = (rect.left + rect.width / 2) + 'px';
+                tts.style.transform = 'translateX(-50%)';
+                let lift = 24;
+                if (showTextOnFront && !isFlipped) {
+                    const frontText = document.querySelector('.card > .card-front .card-front-text');
+                    if (frontText) lift = frontText.offsetHeight + 26;
+                }
+                tts.style.bottom = (window.innerHeight - rect.bottom + offset + lift) + 'px';
             }
 
             // Switch icon colors based on card face — white on green back, green on white front
@@ -6001,15 +6445,8 @@
                     lockIcon.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
                 }
             }
-            if (tts) {
-                const ttsBtn = tts.querySelector('button');
-                const ttsSvg = ttsBtn?.querySelector('svg');
-                if (ttsSvg) {
-                    ttsSvg.setAttribute('stroke', iconColor);
-                    ttsSvg.style.color = iconColor;
-                    ttsSvg.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
-                }
-            }
+            // TTS overlay uses a fixed white/orange circular button (like nav arrows)
+            // so it does not recolor with the card face.
         }
         // Remember which side each card was last on
         const cardFlipStates = {};
@@ -6468,6 +6905,7 @@
             setupSwipeGestures();
             audioManager.init();
             setupTextareaProtection();
+            if (typeof bindWordSizeSlider === 'function') bindWordSizeSlider();
 
             // Hide all card overlays when any modal is open, restore when all closed
             const overlayIds = ['cardOverlaySettings','cardOverlayNav','cardOverlayTTS','cardOverlayCounter'];
@@ -6482,7 +6920,11 @@
                     document.getElementById('cardOverlaySettings').style.display = 'block';
                     document.getElementById('cardOverlayNav').style.display = 'block';
                     const card = cards[currentIndex];
-                    if (card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
+                    if (showTtsButton && card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
+                    else {
+                        const ttsHide = document.getElementById('cardOverlayTTS');
+                        if (ttsHide) ttsHide.style.display = 'none';
+                    }
                     requestAnimationFrame(() => positionNavOverlay());
                 }
             });
@@ -6542,6 +6984,27 @@
 
         // Flag to prevent click event from firing after touch event (prevents double flip)
         let lastTouchTime = 0;
+
+        function closeSettingsMenu() {
+            const menu = document.getElementById('settingsMenu');
+            const bd = document.getElementById('settingsBackdrop');
+            if (menu) menu.style.display = 'none';
+            if (bd) bd.classList.remove('open');
+            document.body.classList.remove('settings-menu-open');
+        }
+
+        function setSwipeChromeHidden(hidden) {
+            document.body.classList.toggle('swipe-chrome-hide', !!hidden);
+            if (hidden) closeSettingsMenu();
+        }
+        function revealSwipeChrome() {
+            if (!document.body.classList.contains('swipe-chrome-hide')) return;
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    document.body.classList.remove('swipe-chrome-hide');
+                });
+            });
+        }
 
         // Setup touch + mouse drag gestures for card navigation (all directions)
         function setupSwipeGestures() {
@@ -6648,6 +7111,7 @@
                 if (dist > peakDist) peakDist = dist;
 
                 if (dist > 10) {
+                    setSwipeChromeHidden(true);
                     const cardEl = document.querySelector('.card');
                     const cardStack = document.querySelector('.card-stack');
                     if (cardEl) {
@@ -6693,6 +7157,7 @@
 
                 // Tap
                 if (elapsed < MAX_TAP_TIME && peakDist < PEAK_DRAG_SUPPRESS_FLIP && finalDist < MIN_DRAG_TO_SUPPRESS_FLIP) {
+                    setSwipeChromeHidden(false);
                     clearSideCarousel();
                     lastTouchTime = Date.now();
                     requestAnimationFrame(() => flipCard());
@@ -6734,12 +7199,14 @@
                         nextCard();
                     }, 290);
                 } else if (sidewaysOnly) {
+                    setSwipeChromeHidden(false);
                     applySideCarousel(0, true);
                     setTimeout(() => {
                         clearSideCarousel();
                         document.body.style.overflow = 'hidden';
                     }, 280);
                 } else {
+                    setSwipeChromeHidden(false);
                     if (cardEl) {
                         cardEl.style.transition = 'transform 0.25s ease';
                         cardEl.style.transform = '';
@@ -6781,6 +7248,7 @@
                 const cardStack = document.querySelector('.card-stack');
                 const cardContainer = document.querySelector('.card-container');
                 clearSideCarousel();
+                setSwipeChromeHidden(false);
                 if (cardEl) {
                     cardEl.style.zIndex = '';
                     cardEl.style.userSelect = '';
@@ -6800,6 +7268,7 @@
                     const cardStack = document.querySelector('.card-stack');
                     const cardContainer = document.querySelector('.card-container');
                     clearSideCarousel();
+                    setSwipeChromeHidden(false);
                     if (cardEl) cardEl.style.zIndex = '';
                     if (cardContainer) cardContainer.style.zIndex = '';
                     document.body.style.overflow = 'hidden';
@@ -10250,17 +10719,30 @@
             if (savedSwipe === '1') swipeForwardOnly = true;
         } catch (e) {}
 
+        function setSettingsItemOn(btn, on) {
+            if (!btn) return;
+            btn.classList.toggle('settings-on', !!on);
+            if (btn.classList.contains('settings-cc-btn')) {
+                btn.style.background = on ? '#f5ead0' : 'white';
+                btn.style.color = on ? '#6b4e1a' : '#35654D';
+                const svg = btn.querySelector('svg');
+                if (svg) svg.setAttribute('stroke', on ? '#6b4e1a' : '#35654D');
+                return;
+            }
+            btn.style.background = on ? '#f5ead0' : 'white';
+            btn.style.color = on ? '#6b4e1a' : '#333';
+        }
+
         function updateSwipeDirButton() {
             const btn = document.getElementById('swipeDirBtn');
             if (!btn) return;
             const on = swipeForwardOnly;
+            setSettingsItemOn(btn, on);
             btn.disabled = false;
             btn.style.cursor = 'pointer';
             btn.style.opacity = '1';
-            btn.style.background = on ? '#ffd0d0' : 'white';
-            btn.style.color = on ? '#8a1515' : '#333';
-            const stroke = on ? '#8a1515' : '#35654D';
-            btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 21 12 15 6"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="9 6 3 12 9 18"/></svg>Swipe Forward: ' + (on ? 'ON' : 'OFF');
+            const stroke = on ? '#6b4e1a' : '#35654D';
+            btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 21 12 15 6"/><line x1="21" y1="12" x2="9" y2="12"/><polyline points="9 6 3 12 9 18"/></svg>Swipe goes next';
         }
 
         function openHelpMenu() {
@@ -10282,8 +10764,7 @@
             swipeForwardOnly = !swipeForwardOnly;
             try { localStorage.setItem('flashabc_swipe_forward', swipeForwardOnly ? '1' : '0'); } catch (e) {}
             updateSwipeDirButton();
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            closeSettingsMenu();
         }
         updateSwipeDirButton();
 
@@ -10524,18 +11005,19 @@
             }
         }
 
-        function saveAsJSONNamed() {
+        async function saveAsJSONNamed() {
             if (cards.length === 0) {
                 showToast('⚠️ No cards to save!', 2000);
                 closeSaveOptions();
                 return;
             }
             try {
+                const exportCards = await prepareCardsForExport(cards);
                 const saveData = {
                     version: '1.0',
                     createdDate: new Date().toISOString(),
-                    totalCards: cards.length,
-                    cards: cards
+                    totalCards: exportCards.length,
+                    cards: exportCards
                 };
                 const jsonString = JSON.stringify(saveData, null, 2);
                 const name = getLoadedFileName() || 'flashcards_' + new Date().toISOString().split('T')[0];
@@ -10561,7 +11043,7 @@
             document.getElementById('saveOptionsModal').classList.remove('active');
         }
 
-        function saveAsJSON() {
+        async function saveAsJSON() {
             if (cards.length === 0) {
                 showToast('⚠️ No cards to save!', 2000);
                 closeSaveOptions();
@@ -10569,12 +11051,12 @@
             }
 
             try {
-                // Create JSON data
+                const exportCards = await prepareCardsForExport(cards);
                 const saveData = {
                     version: '1.0',
                     createdDate: new Date().toISOString(),
-                    totalCards: cards.length,
-                    cards: cards
+                    totalCards: exportCards.length,
+                    cards: exportCards
                 };
 
                 // Convert to JSON string with formatting
@@ -10604,18 +11086,19 @@
             }
         }
 
-        function saveToFiles() {
+        async function saveToFiles() {
             if (cards.length === 0) {
                 showToast('⚠️ No cards to save!', 2000);
                 closeSaveOptions();
                 return;
             }
             try {
+                const exportCards = await prepareCardsForExport(cards);
                 const saveData = {
                     version: '1.0',
                     createdDate: new Date().toISOString(),
-                    totalCards: cards.length,
-                    cards: cards
+                    totalCards: exportCards.length,
+                    cards: exportCards
                 };
                 const jsonString = JSON.stringify(saveData, null, 2);
 
@@ -10650,11 +11133,12 @@
             }
         }
 
-        function saveAsExistingJSON() {
+        async function saveAsExistingJSON() {
             if (cards.length === 0) { showToast('⚠️ No cards to save!', 2000); closeSaveOptions(); return; }
             if (!getLoadedFileName()) { showToast('⚠️ No existing filename found', 2000); return; }
             try {
-                const saveData = { version: '1.0', createdDate: new Date().toISOString(), totalCards: cards.length, cards: cards };
+                const exportCards = await prepareCardsForExport(cards);
+                const saveData = { version: '1.0', createdDate: new Date().toISOString(), totalCards: exportCards.length, cards: exportCards };
                 const jsonString = JSON.stringify(saveData, null, 2);
                 const filename = getLoadedFileName().replace(/\.json$/i, '') + '.json';
                 const blob = new Blob([jsonString], { type: 'application/json' });
@@ -10685,20 +11169,20 @@
             });
         }
 
-        function _saveAsZIPWithLibrary() {
+        async function _saveAsZIPWithLibrary() {
             if (typeof JSZip === 'undefined') {
                 showToast('⚠️ ZIP library not available', 3000);
                 return;
             }
 
             const zip = new JSZip();
+            const exportCards = await prepareCardsForExport(cards);
 
-            // Create data.json with metadata (no images)
             const metadata = {
                 version: '1.0',
                 createdDate: new Date().toISOString(),
-                totalCards: cards.length,
-                cards: cards.map((card, index) => ({
+                totalCards: exportCards.length,
+                cards: exportCards.map((card, index) => ({
                     id: index + 1,
                     backText: card.backText,
                     frontImageFile: `images/card_${index + 1}.jpg`,
@@ -10708,18 +11192,12 @@
 
             zip.file('data.json', JSON.stringify(metadata, null, 2));
 
-            // Add images folder
             const imagesFolder = zip.folder('images');
 
-            // Add each image as a separate file
-            cards.forEach((card, index) => {
+            exportCards.forEach((card, index) => {
                 if (card.frontImage) {
-                    // Convert base64 to blob
                     const base64Data = card.frontImage.split(',')[1];
-                    const mimeType = card.frontImage.split(',')[0].split(':')[1].split(';')[0];
-                    const extension = mimeType.split('/')[1];
-
-                    imagesFolder.file(`card_${index + 1}.${extension}`, base64Data, { base64: true });
+                    imagesFolder.file(`card_${index + 1}.jpg`, base64Data, { base64: true });
                 }
             });
 
@@ -10815,8 +11293,7 @@
         let _previewArrangeMode = false;
 
         function openSessionPreview() {
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            closeSettingsMenu();
             hideCardOverlays();
 
             if (cards.length === 0) { showToast('⚠️ No cards to preview', 2000); return; }
@@ -11735,6 +12212,24 @@
 
         // ── Groups (localStorage) ──
         let _mspSortMode = 'name'; // default: older decks by name; user can switch to date
+        var _mspEditMode = false;
+
+        function toggleMspEdit() {
+            _mspEditMode = !_mspEditMode;
+            updateMspEditUI();
+        }
+
+        function updateMspEditUI() {
+            var panel = document.getElementById('manageSidePanel');
+            var editBtn = document.getElementById('mspEditBtn');
+            var undoBtn = document.getElementById('mspUndoBtn');
+            if (panel) panel.classList.toggle('msp-edit-mode', !!_mspEditMode);
+            if (editBtn) {
+                editBtn.textContent = _mspEditMode ? 'Done' : 'Edit';
+                editBtn.classList.toggle('is-active', !!_mspEditMode);
+            }
+            if (undoBtn) undoBtn.style.display = (_mspEditMode && typeof _mspLastDeleted !== 'undefined' && _mspLastDeleted) ? 'inline-flex' : 'none';
+        }
 
         function mspToggleSort() {
             _mspSortMode = _mspSortMode === 'date' ? 'name' : 'date';
@@ -12264,7 +12759,7 @@
             try {
                 const units = await loadUnitsFromDB();
                 if (!units || units.length === 0) {
-                    list.innerHTML = '<div class="msp-empty">No decks in your library yet.<br><br>Tap <strong>⚙️ Manage</strong> above, then <strong>Import a deck</strong> to add a JSON file.</div>';
+                    list.innerHTML = '<div class="msp-empty">No decks in your library yet.<br><br>Tap <strong>⚙️</strong> above, then <strong>Import a deck</strong> to add a JSON file.</div>';
                     return;
                 }
                 renderMspList(units);
@@ -12287,10 +12782,10 @@
                 if (_mspSortMode === 'name') return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
                 return (b.createdAt || 0) - (a.createdAt || 0); // date: newest first
             });
-            const svgAdd    = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+            const svgAdd    = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
             const svgLoad   = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
-            const svgTrash  = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
-            const svgRemove = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+            const svgTrash  = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+            const svgRemove = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
             const svgHandle = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>';
             const hasCards = cards.length > 0;
             const groups = loadGroups();
@@ -12302,8 +12797,8 @@
                 try { var fd = JSON.parse(unit.fileData); cardCount = fd.cards ? fd.cards.length : 0; } catch(e) {}
                 const lc = isLoaded ? ' loaded' : '';
                 const ab = isLoaded
-                    ? '<button class="msp-btn" title="Remove from deck" style="border-color:#FF9800;color:#FF9800;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'remove-added\')">' + svgRemove + '</button>'
-                    : '<button class="msp-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>';
+                    ? '<button class="msp-btn msp-deck-btn" title="Remove from deck" style="border-color:#FF9800;color:#FF9800;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'remove-added\')">' + svgRemove + '</button>'
+                    : '<button class="msp-btn msp-deck-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>';
                 return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '"' +
                     ' ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)" ondragover="mspRowDragOver(event,this)" ondragleave="mspRowDragLeave(this)" ondrop="mspRowDrop(event,this,' + unit.id + ')">' +
                     '<span class="msp-drag-handle" title="Drag to group" onclick="event.stopPropagation()">' + svgHandle + '</span>' +
@@ -12613,7 +13108,7 @@
             saveCards();
             renderDisplay();
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
-            showToast('✅ All units unloaded', 2000);
+            showToast('✅ All decks cleared', 2000);
         }
 
         var _mspLastDeleted = null; // { unit, groupIds }
@@ -12652,7 +13147,7 @@
                         _mspLastDeleted = { unit: unitCopy, groupIds: groupIds };
                         var undoBtn = document.getElementById('mspUndoBtn');
                         if (undoBtn) {
-                            undoBtn.style.display = '';
+                            undoBtn.style.display = 'inline-flex';
                             // Auto-hide undo after 10s
                             clearTimeout(_mspLastDeleted._timer);
                             _mspLastDeleted._timer = setTimeout(function(){
@@ -12669,7 +13164,7 @@
                         if (row) row.remove();
                         var list = document.getElementById('mspList');
                         if (list && list.querySelectorAll('.msp-unit-row').length === 0) {
-                            list.innerHTML = '<div class="msp-empty">No decks in your library yet.<br><br>Tap <strong>⚙️ Manage</strong> above, then <strong>Import a deck</strong>.</div>';
+                            list.innerHTML = '<div class="msp-empty">No decks in your library yet.<br><br>Tap <strong>⚙️</strong> above, then <strong>Import a deck</strong>.</div>';
                         }
                         syncUnitsEverywhere();
                     }).catch(function(){ showToast('⚠️ Error deleting unit', 2000); });
@@ -12683,10 +13178,10 @@
                 setTimeout(function() {
                     if (btn.dataset.confirming === 'true') {
                         btn.dataset.confirming = 'false';
-                        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
-                        btn.style.background = 'white';
+                        btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
+                        btn.style.background = 'transparent';
                         btn.style.color = '#f44336';
-                        btn.style.borderColor = '#f44336';
+                        btn.style.borderColor = 'transparent';
                     }
                 }, 3000);
             }
@@ -12696,15 +13191,20 @@
         function closeManageSidePanel() {
             const panel = document.getElementById('manageSidePanel');
             panel.classList.remove('open');
+            panel.classList.remove('behind-modal');
             document.getElementById('manageSidePanelOverlay').classList.remove('open');
+            document.getElementById('manageSidePanelOverlay').classList.remove('behind-modal');
             document.body.style.overflow = '';
+            _mspEditMode = false;
+            updateMspEditUI();
             // Reset to default width after slide-out completes
             setTimeout(() => { panel.style.width = ''; }, 310);
         }
 
         // Drag-to-resize side panel
         (function() {
-            const MIN_W = 300, MAX_W_VW = 0.6;
+            const MIN_W = 220;
+            function maxWVw() { return window.innerWidth <= 700 ? 0.8 : 0.6; }
             let resizing = false, startX = 0, startW = 0;
             const handle = document.getElementById('mspResizeHandle');
             const panel  = document.getElementById('manageSidePanel');
@@ -12720,7 +13220,7 @@
             }
             function doResize(x) {
                 if (!resizing) return;
-                const maxW = Math.floor(window.innerWidth * MAX_W_VW);
+                const maxW = Math.floor(window.innerWidth * maxWVw());
                 const newW = Math.min(maxW, Math.max(MIN_W, startW + (x - startX)));
                 panel.style.width = newW + 'px';
             }
@@ -13147,11 +13647,11 @@
             updateFoldersFinishButton();
             _ucmSelectedFolderId = null;
             _ucmFolderActiveUnitId = null;
-            // Close Deck Library (restores default or flashcard view underneath)
+            // Close Deck Library; slider stays open underneath (or reopen if it was closed)
             if (typeof closeUnitConfigModal === 'function') closeUnitConfigModal();
-            // Open manage slider panel on top of whatever main page was behind
-            if (typeof openManageSidePanel === 'function') {
-                openManageSidePanel();
+            const panel = document.getElementById('manageSidePanel');
+            if (!panel || !panel.classList.contains('open')) {
+                if (typeof openManageSidePanel === 'function') openManageSidePanel();
             }
             showToast('✅ Folders updated', 1500);
         }
@@ -13161,6 +13661,13 @@
             console.log('Opening Unit Config Modal');
             try {
                 document.body.style.overflow = 'hidden';
+                // Keep Deck Library slider open underneath so it is still there after Manage
+                const msp = document.getElementById('manageSidePanel');
+                const mspOv = document.getElementById('manageSidePanelOverlay');
+                if (msp && msp.classList.contains('open')) {
+                    msp.classList.add('behind-modal');
+                    if (mspOv) mspOv.classList.add('behind-modal');
+                }
                 const modal = document.getElementById('unitConfigModal');
                 if (!modal) {
                     console.error('unitConfigModal element not found!');
@@ -13187,7 +13694,6 @@
 
         // Close Unit Configuration Modal
         function closeUnitConfigModal() {
-            document.body.style.overflow = '';
             document.getElementById('unitConfigModal').classList.remove('active');
             setFolderDockVisible(false);
             closeNewFolderModal();
@@ -13198,6 +13704,16 @@
             // Next open starts fresh on the blank import button page
             _ucmSessionImports = [];
             clearUcmUndo();
+            const msp = document.getElementById('manageSidePanel');
+            const mspOv = document.getElementById('manageSidePanelOverlay');
+            if (msp) msp.classList.remove('behind-modal');
+            if (mspOv) mspOv.classList.remove('behind-modal');
+            if (msp && msp.classList.contains('open')) {
+                document.body.style.overflow = 'hidden';
+                loadUnitsFromDB().then(function(units) { renderMspList(units); });
+            } else {
+                document.body.style.overflow = '';
+            }
         }
 
         // Toggle source input (URL vs File)
@@ -13266,10 +13782,23 @@
             _ucmImportBusy = true;
             const pickBtn = document.getElementById('importDeckPickBtn');
             const files = Array.from(fileInput.files);
-            if (pickBtn) {
-                pickBtn.disabled = true;
-                pickBtn.style.opacity = '0.85';
-                pickBtn.innerHTML = '<span>⏳</span><span>Importing' + (files.length > 1 ? ' ' + files.length + '…' : '…') + '</span>';
+            try {
+                const existingUnits = await loadUnitsFromDB();
+                const hasNew = files.some(function(file) {
+                    const name = file.name.replace(/\.json$/i, '');
+                    return !(existingUnits || []).some(function(u) { return u.name === name; });
+                });
+                if (hasNew && pickBtn) {
+                    pickBtn.disabled = true;
+                    pickBtn.style.opacity = '0.85';
+                    pickBtn.innerHTML = '<span>⏳</span><span>Importing' + (files.length > 1 ? ' ' + files.length + '…' : '…') + '</span>';
+                }
+            } catch (preErr) {
+                if (pickBtn) {
+                    pickBtn.disabled = true;
+                    pickBtn.style.opacity = '0.85';
+                    pickBtn.innerHTML = '<span>⏳</span><span>Importing' + (files.length > 1 ? ' ' + files.length + '…' : '…') + '</span>';
+                }
             }
             // Safety: never leave "Importing…" forever if something hangs
             var safetyTimer = setTimeout(function() {
@@ -13401,12 +13930,17 @@
 
         function flattenImageToWhite(dataUrl) {
             return new Promise(resolve => {
-                if (!dataUrl || !dataUrl.startsWith('data:image/png')) { resolve(dataUrl); return; }
+                if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+                    resolve(dataUrl);
+                    return;
+                }
+                // Keep animated GIFs as-is
+                if (dataUrl.startsWith('data:image/gif')) { resolve(dataUrl); return; }
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
                     const ctx = canvas.getContext('2d');
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -13418,9 +13952,23 @@
             });
         }
 
+        async function prepareCardsForExport(cardList) {
+            const list = Array.isArray(cardList) ? cardList : [];
+            return Promise.all(list.map(async function (card) {
+                const out = Object.assign({}, card);
+                if (out.frontImage) out.frontImage = await flattenImageToWhite(out.frontImage);
+                if (out.backImage) out.backImage = await flattenImageToWhite(out.backImage);
+                delete out.originalFrontImage;
+                return out;
+            }));
+        }
+
         // Import a single File object → { id, name, cardCount, createdAt } or null
         async function importOneUnitFile(file, existingUnits) {
             const name = file.name.replace(/\.json$/i, '');
+            const nameDup = (existingUnits || []).some(function(u) { return u.name === name; });
+            if (nameDup) throw new Error('duplicate');
+
             const text = await file.text();
             const jsonData = JSON.parse(text);
 
@@ -13473,26 +14021,52 @@
             }
 
             const files = Array.from(fileInput.files);
-            showToast(files.length > 1 ? '⏳ Processing ' + files.length + ' files…' : '⏳ Processing…', 1500);
 
             try {
                 const existingUnits = await loadUnitsFromDB();
+                const alreadyLoaded = [];
+                const newFiles = [];
+                files.forEach(function(file) {
+                    const name = file.name.replace(/\.json$/i, '');
+                    const isDup = (existingUnits || []).some(function(u) { return u.name === name; });
+                    if (isDup) alreadyLoaded.push(file);
+                    else newFiles.push(file);
+                });
+
+                if (!newFiles.length) {
+                    showToast(alreadyLoaded.length === 1
+                        ? "This deck's already loaded"
+                        : "These decks are already loaded", 2500);
+                    if (_ucmSessionImports.length) renderImportSessionList();
+                    else resetImportFlow();
+                    return;
+                }
+
+                showToast(newFiles.length > 1 ? '⏳ Processing ' + newFiles.length + ' files…' : '⏳ Processing…', 1500);
+
                 const results = [];
                 const errors = [];
 
-                for (let i = 0; i < files.length; i++) {
+                for (let i = 0; i < newFiles.length; i++) {
                     try {
-                        const r = await importOneUnitFile(files[i], existingUnits);
+                        const r = await importOneUnitFile(newFiles[i], existingUnits);
                         if (r) results.push(r);
                     } catch (err) {
                         const msg = (err && err.message) ? err.message : 'error';
-                        errors.push(files[i].name + (msg === 'duplicate' ? ' (already in library)' : ''));
-                        console.error('Import failed for', files[i].name, err);
+                        if (msg === 'duplicate') alreadyLoaded.push(newFiles[i]);
+                        else errors.push(newFiles[i].name);
+                        console.error('Import failed for', newFiles[i].name, err);
                     }
                 }
 
                 if (!results.length) {
-                    showToast(errors.length ? '⚠️ No decks imported' : '⚠️ Invalid JSON file', 3000);
+                    if (alreadyLoaded.length && !errors.length) {
+                        showToast(alreadyLoaded.length === 1
+                            ? "This deck's already loaded"
+                            : "These decks are already loaded", 2500);
+                    } else {
+                        showToast(errors.length ? '⚠️ No decks imported' : '⚠️ Invalid JSON file', 3000);
+                    }
                     if (_ucmSessionImports.length) renderImportSessionList();
                     else resetImportFlow();
                     return;
@@ -13524,7 +14098,10 @@
                 flashUcmRowsByIds(_ucmFlashIds);
 
                 var toastMsg = '✅ ' + results.length + ' file' + (results.length !== 1 ? 's' : '') + ' added';
-                if (errors.length) toastMsg += ' (' + errors.length + ' skipped)';
+                if (alreadyLoaded.length) toastMsg += alreadyLoaded.length === 1
+                    ? " (1 already loaded)"
+                    : ' (' + alreadyLoaded.length + ' already loaded)';
+                else if (errors.length) toastMsg += ' (' + errors.length + ' skipped)';
                 showToast(toastMsg, 2200);
 
             } catch (error) {
@@ -14320,6 +14897,7 @@
                 document.getElementById('cardOverlayCounter').style.display = 'none';
                 document.getElementById('cardOverlayNav').style.display = 'none';
                 document.getElementById('cardOverlayTTS').style.display = 'none';
+                setSwipeChromeHidden(false);
 
                 // Empty deck: stop any pending/visible swipe demo (soft — a future
                 // import can request it again this session if never seen forever)
@@ -14477,16 +15055,13 @@
             // Position nav overlay to match card container bounds
             requestAnimationFrame(() => positionNavOverlay());
 
-            // TTS button — bottom right, same style as settings button
+            // TTS button — hidden unless enabled in settings; bottom-center overlay
             const ttsEl = document.getElementById('cardOverlayTTS');
-            if (card.backText) {
-                ttsEl.innerHTML = `<button class="audio-btn" style="color:#35654D;" onclick="event.stopPropagation(); speakText('${card.backText.replace(/'/g, "\\'")}')">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                    </svg>
-                </button>`;
+            if (showTtsButton && card.backText) {
+                const speakEsc = card.backText.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                ttsEl.innerHTML = `<button class="audio-btn tts-card-btn" title="Speak" onclick="event.stopPropagation(); speakText('${speakEsc}')">` +
+                    ttsMicSvg(70, 'currentColor') +
+                    `</button>`;
                 ttsEl.style.display = 'block';
             } else {
                 ttsEl.style.display = 'none';
@@ -14519,6 +15094,7 @@
 
             // Only complete a swipe-hint request from a fresh import (not every re-render)
             if (typeof maybeShowSwipeHint === 'function') maybeShowSwipeHint();
+            revealSwipeChrome();
         }
 
         // cachedBackTextSizes[i] = { size: finalRem, max: maxFontSize used when computed }
@@ -14622,7 +15198,7 @@
             // Short single words must fit on one line (width). Long broken words
             // and multi-word text are wrapping, so they're constrained by height.
             const fitsAtMax = (isSingleWord && !breakLongWord)
-                ? textElement.scrollWidth <= maxWidth
+                ? (textElement.scrollWidth <= maxWidth && textElement.scrollHeight <= maxHeight)
                 : textElement.scrollHeight <= maxHeight;
             if (fitsAtMax) {
                 if (cacheKey !== undefined && cacheKey !== null)
@@ -14637,7 +15213,7 @@
                 const testSize = (minSize + maxSize) / 2;
                 textElement.style.fontSize = testSize + 'rem';
                 const fits = (isSingleWord && !breakLongWord)
-                    ? textElement.scrollWidth <= maxWidth * 0.95
+                    ? (textElement.scrollWidth <= maxWidth * 0.95 && textElement.scrollHeight <= maxHeight * 0.95)
                     : textElement.scrollHeight <= maxHeight * 0.95;
                 if (fits) { optimalSize = testSize; minSize = testSize; }
                 else       { maxSize = testSize; }
@@ -14712,7 +15288,11 @@
         });
         // Dropdown toggle functions
         const TEXT_SCALES = [1.0, 1.4, 1.8]; // default, +40%, +80%
-        let cardTextScaleIndex = 0; // start at default
+        function isPhoneDevice() {
+            return Math.min(window.innerWidth, window.innerHeight) <= 500;
+        }
+        // Phones stay at the smallest default; tablet and PC start at the second-largest
+        let cardTextScaleIndex = isPhoneDevice() ? 0 : 1;
 
         function scaleFrontText() {
             const textEl = document.querySelector('.card-front-text');
@@ -14756,6 +15336,7 @@
                 const imgPercent = Math.max(30, Math.min(80, (imgHeight / cardHeight) * 100));
                 imgEl.style.height = imgPercent + '%';
                 imgEl.style.flex = 'none';
+                if (typeof positionNavOverlay === 'function') positionNavOverlay();
             });
         }
 
@@ -14764,37 +15345,98 @@
             requestAnimationFrame(() => scaleTextToFit());
         }
 
-        function increaseCardTextSize() {
-            if (cardTextScaleIndex < TEXT_SCALES.length - 1) {
-                cardTextScaleIndex++;
-                delete cachedBackTextSizes[currentIndex];
-                requestAnimationFrame(() => {
-                    scaleTextToFit();
-                    requestAnimationFrame(() => {
-                        const textEl = document.querySelector('.card-text-auto-scale');
-                        const container = textEl?.closest('.card-back');
-                        if (textEl && container) {
-                            const overflowsWidth  = textEl.scrollWidth  > container.offsetWidth  - 10;
-                            const overflowsHeight = textEl.scrollHeight > container.offsetHeight - 10;
-                            if (overflowsWidth || overflowsHeight) {
-                                // Revert — text cannot fit even after scaling attempt
-                                cardTextScaleIndex--;
-                                delete cachedBackTextSizes[currentIndex];
-                                scaleTextToFit();
-                                showToast('⚠️ Text too large to fit the card', 2500);
-                            }
-                        }
-                    });
-                });
+        function syncWordSizeSlider() {
+            const track = document.getElementById('wordSizeTrack');
+            const thumb = document.getElementById('wordSizeThumb');
+            if (!track || !thumb) return;
+            const max = TEXT_SCALES.length - 1;
+            const t = max > 0 ? (cardTextScaleIndex / max) : 0;
+            const inset = 8;
+            const usable = Math.max(0, track.clientWidth - inset * 2);
+            thumb.style.left = (inset + t * usable) + 'px';
+            track.setAttribute('aria-valuenow', String(cardTextScaleIndex));
+        }
+
+        function setCardTextScaleIndex(nextIndex) {
+            const max = TEXT_SCALES.length - 1;
+            nextIndex = Math.max(0, Math.min(max, nextIndex | 0));
+            if (nextIndex === cardTextScaleIndex) {
+                syncWordSizeSlider();
+                return;
             }
+            const prev = cardTextScaleIndex;
+            cardTextScaleIndex = nextIndex;
+            syncWordSizeSlider();
+            delete cachedBackTextSizes[currentIndex];
+            requestAnimationFrame(() => {
+                scaleTextToFit();
+                if (nextIndex <= prev) return;
+                requestAnimationFrame(() => {
+                    const textEl = document.querySelector('.card-text-auto-scale');
+                    const container = textEl && textEl.closest('.card-back');
+                    if (textEl && container) {
+                        const overflowsWidth  = textEl.scrollWidth  > container.offsetWidth  - 10;
+                        const overflowsHeight = textEl.scrollHeight > container.offsetHeight - 10;
+                        if (overflowsWidth || overflowsHeight) {
+                            cardTextScaleIndex = prev;
+                            delete cachedBackTextSizes[currentIndex];
+                            scaleTextToFit();
+                            syncWordSizeSlider();
+                            showToast('⚠️ Text too large to fit the card', 2500);
+                        }
+                    }
+                });
+            });
+        }
+
+        function wordSizeIndexFromClientX(clientX) {
+            const track = document.getElementById('wordSizeTrack');
+            if (!track) return cardTextScaleIndex;
+            const r = track.getBoundingClientRect();
+            const inset = 8;
+            const usable = Math.max(1, r.width - inset * 2);
+            const x = Math.max(0, Math.min(1, (clientX - r.left - inset) / usable));
+            return Math.round(x * (TEXT_SCALES.length - 1));
+        }
+
+        function bindWordSizeSlider() {
+            const track = document.getElementById('wordSizeTrack');
+            if (!track || track._wordSizeBound) return;
+            track._wordSizeBound = true;
+            let dragging = false;
+            function pointerX(e) {
+                if (e.touches && e.touches[0]) return e.touches[0].clientX;
+                if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0].clientX;
+                return e.clientX;
+            }
+            function onDown(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                dragging = true;
+                setCardTextScaleIndex(wordSizeIndexFromClientX(pointerX(e)));
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                e.preventDefault();
+                setCardTextScaleIndex(wordSizeIndexFromClientX(pointerX(e)));
+            }
+            function onUp() { dragging = false; }
+            track.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            track.addEventListener('touchstart', onDown, { passive: false });
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onUp);
+            window.addEventListener('resize', syncWordSizeSlider);
+            syncWordSizeSlider();
+        }
+
+        function increaseCardTextSize() {
+            setCardTextScaleIndex(cardTextScaleIndex + 1);
         }
 
         function decreaseCardTextSize() {
-            if (cardTextScaleIndex > 0) {
-                cardTextScaleIndex--;
-                delete cachedBackTextSizes[currentIndex];
-                applyCardTextScale();
-            }
+            setCardTextScaleIndex(cardTextScaleIndex - 1);
         }
 
         function toggleTextOnFront() {
@@ -14803,12 +15445,25 @@
             Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
             const btn = document.getElementById('showTextBtn');
             if (btn) {
-                btn.style.background = showTextOnFront ? '#ffd0d0' : 'white';
-                btn.style.color = showTextOnFront ? '#8a1515' : '#333';
-                btn.querySelector('svg').setAttribute('stroke', showTextOnFront ? '#8a1515' : '#35654D');
+                setSettingsItemOn(btn, showTextOnFront);
+                btn.querySelector('svg').setAttribute('stroke', showTextOnFront ? '#6b4e1a' : '#35654D');
             }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            closeSettingsMenu();
+            renderDisplay();
+        }
+
+        function updateTtsToggleButton() {
+            const btn = document.getElementById('ttsToggleBtn');
+            if (!btn) return;
+            const on = !!showTtsButton;
+            const stroke = on ? '#6b4e1a' : '#35654D';
+            btn.innerHTML = on ? ttsMicSvg(22, stroke) : ttsMicOffSvg(22, stroke);
+            setSettingsItemOn(btn, on);
+        }
+
+        function toggleTtsButton() {
+            showTtsButton = !showTtsButton;
+            updateTtsToggleButton();
             renderDisplay();
         }
 
@@ -14816,14 +15471,13 @@
             showCharOnCard = !showCharOnCard;
             const btn = document.getElementById('showCharBtn');
             if (btn) {
-                btn.style.background = showCharOnCard ? '#ffd0d0' : 'white';
+                setSettingsItemOn(btn, showCharOnCard);
                 const svgRect = btn.querySelector('rect');
-                if (svgRect) svgRect.setAttribute('stroke', showCharOnCard ? '#8a1515' : '#35654D');
+                if (svgRect) svgRect.setAttribute('stroke', showCharOnCard ? '#6b4e1a' : '#35654D');
                 const svgText = btn.querySelector('text');
-                if (svgText) svgText.setAttribute('fill', showCharOnCard ? '#8a1515' : '#35654D');
+                if (svgText) svgText.setAttribute('fill', showCharOnCard ? '#6b4e1a' : '#35654D');
             }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            closeSettingsMenu();
             renderDisplay();
         }
 
@@ -14832,10 +15486,9 @@
         function _updateLockMenuButton(active) {
             const btn = document.getElementById('lockSideBtn');
             if (!btn) return;
-            const sideName = active ? 'Back' : '';
-            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${active ? '#8a1515' : '#35654D'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${active ? `Lock Side (${sideName})` : 'Lock Side'}`;
-            btn.style.background = active ? '#ffd0d0' : 'white';
-            btn.style.color = active ? '#8a1515' : '#333';
+            const stroke = active ? '#6b4e1a' : '#35654D';
+            btn.innerHTML = ttsLockSvg(22, stroke, !!active);
+            setSettingsItemOn(btn, active);
         }
 
         // Same mechanics as flipCard() — toggles the .flipped class on the
@@ -14897,8 +15550,6 @@
             const willLock = (lockSide !== 'back');
             _lockAnimating = true;
 
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
             _updateLockMenuButton(willLock);
 
             // Boost changes when lockSide changes — invalidate the size cache
@@ -15079,65 +15730,60 @@
             isMuted = !isMuted;
             const btn = document.getElementById('muteBtn');
             const icon = document.getElementById('muteIcon');
-            if (btn) {
-                btn.style.background = isMuted ? '#ffd0d0' : 'white';
-                btn.style.color      = isMuted ? '#8a1515' : '#333';
-                btn.lastChild.textContent = isMuted ? ' Unmute Sounds' : ' Mute Sounds';
-            }
             if (icon) {
-                icon.setAttribute('stroke', isMuted ? '#8a1515' : '#35654D');
+                icon.setAttribute('stroke', isMuted ? '#6b4e1a' : '#35654D');
                 icon.innerHTML = isMuted
                     ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
                     : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
             }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            if (btn) setSettingsItemOn(btn, isMuted);
         }
 
         function toggleMute() {
             isMuted = !isMuted;
             const btn = document.getElementById('muteBtn');
             const icon = document.getElementById('muteIcon');
-            if (btn) {
-                btn.style.background = isMuted ? '#ffd0d0' : 'white';
-                btn.style.color      = isMuted ? '#8a1515' : '#333';
-                btn.lastChild.textContent = isMuted ? 'Unmute Sounds' : 'Mute Sounds';
-            }
             if (icon) {
-                icon.setAttribute('stroke', isMuted ? '#8a1515' : '#35654D');
+                icon.setAttribute('stroke', isMuted ? '#6b4e1a' : '#35654D');
                 icon.innerHTML = isMuted
                     ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
                     : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
             }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            if (btn) setSettingsItemOn(btn, isMuted);
         }
 
         function toggleHideUI() {
             const isHidden = document.body.classList.toggle('hide-ui');
             const btn = document.getElementById('hideUIBtn');
-            if (btn) {
-                btn.innerHTML = isHidden
-                    ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a1515" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Show Buttons`
-                    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Hide Buttons`;
-                btn.style.background = isHidden ? '#ffd0d0' : 'white';
-                btn.style.color = isHidden ? '#8a1515' : '#333';
-            }
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            if (!btn) return;
+            const stroke = isHidden ? '#6b4e1a' : 'currentColor';
+            btn.innerHTML = isHidden
+                ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+                : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+            setSettingsItemOn(btn, isHidden);
         }
 
         function toggleSettingsMenu() {
             const menu = document.getElementById('settingsMenu');
-            const btn = document.getElementById('settingsGearBtn') || menu?.closest('div')?.querySelector('.fullscreen-btn');
+            const bd = document.getElementById('settingsBackdrop');
             if (!menu) return;
-            const isOpen = menu.style.display === 'block';
-            menu.style.display = isOpen ? 'none' : 'block';
-            if (!isOpen) {
-                if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
-                setTimeout(() => {
+            const isOpen = menu.style.display === 'flex' || menu.style.display === 'block';
+            if (isOpen) {
+                closeSettingsMenu();
+                return;
+            }
+            menu.style.display = 'flex';
+            if (bd) bd.classList.add('open');
+            document.body.classList.add('settings-menu-open');
+            if (typeof bindWordSizeSlider === 'function') bindWordSizeSlider();
+            requestAnimationFrame(function() {
+                if (typeof syncWordSizeSlider === 'function') syncWordSizeSlider();
+            });
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
+            setTimeout(() => {
                     const closeMenu = (e) => {
                         const menu = document.getElementById('settingsMenu');
+                        const bd = document.getElementById('settingsBackdrop');
                         // Don't close if clicking/touching the toggle button itself — let the toggle handle it
                         const toggleBtn = document.getElementById('settingsGearBtn') || document.querySelector('.fullscreen-btn');
                         if (toggleBtn && (toggleBtn === e.target || toggleBtn.contains(e.target))) {
@@ -15145,8 +15791,14 @@
                             document.removeEventListener('touchstart', closeMenu);
                             return;
                         }
+                        if (bd && (bd === e.target || bd.contains(e.target))) {
+                            closeSettingsMenu();
+                            document.removeEventListener('click', closeMenu);
+                            document.removeEventListener('touchstart', closeMenu);
+                            return;
+                        }
                         if (menu && !menu.contains(e.target)) {
-                            menu.style.display = 'none';
+                            closeSettingsMenu();
                             document.removeEventListener('click', closeMenu);
                             document.removeEventListener('touchstart', closeMenu);
                         }
@@ -15154,7 +15806,6 @@
                     document.addEventListener('click', closeMenu);
                     document.addEventListener('touchstart', closeMenu);
                 }, 10);
-            }
         }
 
         function toggleMoreDropdown() {
@@ -15368,8 +16019,7 @@
         const HANDLE_SIZE = 22;
 
         function openCropTool() {
-            const menu = document.getElementById('settingsMenu');
-            if (menu) menu.style.display = 'none';
+            closeSettingsMenu();
             hideCardOverlays();
 
             cropState.cardIndex = currentIndex;
@@ -15984,7 +16634,7 @@
         <!-- Toolbar -->
         <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#1a1a1a; flex-shrink:0;">
             <button onclick="closeCropTool()" style="background:none; border:none; color:white; font-size:16px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.12);">Cancel</button>
-            <span style="color:white; font-size:17px; font-weight:700; letter-spacing:0.3px;">Clip Image</span>
+            <span style="color:white; font-size:17px; font-weight:700; letter-spacing:0.3px;">Crop</span>
             <button onclick="resetCrop()" style="background:none; border:none; color:#f0a500; font-size:15px; font-weight:600; cursor:pointer; padding:8px 12px; border-radius:8px; background:rgba(240,165,0,0.15);">Reset</button>
         </div>
         <!-- Canvas area -->
