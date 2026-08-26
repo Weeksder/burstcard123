@@ -7006,7 +7006,9 @@
             });
         }
 
-        // Setup touch + mouse drag gestures for card navigation (all directions)
+        // Setup touch + mouse drag gestures for card navigation.
+        // Swipe goes next ON  → free multi-direction drag (unchanged).
+        // Swipe goes next OFF → classic horizontal-only fan (translateX + rotateZ).
         function setupSwipeGestures() {
             let startX = 0, startY = 0;
             let startTime = 0;
@@ -7017,6 +7019,7 @@
             const MAX_TAP_TIME = 500;
             const MIN_DRAG_TO_SUPPRESS_FLIP = 8;
             const PEAK_DRAG_SUPPRESS_FLIP = 20;
+            const FAN_ROTATION = 0.02; // classic fan strength from older builds (~360)
             let peakDist = 0;
 
             function swipeEls() {
@@ -7028,28 +7031,7 @@
                 };
             }
 
-            function applySideCarousel(x, withTransition) {
-                const els = swipeEls();
-                const w = (els.stack && els.stack.offsetWidth) || window.innerWidth;
-                const t = withTransition ? 'transform 0.28s ease-out' : 'none';
-                const flipRot = isFlipped ? ' rotateY(180deg)' : '';
-                if (els.stack) els.stack.classList.add('swipe-carousel', 'swiping');
-                if (els.card) {
-                    els.card.classList.add('swiping');
-                    els.card.style.transition = t;
-                    els.card.style.transform = 'translateX(' + x + 'px)' + flipRot;
-                }
-                if (els.next) {
-                    els.next.style.transition = t;
-                    els.next.style.transform = 'translateX(' + (w + x) + 'px)';
-                }
-                if (els.prev) {
-                    els.prev.style.transition = t;
-                    els.prev.style.transform = 'translateX(' + (-w + x) + 'px)';
-                }
-            }
-
-            function clearSideCarousel() {
+            function clearFanSwipe() {
                 const els = swipeEls();
                 if (els.stack) els.stack.classList.remove('swiping', 'swipe-carousel', 'swipe-show-next', 'swipe-show-prev');
                 if (els.card) {
@@ -7059,6 +7041,38 @@
                 }
                 if (els.next) { els.next.style.transform = ''; els.next.style.transition = ''; }
                 if (els.prev) { els.prev.style.transform = ''; els.prev.style.transition = ''; }
+            }
+
+            // Kept for cancel/reset paths that still call the old name
+            function clearSideCarousel() { clearFanSwipe(); }
+
+            /** Classic left/right fan: no vertical travel, rotateZ like old builds. */
+            function applyFanSwipe(x, withTransition) {
+                const els = swipeEls();
+                const t = withTransition ? 'transform 0.28s ease-out' : 'none';
+                const flipRot = isFlipped ? ' rotateY(180deg)' : '';
+                const rotation = x * FAN_ROTATION;
+                if (els.stack) {
+                    els.stack.classList.add('swiping');
+                    els.stack.classList.remove('swipe-carousel');
+                    if (x < 0) {
+                        els.stack.classList.add('swipe-show-next');
+                        els.stack.classList.remove('swipe-show-prev');
+                    } else if (x > 0) {
+                        els.stack.classList.add('swipe-show-prev');
+                        els.stack.classList.remove('swipe-show-next');
+                    } else {
+                        els.stack.classList.remove('swipe-show-next', 'swipe-show-prev');
+                    }
+                }
+                if (els.card) {
+                    els.card.classList.add('swiping');
+                    els.card.style.transition = t;
+                    els.card.style.transform = 'translateX(' + x + 'px) rotateZ(' + rotation + 'deg)' + flipRot;
+                }
+                // Neighbors stay as peek cards (not sliding with the finger)
+                if (els.next) { els.next.style.transition = ''; els.next.style.transform = ''; }
+                if (els.prev) { els.prev.style.transition = ''; els.prev.style.transform = ''; }
             }
 
             function getPos(e) {
@@ -7116,8 +7130,12 @@
                     const cardStack = document.querySelector('.card-stack');
                     if (cardEl) {
                         if (!swipeForwardOnly) {
-                            applySideCarousel(dragX, false);
+                            // Back & forward: horizontal-only fan (no up/down)
+                            if (Math.abs(dragX) > Math.abs(dragY) && Math.abs(dragX) > 15) {
+                                applyFanSwipe(dragX, false);
+                            }
                         } else {
+                            // Swipe goes next: unchanged free multi-direction drag
                             const rotation = dragX * 0.03;
                             const tiltY = dragY * 0.01;
                             const flipRot = isFlipped ? ' rotateY(180deg)' : '';
@@ -7166,18 +7184,40 @@
 
                 const absX = Math.abs(dragX), absY = Math.abs(dragY);
                 const sidewaysOnly = !swipeForwardOnly;
-                const isSwipe = sidewaysOnly ? (absX >= MIN_SWIPE) : (finalDist >= MIN_SWIPE);
+                // Fan mode: must be clearly horizontal (classic). Forward mode: any direction.
+                const isSwipe = sidewaysOnly
+                    ? (absX >= MIN_SWIPE && absX > absY)
+                    : (finalDist >= MIN_SWIPE);
 
                 if (isSwipe && sidewaysOnly) {
-                    const w = (cardStack && cardStack.offsetWidth) || window.innerWidth;
+                    // Back & forward: fan fly-off left/right, then prev/next
                     const goingNext = dragX < 0;
-                    applySideCarousel(goingNext ? -w : w, true);
-                    document.body.style.overflow = 'hidden';
+                    const flyX = goingNext ? -window.innerWidth * 1.2 : window.innerWidth * 1.2;
+                    const flyRot = dragX * 0.15;
+                    const flipRot = isFlipped ? ' rotateY(180deg)' : '';
+                    document.body.style.overflow = 'visible';
+                    if (cardEl) {
+                        cardEl.classList.add('swiping');
+                        cardEl.style.transition = 'transform 0.28s ease-in';
+                        cardEl.style.transform = 'translateX(' + flyX + 'px) rotateZ(' + flyRot + 'deg)' + flipRot;
+                    }
+                    if (cardStack) {
+                        cardStack.classList.add('swiping');
+                        if (goingNext) {
+                            cardStack.classList.add('swipe-show-next');
+                            cardStack.classList.remove('swipe-show-prev');
+                        } else {
+                            cardStack.classList.add('swipe-show-prev');
+                            cardStack.classList.remove('swipe-show-next');
+                        }
+                    }
                     setTimeout(() => {
-                        clearSideCarousel();
+                        document.body.style.overflow = 'hidden';
+                        clearFanSwipe();
                         if (goingNext) nextCard(); else prevCard();
-                    }, 280);
+                    }, 290);
                 } else if (isSwipe) {
+                    // Swipe goes next: unchanged multi-direction fly-off
                     const flyX = absX >= absY
                         ? (dragX > 0 ? window.innerWidth * 1.2 : -window.innerWidth * 1.2)
                         : 0;
@@ -7199,10 +7239,11 @@
                         nextCard();
                     }, 290);
                 } else if (sidewaysOnly) {
+                    // Fan cancel: spring back to center
                     setSwipeChromeHidden(false);
-                    applySideCarousel(0, true);
+                    applyFanSwipe(0, true);
                     setTimeout(() => {
-                        clearSideCarousel();
+                        clearFanSwipe();
                         document.body.style.overflow = 'hidden';
                     }, 280);
                 } else {
