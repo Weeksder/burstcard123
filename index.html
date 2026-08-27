@@ -24,6 +24,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta name="flashabc-build" content="1188-folder-create-no-dupes">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -172,6 +173,33 @@
         #spellingGameModal .answer-slot.spell-drop-hover {
             background: #e8f5e9 !important;
             box-shadow: inset 0 0 0 2px rgba(53, 101, 77, 0.35);
+        }
+        /* Insert-between bars (same idea as import-card reorder) */
+        #spellingGameModal .answer-slot.spell-insert-before::before,
+        #spellingGameModal .answer-slot.spell-insert-after::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            bottom: -3px;
+            width: 4px;
+            background: #10b981;
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.85);
+            z-index: 6;
+            pointer-events: none;
+        }
+        #spellingGameModal .answer-slot.spell-insert-before,
+        #spellingGameModal .answer-slot.spell-insert-after {
+            overflow: visible;
+        }
+        #spellingGameModal .answer-slot.spell-insert-before::before { left: -4px; }
+        #spellingGameModal .answer-slot.spell-insert-after::after { right: -4px; }
+        #spellingGameModal .answer-slot.spell-live-placeholder {
+            opacity: 0.42;
+            box-shadow: inset 0 0 0 2px #10b981 !important;
+        }
+        #spellingGameModal .answer-slot {
+            transition: background 0.12s ease, opacity 0.12s ease;
         }
         /* Filled answer tiles + bank tiles: fill paints full box; glyphs stay inside. */
         #spellingGameModal .answer-slot {
@@ -1071,6 +1099,7 @@
             padding: 6px 10px;
             padding-bottom: var(--card-btn-clearance);
             box-sizing: border-box;
+            overflow: hidden;
         }
 
         .card-front.show-text-active .card-image {
@@ -1135,9 +1164,7 @@
         .card-front-text {
             width: 100%;
             flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: block;
             padding: 8px 10px 16px;
             font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
             font-size: 6rem;
@@ -1145,17 +1172,17 @@
             color: #1a1a1a;
             text-align: center;
             line-height: 1.3;
-            white-space: normal;
-            word-break: normal;
-            overflow-wrap: break-word;
-            overflow: visible;
+            white-space: nowrap;
+            word-break: keep-all;
+            overflow-wrap: normal;
+            overflow: hidden;
         }
 
         .card-front-text .vowel {
             font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
             font-weight: var(--spell-letter-weight, 400) !important;
             display: inline;
-            white-space: pre-wrap;
+            white-space: nowrap;
         }
 
         .card-back {
@@ -1278,6 +1305,7 @@
         body.hide-ui .counter,
         body.hide-ui #cardOverlayCounter,
         body.hide-ui #cardOverlayTTS,
+        body.hide-ui .card-stack-tts,
         body.hide-ui #cardOverlayNav,
         body.hide-ui .nav-btn,
         body.hide-ui #navIndexLabel,
@@ -1356,7 +1384,8 @@
         }
         #cardOverlaySettings .fullscreen-btn,
         #cardOverlayLock .fullscreen-btn,
-        #cardOverlayTTS .tts-card-btn {
+        #cardOverlayTTS .tts-card-btn,
+        .card-stack-tts .tts-card-btn {
             transition: transform 0.2s ease, opacity 0.2s ease;
             transform-origin: center;
         }
@@ -1370,7 +1399,9 @@
         body.swipe-chrome-hide #cardOverlayLock,
         body.swipe-chrome-hide #cardOverlayLock .fullscreen-btn,
         body.swipe-chrome-hide #cardOverlayTTS .tts-card-btn,
-        body.swipe-chrome-hide #cardOverlayTTS .tts-card-btn:hover {
+        body.swipe-chrome-hide #cardOverlayTTS .tts-card-btn:hover,
+        body.swipe-chrome-hide .card-stack-tts .tts-card-btn,
+        body.swipe-chrome-hide .card-stack-tts .tts-card-btn:hover {
             transform: scale(0) !important;
             opacity: 0 !important;
             pointer-events: none !important;
@@ -1452,41 +1483,63 @@
             transform: scale(0.95);
         }
 
-        /* Card TTS overlay — 2× current size, ring tight to the icon */
-        #cardOverlayTTS .tts-card-btn {
-            width: 100px !important;
-            height: 100px !important;
+        /* Mic lives on the card stack (same top:10px as the nav arrows).
+           The old fixed overlay is unused and must stay hidden. */
+        #cardOverlayTTS {
+            display: none !important;
+        }
+        .card-stack-tts {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            pointer-events: none;
+        }
+        .card-stack-tts .tts-card-btn {
+            pointer-events: auto;
+        }
+        #cardOverlayTTS .tts-card-btn,
+        .card-stack-tts .tts-card-btn {
+            width: 75px !important;
+            height: 75px !important;
             border-radius: 50%;
             background: white !important;
-            border: 3px solid #f5a623;
+            border: 2.25px solid #f5a623;
             box-shadow: 0 3px 10px rgba(0,0,0,0.3);
             color: #f5a623;
             opacity: 1;
             padding: 0;
         }
-        #cardOverlayTTS .tts-card-btn svg {
-            width: 70px;
-            height: 70px;
+        #cardOverlayTTS .tts-card-btn svg,
+        .card-stack-tts .tts-card-btn svg {
+            width: 53px;
+            height: 53px;
         }
-        #cardOverlayTTS .tts-card-btn:hover {
+        #cardOverlayTTS .tts-card-btn:hover,
+        .card-stack-tts .tts-card-btn:hover {
             background: white !important;
             transform: scale(1.04);
             opacity: 1;
         }
         @media (max-width: 480px) {
-            #cardOverlayTTS .tts-card-btn {
-                width: 88px !important;
-                height: 88px !important;
+            #cardOverlayTTS .tts-card-btn,
+            .card-stack-tts .tts-card-btn {
+                width: 66px !important;
+                height: 66px !important;
             }
-            #cardOverlayTTS .tts-card-btn svg { width: 62px; height: 62px; }
+            #cardOverlayTTS .tts-card-btn svg,
+            .card-stack-tts .tts-card-btn svg { width: 47px; height: 47px; }
         }
         @media (orientation: landscape) and (max-height: 500px) {
-            #cardOverlayTTS .tts-card-btn {
-                width: 76px !important;
-                height: 76px !important;
-                border-width: 2.5px;
+            #cardOverlayTTS .tts-card-btn,
+            .card-stack-tts .tts-card-btn {
+                width: 57px !important;
+                height: 57px !important;
+                border-width: 2px;
             }
-            #cardOverlayTTS .tts-card-btn svg { width: 54px; height: 54px; }
+            #cardOverlayTTS .tts-card-btn svg,
+            .card-stack-tts .tts-card-btn svg { width: 41px; height: 41px; }
         }
 
         .fullscreen-btn {
@@ -3798,7 +3851,8 @@
         body.settings-menu-open #cardOverlaySettings {
             z-index: 10002;
         }
-        body.settings-menu-open #cardOverlayTTS {
+        body.settings-menu-open #cardOverlayTTS,
+        body.settings-menu-open .card-stack-tts {
             z-index: 9997 !important;
             pointer-events: none;
         }
@@ -5758,8 +5812,26 @@
             padding:10px 14px;background:#c8dfc8;
             border-bottom:1px solid #e0e0e0;cursor:pointer;
             user-select:none;-webkit-user-select:none;
+            min-height:42px;box-sizing:border-box;
         }
         .msp-group-header:hover { background:#b8d4b8; }
+        .msp-group-header.msp-uncat-header {
+            background:#fde8ee;
+            border-top:1px solid #f3cfd8;
+            border-bottom:1px solid #f3cfd8;
+        }
+        .msp-group-header.msp-uncat-header.msp-uncat-spaced {
+            margin-top:0;
+        }
+        .msp-uncat-gap {
+            height:28px;
+            margin:0;
+            box-sizing:border-box;
+        }
+        .msp-group-header.msp-uncat-header:hover { background:#f8d5e0; }
+        .msp-group-header.msp-uncat-header .msp-group-name { color:#8a3d54; }
+        .msp-group-header.msp-uncat-header .msp-group-arrow { color:#c07a90; }
+        .msp-group-header.msp-uncat-header .msp-group-count { color:#c07a90; }
         .msp-group-arrow { font-size:11px;color:#888;transition:transform 0.2s;flex-shrink:0; }
         .msp-group-arrow.collapsed { transform:rotate(-90deg); }
         .msp-group-name { font-size:0.88rem;font-weight:700;color:#1a3d2b;flex:1; }
@@ -6365,12 +6437,92 @@
         }
         let showTextOnFront = false; // overlay back text on card front
         let showCharOnCard = false;  // show first character top-right corner
-        let cachedFrontTextSize = null; // cached font size so all cards scale consistently
+        let cachedFrontTextSize = null; // rem — same size for every card so swipes don't reflow
+        let ttsPlaced = false; // mic stays at top-center once placed
         const cachedBackTextSizes = {}; // per-card font size cache keyed by card index
+
+        function resetFrontTextCache() {
+            cachedFrontTextSize = null;
+        }
+
+        function setTtsCardButton(text) {
+            const ttsEl = document.getElementById('cardOverlayTTS');
+            if (!ttsEl) return;
+            if (!showTtsButton || !text) {
+                ttsEl.style.display = 'none';
+                ttsEl.classList.remove('tts-ready');
+                return;
+            }
+            let btn = ttsEl.querySelector('button.tts-card-btn');
+            if (!btn) {
+                ttsEl.innerHTML = '<button class="audio-btn tts-card-btn" title="Speak">' +
+                    ttsMicSvg(53, 'currentColor') + '</button>';
+                btn = ttsEl.querySelector('button.tts-card-btn');
+            }
+            const speak = String(text);
+            btn.onclick = function (event) {
+                event.stopPropagation();
+                speakText(speak);
+            };
+            ttsEl.style.display = 'block';
+            if (ttsPlaced && ttsEl.style.top && ttsEl.style.left) ttsEl.classList.add('tts-ready');
+            else ttsEl.classList.remove('tts-ready');
+        }
+
+        // Top-center of the card, matching the nav arrows' top on every device.
+        // Nav is position:absolute; the mic is position:fixed — on phones the
+        // visual viewport (URL bar / pinch) can offset those coordinate systems.
+        function placeTtsAtCardTop(rect) {
+            /* Mic is CSS-positioned on .card-stack (top:10px). Do not use the old fixed overlay. */
+            ttsPlaced = true;
+        }
+
+        function updateOverlayIconColors() {
+            const iconColor = isFlipped ? 'white' : '#35654D';
+            const settings = document.getElementById('cardOverlaySettings');
+            if (settings) {
+                const btn = settings.querySelector('button.fullscreen-btn');
+                if (btn) {
+                    const gearSvg = btn.querySelector('svg');
+                    if (gearSvg) {
+                        gearSvg.setAttribute('stroke', iconColor);
+                        gearSvg.style.color = iconColor;
+                        gearSvg.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
+                    }
+                }
+            }
+            const lockOv = document.getElementById('cardOverlayLock');
+            if (lockOv) {
+                const lockIcon = lockOv.querySelector('svg');
+                if (lockIcon) {
+                    lockIcon.setAttribute('stroke', iconColor);
+                    lockIcon.style.color = iconColor;
+                    lockIcon.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
+                }
+            }
+        }
+
+        function frontTextSizeRange() {
+            const screenWidth = window.innerWidth;
+            if (screenWidth <= 390)       return { max: 2.8, min: 0.7 };
+            if (screenWidth <= 480)       return { max: 3.5, min: 0.8 };
+            if (screenWidth <= 768)       return { max: 4.5, min: 1.0 };
+            if (screenWidth <= 1024)      return { max: 6.0, min: 1.2 };
+            return { max: 7.5, min: 1.4 };
+        }
+
+        function frontCaptionMarkup(text) {
+            const style = cachedFrontTextSize != null
+                ? ' style="font-size:' + cachedFrontTextSize + 'rem;white-space:nowrap"'
+                : ' style="white-space:nowrap"';
+            return '<div class="card-front-text"' + style + '>' + highlightVowelsFront(text) + '</div>';
+        }
 
         function hideCardOverlays() {
             ['cardOverlaySettings','cardOverlayLock','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
                 .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+            const ttsHide = document.getElementById('cardOverlayTTS');
+            if (ttsHide) ttsHide.classList.remove('tts-ready');
             closeSettingsMenu();
         }
 
@@ -6381,72 +6533,33 @@
             document.getElementById('cardOverlayLock').style.display =
                 (lockSide === 'back') ? 'block' : 'none';
             const card = cards[currentIndex];
-            if (showTtsButton && card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
-            else {
-                const ttsHide = document.getElementById('cardOverlayTTS');
-                if (ttsHide) ttsHide.style.display = 'none';
-            }
-            requestAnimationFrame(() => positionNavOverlay());
+            setTtsCardButton(card && card.backText);
+            requestAnimationFrame(() => positionNavOverlay(true));
         }
 
-        function positionNavOverlay() {
+        function positionNavOverlay(force) {
             const container = document.querySelector('.card-container');
             if (!container) return;
-            const rect = container.getBoundingClientRect();
-
-            // Position settings (bottom-left) and TTS (bottom-right) anchored to card
             const settings = document.getElementById('cardOverlaySettings');
-            const tts = document.getElementById('cardOverlayTTS');
-            const offset = -2;
-            if (settings) {
-                settings.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
-                settings.style.left   = (rect.left + offset) + 'px';
-            }
-            // Lock floating button sits directly above the gear, same left edge.
-            // 58 = approx button height (50) + small gap (8).
-            const lockOverlay = document.getElementById('cardOverlayLock');
-            if (lockOverlay) {
-                lockOverlay.style.bottom = (window.innerHeight - rect.bottom + offset + 58) + 'px';
-                lockOverlay.style.left   = (rect.left + offset) + 'px';
-            }
-            if (tts && showTtsButton) {
-                tts.style.right = 'auto';
-                tts.style.left = (rect.left + rect.width / 2) + 'px';
-                tts.style.transform = 'translateX(-50%)';
-                let lift = 24;
-                if (showTextOnFront && !isFlipped) {
-                    const frontText = document.querySelector('.card > .card-front .card-front-text');
-                    if (frontText) lift = frontText.offsetHeight + 26;
-                }
-                tts.style.bottom = (window.innerHeight - rect.bottom + offset + lift) + 'px';
-            }
-
-            // Switch icon colors based on card face — white on green back, green on white front
-            const iconColor = isFlipped ? 'white' : '#35654D';
-            if (settings) {
-                const btn = settings.querySelector('button.fullscreen-btn');
-                if (btn) {
-                    // Only color the gear SVG itself, not the button (which would cascade into menu text)
-                    const gearSvg = btn.querySelector('svg');
-                    if (gearSvg) {
-                        gearSvg.setAttribute('stroke', iconColor);
-                        gearSvg.style.color = iconColor;
-                        gearSvg.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
+            const gearPlaced = !!(settings && settings.style.bottom);
+            const needTts = showTtsButton && !ttsPlaced;
+            if (force || !gearPlaced || needTts) {
+                const rect = container.getBoundingClientRect();
+                const offset = -2;
+                if (force || !gearPlaced) {
+                    if (settings) {
+                        settings.style.bottom = (window.innerHeight - rect.bottom + offset) + 'px';
+                        settings.style.left   = (rect.left + offset) + 'px';
+                    }
+                    const lockOverlay = document.getElementById('cardOverlayLock');
+                    if (lockOverlay) {
+                        lockOverlay.style.bottom = (window.innerHeight - rect.bottom + offset + 58) + 'px';
+                        lockOverlay.style.left   = (rect.left + offset) + 'px';
                     }
                 }
+                if (showTtsButton && (force || needTts)) placeTtsAtCardTop(rect);
             }
-            // Lock floating button: match the gear's color/shadow scheme
-            const lockOv = document.getElementById('cardOverlayLock');
-            if (lockOv) {
-                const lockIcon = lockOv.querySelector('svg');
-                if (lockIcon) {
-                    lockIcon.setAttribute('stroke', iconColor);
-                    lockIcon.style.color = iconColor;
-                    lockIcon.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
-                }
-            }
-            // TTS overlay uses a fixed white/orange circular button (like nav arrows)
-            // so it does not recolor with the card face.
+            updateOverlayIconColors();
         }
         // Remember which side each card was last on
         const cardFlipStates = {};
@@ -6495,7 +6608,7 @@
         /* Mid lift: between previous (-0.03em) and too-high (-0.10em). */
         const SPELL_GLYPH_LIFT = 'translateY(-0.065em)';
         const SPELL_FILL_BG = '#f0f8f3';
-        const SPELL_DRAG_THRESHOLD = 8;
+        const SPELL_DRAG_THRESHOLD = 12;
         const SPELL_CARD_SWIPE_MIN = 60;
 
         /**
@@ -6920,12 +7033,8 @@
                     document.getElementById('cardOverlaySettings').style.display = 'block';
                     document.getElementById('cardOverlayNav').style.display = 'block';
                     const card = cards[currentIndex];
-                    if (showTtsButton && card && card.backText) document.getElementById('cardOverlayTTS').style.display = 'block';
-                    else {
-                        const ttsHide = document.getElementById('cardOverlayTTS');
-                        if (ttsHide) ttsHide.style.display = 'none';
-                    }
-                    requestAnimationFrame(() => positionNavOverlay());
+                    setTtsCardButton(card && card.backText);
+                    requestAnimationFrame(() => positionNavOverlay(true));
                 }
             });
             document.querySelectorAll('.modal').forEach(m => observer.observe(m, { attributes: true, attributeFilter: ['class'] }));
@@ -6994,17 +7103,10 @@
         }
 
         function setSwipeChromeHidden(hidden) {
-            document.body.classList.toggle('swipe-chrome-hide', !!hidden);
+            // Keep nav / gear / mic fixed while swiping (no fade). Still close settings if a swipe starts.
             if (hidden) closeSettingsMenu();
         }
-        function revealSwipeChrome() {
-            if (!document.body.classList.contains('swipe-chrome-hide')) return;
-            requestAnimationFrame(function() {
-                requestAnimationFrame(function() {
-                    document.body.classList.remove('swipe-chrome-hide');
-                });
-            });
-        }
+        function revealSwipeChrome() {}
 
         // Setup touch + mouse drag gestures for card navigation.
         // Swipe goes next ON  → free multi-direction drag (unchanged).
@@ -10859,8 +10961,7 @@
                     if (_ft2) _ft2.style.visibility = '';
                 });
             }
-            // Update icon colors immediately on flip
-            requestAnimationFrame(() => positionNavOverlay());
+            updateOverlayIconColors();
         }
 
         function highlightVowels(text) {
@@ -12279,8 +12380,10 @@
             if (btn) btn.textContent = label;
             const mBtn = document.getElementById('manageSortBtn');
             if (mBtn) mBtn.textContent = label;
-            loadUnitsFromDB().then(units => renderMspList(units));
-            // Also refresh manage modal if open
+            loadUnitsFromDB().then(function(units) {
+                applyMspSortToStored(units);
+                renderMspList(units);
+            });
             if (document.getElementById('unitConfigModal')?.classList.contains('active')) {
                 loadUnitsList();
             }
@@ -12520,23 +12623,103 @@
             if (btn) btn.textContent = label;
             const sBtn = document.getElementById('mspSortBtn');
             if (sBtn) sBtn.textContent = label;
+            loadUnitsFromDB().then(function(units) {
+                applyMspSortToStored(units);
+                if (document.getElementById('manageSidePanel').classList.contains('open')) {
+                    renderMspList(units);
+                }
+            });
             loadUnitsList();
-            // Also refresh side panel if it's open
-            if (document.getElementById('manageSidePanel').classList.contains('open')) {
-                loadUnitsFromDB().then(units => renderMspList(units));
-            }
+        }
+        function sanitizeGroups(groups) {
+            var seen = {};
+            (groups || []).forEach(function(g) {
+                var ids = [];
+                (g.unitIds || []).forEach(function(id) {
+                    var n = Number(id);
+                    if (!n || seen[n]) return;
+                    seen[n] = true;
+                    ids.push(n);
+                });
+                g.unitIds = ids;
+            });
+            return groups || [];
+        }
+        function assignedUnitIdSet(groups) {
+            var set = {};
+            (groups || []).forEach(function(g) {
+                (g.unitIds || []).forEach(function(id) {
+                    var n = Number(id);
+                    if (n) set[n] = true;
+                });
+            });
+            return set;
+        }
+        function pruneUncatOfAssigned(groups) {
+            var assigned = assignedUnitIdSet(groups);
+            saveUncatOrder(loadUncatOrder().filter(function(id) { return !assigned[Number(id)]; }));
         }
         function loadGroups() {
-            try { return JSON.parse(localStorage.getItem('msp_groups') || '[]'); } catch(e) { return []; }
+            try { return sanitizeGroups(JSON.parse(localStorage.getItem('msp_groups') || '[]')); } catch(e) { return []; }
         }
         function saveGroups(groups) {
+            groups = sanitizeGroups(groups);
             localStorage.setItem('msp_groups', JSON.stringify(groups));
+            pruneUncatOfAssigned(groups);
         }
         function loadUncatOrder() {
             try { return JSON.parse(localStorage.getItem('msp_uncat_order') || '[]').map(Number); } catch(e) { return []; }
         }
         function saveUncatOrder(order) {
-            localStorage.setItem('msp_uncat_order', JSON.stringify(order));
+            localStorage.setItem('msp_uncat_order', JSON.stringify(order.map(Number)));
+        }
+        function applyMspSortToStored(units) {
+            if (!units) return;
+            var groups = loadGroups();
+            var assigned = new Set(groups.flatMap(function(g){ return (g.unitIds || []).map(Number); }));
+            var uncat = units.filter(function(u){ return !assigned.has(Number(u.id)); });
+            var cmp = _mspSortMode === 'name'
+                ? function(a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }); }
+                : function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); };
+            groups.forEach(function(g) {
+                var gu = (g.unitIds || []).map(function(uid) {
+                    return units.find(function(u){ return Number(u.id) === Number(uid); });
+                }).filter(Boolean);
+                gu.sort(cmp);
+                g.unitIds = gu.map(function(u){ return Number(u.id); });
+            });
+            uncat.sort(cmp);
+            saveGroups(groups);
+            saveUncatOrder(uncat.map(function(u){ return Number(u.id); }));
+        }
+        function orderUnitsByIds(units, idOrder, onlyListed) {
+            var byId = {};
+            units.forEach(function(u){ byId[Number(u.id)] = u; });
+            var out = [];
+            var used = {};
+            (idOrder || []).forEach(function(id) {
+                var n = Number(id);
+                if (used[n]) return;
+                var u = byId[n];
+                if (u) { out.push(u); used[n] = true; }
+            });
+            if (!onlyListed) {
+                units.forEach(function(u) {
+                    var n = Number(u.id);
+                    if (!used[n]) { out.push(u); used[n] = true; }
+                });
+            }
+            return out;
+        }
+        function unitsInGroup(allUnits, unitIds) {
+            var want = {};
+            (unitIds || []).forEach(function(id) {
+                var n = Number(id);
+                if (n) want[n] = true;
+            });
+            return orderUnitsByIds(allUnits.filter(function(u) {
+                return want[Number(u.id)];
+            }), unitIds, true);
         }
         function openNewFolderModal() {
             var modal = document.getElementById('newFolderModal');
@@ -12569,8 +12752,27 @@
                 return;
             }
             const groups = loadGroups();
-            groups.push({ id: 'g_' + Date.now(), name: name, unitIds: [], collapsed: false });
+            var pending = [];
+            try { pending = getUcmNewImportList() || []; } catch (e) { pending = []; }
+            var pendingIds = pending.map(function(p) { return Number(p.id); }).filter(function(n) { return !!n; });
+            groups.push({ id: 'g_' + Date.now(), name: name, unitIds: pendingIds.slice(), collapsed: false });
             saveGroups(groups);
+            if (pendingIds.length) {
+                if (_ucmSessionImports) {
+                    _ucmSessionImports = _ucmSessionImports.filter(function(s) {
+                        return pendingIds.indexOf(Number(s.id)) === -1;
+                    });
+                }
+                if (_ucmPendingUnit && pendingIds.indexOf(Number(_ucmPendingUnit.id)) !== -1) {
+                    _ucmPendingUnit = _ucmSessionImports.length
+                        ? { id: _ucmSessionImports[_ucmSessionImports.length - 1].id, name: _ucmSessionImports[_ucmSessionImports.length - 1].name }
+                        : null;
+                }
+                _ucmSelectedFolderId = null;
+                _ucmFolderActiveUnitId = null;
+                if (typeof updateOrganizePendingUI === 'function') updateOrganizePendingUI();
+                if (typeof updateFoldersPendingUI === 'function') updateFoldersPendingUI();
+            }
             input.value = '';
             closeNewFolderModal();
             markUcmManageDirty();
@@ -12579,7 +12781,9 @@
             if (document.getElementById('manageSidePanel').classList.contains('open')) {
                 loadUnitsFromDB().then(units => renderMspList(units));
             }
-            showToast('✅ Folder created', 1500);
+            showToast(pendingIds.length
+                ? '✅ Folder created — deck' + (pendingIds.length === 1 ? '' : 's') + ' placed in "' + name + '"'
+                : '✅ Folder created', 1500);
         }
         function confirmDeleteGroup(event, groupId) {
             event.stopPropagation();
@@ -12830,7 +13034,7 @@
             const svgHandle = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>';
             const hasCards = cards.length > 0;
             const groups = loadGroups();
-            const assignedIds = new Set(groups.flatMap(function(g){ return g.unitIds.map(Number); }));
+            const assignedIds = new Set(groups.flatMap(function(g){ return (g.unitIds || []).map(Number); }));
 
             function makeUnitRow(unit) {
                 const isLoaded = loadedUnitIds.has(unit.id);
@@ -12852,13 +13056,7 @@
 
             var html = '';
             groups.forEach(function(g) {
-                var gu = g.unitIds.map(function(uid){ return sorted.find(function(u){ return u.id === Number(uid); }); }).filter(Boolean);
-                // Only sort by name when explicitly in name mode — date mode preserves manual drag order
-                if (_mspSortMode === 'name') {
-                    gu.sort(function(a, b) {
-                        return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
-                    });
-                }
+                var gu = unitsInGroup(sorted, g.unitIds);
                 var ac = g.collapsed ? ' collapsed' : '';
                 html += '<div class="msp-group-header" onclick="mspToggleGroup(\'' + g.id + '\',this)" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
                     '<span class="msp-group-arrow' + ac + '">&#9660;</span>' +
@@ -12869,32 +13067,46 @@
                     '</div>';
             });
 
-            var uncat = sorted.filter(function(u){ return !assignedIds.has(u.id); });
-            if (_mspSortMode !== 'name') {
-                // Respect manual drag order for uncategorized units
-                var uncatOrder = loadUncatOrder();
-                uncat.sort(function(a, b) {
-                    var ai = uncatOrder.indexOf(a.id);
-                    var bi = uncatOrder.indexOf(b.id);
-                    if (ai === -1 && bi === -1) return (b.createdAt || b.id || 0) - (a.createdAt || a.id || 0);
-                    if (ai === -1) return 1;
-                    if (bi === -1) return -1;
-                    return ai - bi;
-                });
-            }
-            if (uncat.length > 0) {
+            var uncat = orderUnitsByIds(
+                sorted.filter(function(u){ return !assignedIds.has(Number(u.id)); }),
+                loadUncatOrder()
+            );
+            if (uncat.length > 0 || groups.length > 0) {
+                var uncatCollapsed = false;
+                try { uncatCollapsed = localStorage.getItem('flashabc_uncat_collapsed') === '1'; } catch (e) {}
+                var uac = uncatCollapsed ? ' collapsed' : '';
+                html += '<div class="msp-uncat-section">';
                 if (groups.length > 0) {
-                    html += '<div class="msp-group-header" style="background:#fafafa;">' +
-                        '<span class="msp-group-name" style="color:#888;">Uncategorized</span>' +
-                        '<span class="msp-group-count">' + uncat.length + '</span></div>';
+                    html += '<div class="msp-uncat-gap"></div>';
                 }
-                html += uncat.map(makeUnitRow).join('');
+                html += '<div class="msp-group-header msp-uncat-header' + (groups.length > 0 ? ' msp-uncat-spaced' : '') + '" onclick="mspToggleUncat(this)"' +
+                    ' ondragover="event.preventDefault()" ondrop="mspDropOnUncat(event,this)">' +
+                    '<span class="msp-group-arrow' + uac + '">&#9660;</span>' +
+                    '<span class="msp-group-name">Uncategorized</span>' +
+                    '<span class="msp-group-count">' + uncat.length + '</span></div>' +
+                    '<div class="msp-group-body' + uac + '" id="msp-uncat-body"' +
+                    ' ondragover="event.preventDefault()" ondrop="mspDropOnUncat(event,this)">' +
+                    (uncat.length === 0 ? '<div class="msp-group-empty">Drop decks here</div>' : uncat.map(makeUnitRow).join('')) +
+                    '</div></div>';
             }
             list.innerHTML = html || '<div class="msp-empty">No decks in your library yet.</div>';
             setupMspTouchDrag(list);
         }
 
         var _mspDragId = null;
+        var _mspDropLock = 0;
+        function mspCanApplyDrop() {
+            var now = Date.now();
+            if (now - _mspDropLock < 250) return false;
+            _mspDropLock = now;
+            return true;
+        }
+        function mspRemoveFromAllGroups(groups, unitId) {
+            var n = Number(unitId);
+            (groups || []).forEach(function(g) {
+                g.unitIds = (g.unitIds || []).map(Number).filter(function(id){ return id !== n; });
+            });
+        }
         function mspDragStart(event, unitId) {
             _mspDragId = unitId;
             event.dataTransfer.effectAllowed = 'move';
@@ -12921,8 +13133,8 @@
             event.preventDefault(); event.stopPropagation();
             rowEl.classList.remove('msp-insert-above'); rowEl.classList.remove('msp-insert-below');
             document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            if (!mspCanApplyDrop()) return;
             var draggedId = Number(event.dataTransfer.getData('text/plain') || _mspDragId);
-            if (!draggedId || draggedId === targetUnitId) return;
             var rect = rowEl.getBoundingClientRect();
             var insertBefore = event.clientY < (rect.top + rect.height / 2);
             var groups = loadGroups();
@@ -12932,13 +13144,9 @@
             groups.forEach(function(g){ if (g.unitIds.map(Number).indexOf(targetUnitId) !== -1) targetGroup = g; });
 
             if (targetGroup) {
-                // Remove dragged unit from ALL groups first (prevents double-entry and splice(-1) bug)
-                groups.forEach(function(g){
-                    g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== draggedId; });
-                });
-                // Now insert into target group at correct position
-                var ids = targetGroup.unitIds.map(Number);
-                var toIdx = ids.indexOf(targetUnitId);
+                mspRemoveFromAllGroups(groups, draggedId);
+                var ids = (targetGroup.unitIds || []).map(Number);
+                var toIdx = ids.indexOf(Number(targetUnitId));
                 if (toIdx === -1) {
                     ids.push(draggedId);
                 } else {
@@ -12946,16 +13154,21 @@
                 }
                 targetGroup.unitIds = ids;
                 saveGroups(groups);
+                var uo = loadUncatOrder().map(Number).filter(function(id){ return id !== draggedId; });
+                saveUncatOrder(uo);
             } else {
-                // Target is uncategorized — remove from any groups and update uncat order
-                groups.forEach(function(g){
-                    g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== draggedId; });
-                });
+                mspRemoveFromAllGroups(groups, draggedId);
                 saveGroups(groups);
-                var order = loadUncatOrder();
-                var fromIdx = order.indexOf(draggedId);
-                if (fromIdx !== -1) order.splice(fromIdx, 1);
-                var toIdx2 = order.indexOf(targetUnitId);
+                var visible = [];
+                document.querySelectorAll('#msp-uncat-body .msp-unit-row').forEach(function(r) {
+                    var id = Number(r.dataset.unitId);
+                    if (id && visible.indexOf(id) === -1) visible.push(id);
+                });
+                var order = loadUncatOrder().map(Number);
+                visible.forEach(function(id){ if (order.indexOf(id) === -1) order.push(id); });
+                order = order.filter(function(id){ return id !== draggedId; });
+                if (visible.indexOf(draggedId) === -1) visible.push(draggedId);
+                var toIdx2 = order.indexOf(Number(targetUnitId));
                 if (toIdx2 === -1) order.push(draggedId);
                 else order.splice(insertBefore ? toIdx2 : toIdx2 + 1, 0, draggedId);
                 saveUncatOrder(order);
@@ -12964,16 +13177,17 @@
         }
         function mspDropOnGroup(event, groupId, el) {
             event.preventDefault();
-            el.classList.remove('msp-drop-active');
+            event.stopPropagation();
+            if (el) el.classList.remove('msp-drop-active');
+            if (!mspCanApplyDrop()) return;
             var unitId = Number(event.dataTransfer.getData('text/plain') || _mspDragId);
             if (!unitId) return;
             var groups = loadGroups();
+            mspRemoveFromAllGroups(groups, unitId);
             var tgt = groups.find(function(g){ return g.id === groupId; });
-            if (tgt && tgt.unitIds.map(Number).indexOf(unitId) !== -1) return;
-            groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
-            tgt = groups.find(function(g){ return g.id === groupId; });
-            if (tgt) tgt.unitIds.push(unitId);
+            if (tgt && tgt.unitIds.map(Number).indexOf(unitId) === -1) tgt.unitIds.push(unitId);
             saveGroups(groups);
+            saveUncatOrder(loadUncatOrder().map(Number).filter(function(id){ return id !== unitId; }));
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
         }
 
@@ -12987,6 +13201,33 @@
             var arrow = headerEl.querySelector('.msp-group-arrow');
             if (body) body.classList.toggle('collapsed', g.collapsed);
             if (arrow) arrow.classList.toggle('collapsed', g.collapsed);
+        }
+
+        function mspToggleUncat(headerEl) {
+            var collapsed = false;
+            try { collapsed = localStorage.getItem('flashabc_uncat_collapsed') === '1'; } catch (e) {}
+            collapsed = !collapsed;
+            try { localStorage.setItem('flashabc_uncat_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+            var body = document.getElementById('msp-uncat-body');
+            var arrow = headerEl.querySelector('.msp-group-arrow');
+            if (body) body.classList.toggle('collapsed', collapsed);
+            if (arrow) arrow.classList.toggle('collapsed', collapsed);
+        }
+
+        function mspDropOnUncat(event, el) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!mspCanApplyDrop()) return;
+            var unitId = Number((event.dataTransfer && event.dataTransfer.getData('text/plain')) || _mspDragId);
+            if (!unitId) return;
+            var groups = loadGroups();
+            groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== unitId; }); });
+            saveGroups(groups);
+            var order = loadUncatOrder();
+            order = order.filter(function(id){ return Number(id) !== Number(unitId); });
+            order.push(Number(unitId));
+            saveUncatOrder(order);
+            loadUnitsFromDB().then(function(units){ renderMspList(units); });
         }
         // Single persistent touch-drag state (not re-created per render)
         var _mspTouch = { id: null, ghost: null, container: null, bound: false };
@@ -13056,7 +13297,9 @@
                 row.classList.add(t.clientY < (rect.top + rect.height / 2) ? 'msp-insert-above' : 'msp-insert-below');
             } else {
                 var hit = under.closest('.msp-group-header') || under.closest('.msp-group-body');
-                if (hit) hit.classList.add('msp-drop-active');
+                if (hit && !hit.classList.contains('msp-uncat-header') && hit.id !== 'msp-uncat-body') {
+                    hit.classList.add('msp-drop-active');
+                }
             }
         }
 
@@ -13068,13 +13311,26 @@
             var droppedId = _mspTouch.id;
             _mspCleanGhost();
             if (!droppedId || !e.changedTouches) return;
+            if (!mspCanApplyDrop()) return;
 
             var t = e.changedTouches[0];
             var under = document.elementFromPoint(t.clientX, t.clientY);
             if (!under) return;
 
-            // Check if dropped on a unit row (positional reorder)
+            // Dropped on Uncategorized pink section (gap, header, empty body)
+            // Unit rows inside Uncategorized still use row-insert below.
+            var uncatSec = under.closest('.msp-uncat-section');
             var row = under.closest('.msp-unit-row');
+            if (uncatSec && !row) {
+                mspDropOnUncat({
+                    preventDefault: function(){},
+                    stopPropagation: function(){},
+                    dataTransfer: { getData: function(){ return String(droppedId); } }
+                }, uncatSec);
+                return;
+            }
+
+            // Check if dropped on a unit row (positional reorder)
             if (row) {
                 var targetId = Number(row.dataset.unitId);
                 if (targetId && targetId !== droppedId) {
@@ -13084,33 +13340,47 @@
                     var targetGroup = null;
                     groups.forEach(function(g){ if (g.unitIds.map(Number).indexOf(targetId) !== -1) targetGroup = g; });
                     if (targetGroup) {
-                        var ids = targetGroup.unitIds.map(Number);
-                        var fromIdx = ids.indexOf(droppedId);
-                        var toIdx   = ids.indexOf(targetId);
-                        if (fromIdx !== -1) ids.splice(fromIdx, 1);
+                        mspRemoveFromAllGroups(groups, droppedId);
+                        var ids = (targetGroup.unitIds || []).map(Number);
                         var newToIdx = ids.indexOf(targetId);
                         if (newToIdx === -1) newToIdx = ids.length;
                         ids.splice(insertBefore ? newToIdx : newToIdx + 1, 0, droppedId);
                         targetGroup.unitIds = ids;
-                        groups.forEach(function(g){ if (g !== targetGroup) g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== droppedId; }); });
                         saveGroups(groups);
-                        loadUnitsFromDB().then(function(units){ renderMspList(units); });
+                        saveUncatOrder(loadUncatOrder().map(Number).filter(function(id){ return id !== droppedId; }));
+                    } else {
+                        mspRemoveFromAllGroups(groups, droppedId);
+                        saveGroups(groups);
+                        var visible = [];
+                        document.querySelectorAll('#msp-uncat-body .msp-unit-row').forEach(function(r) {
+                            var id = Number(r.dataset.unitId);
+                            if (id && visible.indexOf(id) === -1) visible.push(id);
+                        });
+                        var order = loadUncatOrder().map(Number);
+                        visible.forEach(function(id){ if (order.indexOf(id) === -1) order.push(id); });
+                        order = order.filter(function(id){ return id !== droppedId; });
+                        var toU = order.indexOf(targetId);
+                        if (toU === -1) order.push(droppedId);
+                        else order.splice(insertBefore ? toU : toU + 1, 0, droppedId);
+                        saveUncatOrder(order);
                     }
+                    loadUnitsFromDB().then(function(units){ renderMspList(units); });
                 }
                 return;
             }
 
-            // Dropped on group header/body
+            // Dropped on folder header/body (not Uncategorized)
             var hit = under.closest('.msp-group-header') || under.closest('.msp-group-body');
-            if (!hit) return;
+            if (!hit || hit.classList.contains('msp-uncat-header') || hit.id === 'msp-uncat-body') return;
             var gid = (hit.id || '').replace('msp-gbody-', '');
-            if (!gid) { var m = (hit.getAttribute('onclick') || '').match(/'([^']+)'/); if (m) gid = m[1]; }
+            if (!gid) { var m = (hit.getAttribute('onclick') || '').match(/mspToggleGroup\('([^']+)'/); if (m) gid = m[1]; }
             if (!gid) return;
-            var groups = loadGroups();
-            groups.forEach(function(g){ g.unitIds = g.unitIds.filter(function(id){ return Number(id) !== droppedId; }); });
-            var tgt = groups.find(function(g){ return g.id === gid; });
-            if (tgt && tgt.unitIds.indexOf(droppedId) === -1) tgt.unitIds.push(droppedId);
-            saveGroups(groups);
+            var groups2 = loadGroups();
+            mspRemoveFromAllGroups(groups2, droppedId);
+            var tgt = groups2.find(function(g){ return g.id === gid; });
+            if (tgt && tgt.unitIds.map(Number).indexOf(droppedId) === -1) tgt.unitIds.push(droppedId);
+            saveGroups(groups2);
+            saveUncatOrder(loadUncatOrder().map(Number).filter(function(id){ return id !== droppedId; }));
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
         }
 
@@ -13643,6 +13913,7 @@
             }
             tgt.unitIds = [unitId].concat(tgt.unitIds || []);
             saveGroups(groups);
+            saveUncatOrder(loadUncatOrder().filter(function(id) { return Number(id) !== unitId; }));
             markUcmManageDirty();
             var doneName = item.name;
             var folderName = tgt.name;
@@ -14938,6 +15209,7 @@
                 document.getElementById('cardOverlayCounter').style.display = 'none';
                 document.getElementById('cardOverlayNav').style.display = 'none';
                 document.getElementById('cardOverlayTTS').style.display = 'none';
+                ttsPlaced = false;
                 setSwipeChromeHidden(false);
 
                 // Empty deck: stop any pending/visible swipe demo (soft — a future
@@ -15013,9 +15285,7 @@
                             <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">
                                 ${showCharOnCard && prevCard.backText ? `<span class="card-char-label">${prevCard.backText.charAt(0).toUpperCase()}${prevCard.backText.charAt(0).toLowerCase()}</span>` : ''}
                                 <img src="${gifSrc(prevCard.frontImage)}" class="card-image">
-                                ${showTextOnFront && prevCard.backText ? `
-                                <div class="card-front-text">${highlightVowelsFront(prevCard.backText)}</div>
-                                ` : ''}
+                                ${showTextOnFront && prevCard.backText ? frontCaptionMarkup(prevCard.backText) : ''}
                             </div>`}
                         </div>
                         ` : ''}
@@ -15023,9 +15293,7 @@
                             <div class="card-face card-front${showTextOnFront && card.backText ? ' show-text-active' : ''}${showCharOnCard && card.backText ? ' show-char-active' : ''}">
                                 ${showCharOnCard && card.backText ? `<span class="card-char-label">${card.backText.charAt(0).toUpperCase()}${card.backText.charAt(0).toLowerCase()}</span>` : ''}
                                 <img src="${gifSrc(card.frontImage)}" class="card-image">
-                                ${showTextOnFront && card.backText ? `
-                                <div class="card-front-text">${highlightVowelsFront(card.backText)}</div>
-                                ` : ''}
+                                ${showTextOnFront && card.backText ? frontCaptionMarkup(card.backText) : ''}
                             </div>
                             <div class="card-face card-back">
                                 ${card.backImage ? '<img src="' + gifSrc(card.backImage) + '" class="card-image">' : ''}
@@ -15042,10 +15310,17 @@
                             <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">
                                 ${showCharOnCard && nextCard.backText ? `<span class="card-char-label">${nextCard.backText.charAt(0).toUpperCase()}${nextCard.backText.charAt(0).toLowerCase()}</span>` : ''}
                                 <img src="${gifSrc(nextCard.frontImage)}" class="card-image">
-                                ${showTextOnFront && nextCard.backText ? `
-                                <div class="card-front-text">${highlightVowelsFront(nextCard.backText)}</div>
-                                ` : ''}
+                                ${showTextOnFront && nextCard.backText ? frontCaptionMarkup(nextCard.backText) : ''}
                             </div>`}
+                        </div>
+                        ` : ''}
+
+                        ${showTtsButton && card.backText ? `
+                        <div class="card-stack-tts">
+                            <button type="button" class="audio-btn tts-card-btn" title="Speak"
+                                onclick="event.stopPropagation();speakText('${String(card.backText).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')">
+                                ${ttsMicSvg(53, 'currentColor')}
+                            </button>
                         </div>
                         ` : ''}
 
@@ -15093,20 +15368,12 @@
             if (navIndex) navIndex.textContent = `${currentIndex + 1} / ${cards.length}`;
             if (navHint) navHint.textContent = isFlipped ? 'Tap to flip' : 'Tap to flip';
 
-            // Position nav overlay to match card container bounds
-            requestAnimationFrame(() => positionNavOverlay());
+            const ttsOverlayEl = document.getElementById('cardOverlayTTS');
+            if (ttsOverlayEl) ttsOverlayEl.style.display = 'none';
 
-            // TTS button — hidden unless enabled in settings; bottom-center overlay
-            const ttsEl = document.getElementById('cardOverlayTTS');
-            if (showTtsButton && card.backText) {
-                const speakEsc = card.backText.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-                ttsEl.innerHTML = `<button class="audio-btn tts-card-btn" title="Speak" onclick="event.stopPropagation(); speakText('${speakEsc}')">` +
-                    ttsMicSvg(70, 'currentColor') +
-                    `</button>`;
-                ttsEl.style.display = 'block';
-            } else {
-                ttsEl.style.display = 'none';
-            }
+            // Fit caption before the first paint so the image band stays put.
+            if (typeof applyCardLetterFonts === 'function') applyCardLetterFonts();
+            if (showTextOnFront) scaleFrontText();
 
             // Hide ALL back-text (main + prev/next peeks) until after the scaler
             // sets the final size. Without this, the text paints at its 7.5rem
@@ -15124,13 +15391,14 @@
                 if (typeof applyCardLetterFonts === 'function') applyCardLetterFonts();
                 scaleTextToFit();
                 applyCardTextScale();
-                scaleFrontText();
+                if (showTextOnFront) scaleFrontText();
                 // Reveal the now-sized back text everywhere
                 document.querySelectorAll(
                     '.card > .card-back .card-text-auto-scale, ' +
                     '.card-prev .card-text-auto-scale, ' +
                     '.card-next .card-text-auto-scale'
                 ).forEach(t => { t.style.visibility = ''; });
+                positionNavOverlay();
             });
 
             // Only complete a swipe-hint request from a fresh import (not every re-render)
@@ -15336,49 +15604,63 @@
         let cardTextScaleIndex = isPhoneDevice() ? 0 : 1;
 
         function scaleFrontText() {
-            const textEl = document.querySelector('.card-front-text');
-            if (!textEl) return;
-            const cardFront = textEl.closest('.card-front');
-            const imgEl = cardFront ? cardFront.querySelector('.card-image') : null;
-            if (!cardFront || !imgEl) return;
+            const textEls = document.querySelectorAll('.card-front-text');
+            if (!textEls.length) return;
+            const measureEl = document.querySelector('.card > .card-front .card-front-text') || textEls[0];
+            const cardFront = measureEl.closest('.card-front');
+            if (!cardFront) return;
 
-            const screenWidth = window.innerWidth;
+            const range = frontTextSizeRange();
+            const cardWidth = Math.max(0, cardFront.offsetWidth - 20);
 
-            // Match same size tiers as back-text scaling
-            let maxFontSize, minFontSize;
-            if (screenWidth <= 390)       { maxFontSize = 2.8; minFontSize = 0.7; }
-            else if (screenWidth <= 480)  { maxFontSize = 3.5; minFontSize = 0.8; }
-            else if (screenWidth <= 768)  { maxFontSize = 4.5; minFontSize = 1.0; }
-            else if (screenWidth <= 1024) { maxFontSize = 6.0; minFontSize = 1.2; }
-            else                          { maxFontSize = 7.5; minFontSize = 1.4; }
-
-            const cardWidth = cardFront.offsetWidth - 20;
-
-            // Single-line: scale down until it fits the card width
-            textEl.style.whiteSpace = 'nowrap';
-            textEl.style.fontSize = maxFontSize + 'rem';
-
-            if (textEl.scrollWidth > cardWidth) {
-                let lo = minFontSize, hi = maxFontSize, best = minFontSize;
-                for (let i = 0; i < 12; i++) {
-                    const mid = (lo + hi) / 2;
-                    textEl.style.fontSize = mid + 'rem';
-                    if (textEl.scrollWidth <= cardWidth) { best = mid; lo = mid; }
-                    else { hi = mid; }
+            if (cachedFrontTextSize == null) {
+                const originalHTML = measureEl.innerHTML;
+                const seen = {};
+                let widestHTML = originalHTML;
+                let widestWidth = 0;
+                measureEl.style.whiteSpace = 'nowrap';
+                measureEl.style.fontSize = range.max + 'rem';
+                for (let i = 0; i < cards.length; i++) {
+                    const t = (cards[i] && cards[i].backText) ? String(cards[i].backText) : '';
+                    if (!t || seen[t]) continue;
+                    seen[t] = true;
+                    const html = highlightVowelsFront(t);
+                    measureEl.innerHTML = html;
+                    const w = measureEl.scrollWidth;
+                    if (w > widestWidth) {
+                        widestWidth = w;
+                        widestHTML = html;
+                    }
                 }
-                textEl.style.fontSize = best + 'rem';
+                let best = range.max;
+                if (widestWidth > cardWidth) {
+                    measureEl.innerHTML = widestHTML;
+                    let lo = range.min, hi = range.max;
+                    best = range.min;
+                    for (let i = 0; i < 12; i++) {
+                        const mid = (lo + hi) / 2;
+                        measureEl.style.fontSize = mid + 'rem';
+                        if (measureEl.scrollWidth <= cardWidth) { best = mid; lo = mid; }
+                        else { hi = mid; }
+                    }
+                }
+                cachedFrontTextSize = best;
+                measureEl.innerHTML = originalHTML;
             }
 
-            // Adjust image height based on text block height
-            requestAnimationFrame(() => {
-                const cardHeight = cardFront.offsetHeight;
-                const textHeight = textEl.offsetHeight + 12;
-                const imgHeight = cardHeight - textHeight - 20;
-                const imgPercent = Math.max(30, Math.min(80, (imgHeight / cardHeight) * 100));
-                imgEl.style.height = imgPercent + '%';
-                imgEl.style.flex = 'none';
-                if (typeof positionNavOverlay === 'function') positionNavOverlay();
-            });
+            const sizeCss = cachedFrontTextSize + 'rem';
+            for (let i = 0; i < textEls.length; i++) {
+                const el = textEls[i];
+                el.style.whiteSpace = 'nowrap';
+                el.style.fontSize = sizeCss;
+                el.style.visibility = '';
+                const img = el.closest('.card-front') && el.closest('.card-front').querySelector('.card-image');
+                if (img) {
+                    img.style.height = '';
+                    img.style.flex = '';
+                }
+            }
+
         }
 
         function applyCardTextScale() {
@@ -15482,7 +15764,7 @@
 
         function toggleTextOnFront() {
             showTextOnFront = !showTextOnFront;
-            cachedFrontTextSize = null; // reset so it recomputes for this session
+            resetFrontTextCache(); // recompute so every card shares one caption size
             Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
             const btn = document.getElementById('showTextBtn');
             if (btn) {
@@ -15505,6 +15787,7 @@
         function toggleTtsButton() {
             showTtsButton = !showTtsButton;
             updateTtsToggleButton();
+            ttsPlaced = false;
             renderDisplay();
         }
 
@@ -15557,7 +15840,7 @@
                     if (_ft2) _ft2.style.visibility = '';
                 });
             }
-            requestAnimationFrame(() => positionNavOverlay());
+            updateOverlayIconColors();
         }
 
         // Update only the ghost preview cards (card-prev / card-next) when
@@ -15574,14 +15857,14 @@
                 if (lockSide === 'back') {
                     prevEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}</div>`;
                 } else {
-                    prevEl.innerHTML = `<div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">${showCharOnCard && prevCard.backText ? '<span class="card-char-label">' + prevCard.backText.charAt(0).toUpperCase() + prevCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(prevCard.frontImage)}" class="card-image">${showTextOnFront && prevCard.backText ? '<div class="card-front-text">' + highlightVowelsFront(prevCard.backText) + '</div>' : ''}</div>`;
+                    prevEl.innerHTML = `<div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${showCharOnCard && prevCard.backText ? ' show-char-active' : ''}">${showCharOnCard && prevCard.backText ? '<span class="card-char-label">' + prevCard.backText.charAt(0).toUpperCase() + prevCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(prevCard.frontImage)}" class="card-image">${showTextOnFront && prevCard.backText ? frontCaptionMarkup(prevCard.backText) : ''}</div>`;
                 }
             }
             if (nextEl && nextCard) {
                 if (lockSide === 'back') {
                     nextEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}</div>`;
                 } else {
-                    nextEl.innerHTML = `<div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">${showCharOnCard && nextCard.backText ? '<span class="card-char-label">' + nextCard.backText.charAt(0).toUpperCase() + nextCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(nextCard.frontImage)}" class="card-image">${showTextOnFront && nextCard.backText ? '<div class="card-front-text">' + highlightVowelsFront(nextCard.backText) + '</div>' : ''}</div>`;
+                    nextEl.innerHTML = `<div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${showCharOnCard && nextCard.backText ? ' show-char-active' : ''}">${showCharOnCard && nextCard.backText ? '<span class="card-char-label">' + nextCard.backText.charAt(0).toUpperCase() + nextCard.backText.charAt(0).toLowerCase() + '</span>' : ''}<img src="${gifSrc(nextCard.frontImage)}" class="card-image">${showTextOnFront && nextCard.backText ? frontCaptionMarkup(nextCard.backText) : ''}</div>`;
                 }
             }
         }
@@ -15611,7 +15894,7 @@
                     lockOverlay.style.display = 'block';
                     lockOverlay.style.visibility = 'hidden';
                 }
-                positionNavOverlay();
+                positionNavOverlay(true);
                 if (!isFlipped) _flipCardCss(true);
                 else requestAnimationFrame(() => scaleTextToFit());
                 playLockAnimation('lock', () => { _lockAnimating = false; });
@@ -15738,7 +16021,7 @@
                     const ov = document.getElementById('cardOverlayLock');
                     if (ov) ov.style.visibility = '';
                     if (onComplete) onComplete();
-                    cachedFrontTextSize = null;
+                    resetFrontTextCache();
                     Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
                     scaleTextToFit();
                 }, 1050);
@@ -15760,7 +16043,7 @@
                 setTimeout(() => {
                     big.remove();
                     if (onComplete) onComplete();
-                    cachedFrontTextSize = null;
+                    resetFrontTextCache();
                     Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
                     scaleFrontText();
                 }, 1000);
@@ -16357,10 +16640,9 @@
         window.addEventListener('orientationchange', () => {
             setTimeout(() => {
                 if (cards.length > 0) {
-                    renderDisplay();
-                    cachedFrontTextSize = null;
+                    resetFrontTextCache();
                     Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-                    scaleFrontText();
+                    renderDisplay();
                     if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
                         hideCardOverlays();
                     }
@@ -16384,8 +16666,17 @@
             }, 300);
         });
         let resizeTimer;
+        let vvOverlayRaf = 0;
+        function relayoutCardOverlaysForViewport() {
+            if (vvOverlayRaf) return;
+            vvOverlayRaf = requestAnimationFrame(function () {
+                vvOverlayRaf = 0;
+                if (cards.length > 0) positionNavOverlay(true);
+            });
+        }
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
+                relayoutCardOverlaysForViewport();
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(function () {
                     if (document.getElementById('guessGameModal')?.classList.contains('active')) {
@@ -16396,12 +16687,17 @@
                     }
                 }, 80);
             });
+            window.visualViewport.addEventListener('scroll', relayoutCardOverlaysForViewport);
         }
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
-                positionNavOverlay();
-                if (cards.length > 0) { cachedFrontTextSize = null; Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]); scaleFrontText(); }
+                if (cards.length > 0) {
+                    resetFrontTextCache();
+                    Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+                    scaleFrontText();
+                }
+                positionNavOverlay(true);
                 if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
                     hideCardOverlays();
                 }
@@ -17682,6 +17978,11 @@
                 </button>`;
             }).join('');
 
+            const isTabletPortrait = !isLandscape && (
+                (typeof isIPad === 'function' && isIPad()) ||
+                (isTouchDevice && window.innerWidth >= 700)
+            );
+
             const shellBorder = isLandscape ? '#e53935' : '#35654D';
             const shellDir = isLandscape ? 'row' : 'column';
             const choicesWrap = isLandscape
@@ -17699,6 +18000,9 @@
                     <div style="display:flex;flex-direction:column;${choicesWrap}">
                         ${choicesHTML}
                     </div>`;
+            const tabletLift = isTabletPortrait
+                ? '<div aria-hidden="true" style="flex:0 0 5%;min-height:0;"></div>'
+                : '';
 
             content.innerHTML = `
                 <div style="width:100%;height:100%;background:white;border-radius:20px;
@@ -17713,6 +18017,7 @@
                     </span>
 
                     ${isLandscape ? choicesBlock + imageBlock : imageBlock + choicesBlock}
+                    ${tabletLift}
 
                 </div>`;
 
@@ -18866,7 +19171,10 @@
                 return `<div onclick="selectAnswerSlot(${idx})" class="answer-slot" data-index="${idx}"
                 draggable="true"
                 ondragstart="spellingDragStart(event,${idx},'slot')"
-                ondragover="event.preventDefault()" ondrop="spellingDragDrop(event,${idx})"
+                ondragover="spellingDragOver(event,${idx})"
+                ondragleave="spellingDragLeave(event)"
+                ondrop="spellingDragDrop(event,${idx})"
+                ondragend="spellingDragEnd(event)"
                 ontouchstart="spellingTouchStart(event,${idx},'slot')"
                 ontouchmove="spellingTouchMove(event)"
                 ontouchend="spellingTouchEnd(event)"
@@ -18912,9 +19220,9 @@
             // with a bit more air between the answer line and the undo control.
             const clearBesideGap = Math.max(10, Math.round(tileW * 0.28));
             const lastRowWithClear = (innerHTML) =>
-                `<div style="display:grid;grid-template-columns:${clearColW}px auto ${clearColW}px;column-gap:${clearBesideGap}px;align-items:center;justify-content:center;width:fit-content;max-width:100%;margin:0 auto;box-sizing:border-box;">
+                `<div style="display:grid;grid-template-columns:${clearColW}px minmax(0,1fr) ${clearColW}px;column-gap:${clearBesideGap}px;align-items:center;justify-content:center;width:100%;max-width:100%;margin:0 auto;box-sizing:border-box;">
                     <div aria-hidden="true" style="width:${clearColW}px;height:1px;"></div>
-                    <div style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;min-width:0;max-width:100%;">${innerHTML}</div>
+                    <div style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;min-width:0;width:100%;max-width:100%;">${innerHTML}</div>
                     <div style="display:flex;align-items:center;justify-content:center;width:${clearColW}px;height:${tileH}px;">${clearBtnHTML}</div>
                  </div>`;
             // Landscape: clear centered over the answer line; slots wrap when needed
@@ -18946,7 +19254,7 @@
                         }
                         slotIndex++; // skip SPACE or HYPHEN slot in data model
                     }
-                    return `<div class="spell-word-group" style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:100%;">${groupSlots.join('')}</div>`;
+                    return `<div class="spell-word-group" style="display:inline-flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:100%;">${groupSlots.join('')}</div>`;
                 });
             };
 
@@ -18967,13 +19275,13 @@
                 const wordGroups = buildWordGroups();
                 if (words.length >= 3) {
                     const splitAt = Math.ceil(wordGroups.length / 2);
-                    answerRowsHTML = `<div id="answerRow" style="display:flex;flex-direction:column;gap:8px;align-items:stretch;justify-content:center;overflow:visible;width:100%;">
-                                          <div style="display:flex;gap:${wordGap}px;row-gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;">${wordGroups.slice(0, splitAt).join('')}</div>
-                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;flex-wrap:wrap;">${wordGroups.slice(splitAt).join('')}</div>`)}
+                    answerRowsHTML = `<div id="answerRow" style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;overflow:visible;width:100%;">
+                                          <div style="display:flex;gap:${wordGap}px;row-gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;width:100%;">${wordGroups.slice(0, splitAt).join('')}</div>
+                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;">${wordGroups.slice(splitAt).join('')}</div>`)}
                                       </div>`;
                 } else {
                     answerRowsHTML = `<div id="answerRow" style="width:100%;overflow:visible;">
-                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;flex-wrap:wrap;">${wordGroups.join('')}</div>`)}
+                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;">${wordGroups.join('')}</div>`)}
                                       </div>`;
                 }
             } else {
@@ -18989,6 +19297,7 @@
                     onclick="selectLetter(${idx})"
                     draggable="true"
                     ondragstart="spellingDragStart(event,${idx},'tile')"
+                    ondragend="spellingDragEnd(event)"
                     ontouchstart="spellingTouchStart(event,${idx},'tile')"
                     ontouchmove="spellingTouchMove(event)"
                     ontouchend="spellingTouchEnd(event)"
@@ -19227,13 +19536,276 @@
 
         // ---- Mouse drag & drop ----
         let _spellDragSource = null;
+        let _spellInsertAfter = false;
+
+        let _spellLive = null; // live insert preview while dragging
+
+        function spellBeginLive(type, index) {
+            _spellLive = {
+                type: type,
+                index: index,
+                orig: {
+                    slots: spellingGameState.answerSlots.slice(),
+                    bank: spellingGameState.scrambledLetters.slice()
+                },
+                lastKey: null,
+                placeholderIdx: null
+            };
+            document.addEventListener('dragover', spellingDocDragOver);
+            document.addEventListener('drop', spellingDocDrop);
+        }
+
+        function spellUnbindDocDrag() {
+            document.removeEventListener('dragover', spellingDocDragOver);
+            document.removeEventListener('drop', spellingDocDrop);
+        }
+
+        function spellRestoreLiveOrig() {
+            if (!_spellLive || !_spellLive.orig) return;
+            spellingGameState.answerSlots = _spellLive.orig.slots.slice();
+            spellingGameState.scrambledLetters = _spellLive.orig.bank.slice();
+        }
+
+        function spellClearLivePlaceholder() {
+            document.querySelectorAll('#spellingGameModal .answer-slot.spell-live-placeholder').forEach(s => {
+                s.classList.remove('spell-live-placeholder');
+            });
+        }
+
+        function spellMarkLivePlaceholder(idx) {
+            spellClearLivePlaceholder();
+            if (idx == null || isNaN(idx)) return;
+            const el = document.querySelector('#spellingGameModal .answer-slot[data-index="' + idx + '"]');
+            if (el) el.classList.add('spell-live-placeholder');
+        }
+
+        function spellLandingIndex(fromType, fromIndex, destSlotIdx, insertAfter) {
+            const letterIdxs = spellLetterSlotIndices();
+            let destPos = letterIdxs.indexOf(destSlotIdx);
+            if (destPos < 0) return destSlotIdx;
+            if (insertAfter) destPos += 1;
+            if (fromType === 'slot') {
+                const sourcePos = letterIdxs.indexOf(fromIndex);
+                if (sourcePos >= 0 && sourcePos < destPos) destPos -= 1;
+            }
+            if (destPos < 0) destPos = 0;
+            if (destPos >= letterIdxs.length) destPos = letterIdxs.length - 1;
+            return letterIdxs[destPos];
+        }
+
+        function findSpellInsertSlotAt(clientX, clientY) {
+            // Must be over (or very near) a slot — not the whole answer row.
+            const slots = Array.from(document.querySelectorAll('#spellingGameModal .answer-slot'));
+            const usable = [];
+            slots.forEach(function (slot) {
+                const idx = parseInt(slot.getAttribute('data-index'), 10);
+                if (isNaN(idx) || isSpellSeparator(spellingGameState.answerSlots[idx])) return;
+                usable.push({ slot: slot, r: slot.getBoundingClientRect() });
+            });
+            if (!usable.length) return null;
+
+            const Y_PAD = 28;
+            let best = null, bestD = Infinity;
+            usable.forEach(function (u) {
+                const r = u.r;
+                if (clientY < r.top - Y_PAD || clientY > r.bottom + Y_PAD) return;
+                const half = r.width / 2;
+                const xPad = Math.max(10, half * 0.35);
+                if (clientX < r.left - xPad || clientX > r.right + xPad) return;
+                const d = Math.hypot(
+                    clientX - (r.left + half),
+                    clientY - (r.top + r.height / 2)
+                );
+                if (d < bestD) { bestD = d; best = u.slot; }
+            });
+            return best;
+        }
+
+        function spellLivePreview(clientX, clientY) {
+            if (!_spellLive) return;
+            const slotEl = findSpellInsertSlotAt(clientX, clientY);
+            if (!slotEl) {
+                if (_spellLive.lastKey === 'out') return;
+                _spellLive.lastKey = 'out';
+                _spellLive.placeholderIdx = null;
+                spellRestoreLiveOrig();
+                renderSpellingGameState();
+                spellClearLivePlaceholder();
+                return;
+            }
+            const destIdx = parseInt(slotEl.getAttribute('data-index'), 10);
+            const r = slotEl.getBoundingClientRect();
+            const mid = r.left + r.width / 2;
+            const hyst = Math.max(10, r.width * 0.22);
+            let insertAfter = _spellInsertAfter;
+            if (clientX > mid + hyst) insertAfter = true;
+            else if (clientX < mid - hyst) insertAfter = false;
+            const key = destIdx + (insertAfter ? 'a' : 'b');
+            if (_spellLive.lastKey === key) return;
+            _spellLive.lastKey = key;
+            _spellInsertAfter = insertAfter;
+
+            spellRestoreLiveOrig();
+            const ok = spellInsertLetter(_spellLive.type, _spellLive.index, destIdx, insertAfter);
+            if (ok) {
+                _spellLive.placeholderIdx = spellLandingIndex(_spellLive.type, _spellLive.index, destIdx, insertAfter);
+            } else {
+                _spellLive.placeholderIdx = (_spellLive.type === 'slot') ? _spellLive.index : null;
+            }
+            renderSpellingGameState();
+            spellMarkLivePlaceholder(_spellLive.placeholderIdx);
+        }
+
+        function spellingDocDragOver(e) {
+            if (!_spellLive) return;
+            e.preventDefault();
+            try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+            spellLivePreview(e.clientX, e.clientY);
+        }
+
+        function spellingDocDrop(e) {
+            if (!_spellLive) return;
+            e.preventDefault();
+            if (_spellLive.lastKey && _spellLive.lastKey !== 'out') spellCommitLive();
+            else spellCancelLive();
+        }
+
+        function spellCommitLive() {
+            clearSpellDropHover();
+            clearSpellInsertMarks();
+            spellClearLivePlaceholder();
+            spellUnbindDocDrag();
+            _spellDragSource = null;
+            if (_spellLive) {
+                if (_spellLive.lastKey == null || _spellLive.lastKey === 'out') {
+                    spellRestoreLiveOrig();
+                }
+                _spellLive = null;
+            }
+            renderSpellingGameState();
+        }
+
+        function spellCancelLive() {
+            clearSpellDropHover();
+            clearSpellInsertMarks();
+            spellClearLivePlaceholder();
+            spellUnbindDocDrag();
+            if (_spellLive) {
+                spellRestoreLiveOrig();
+                _spellLive = null;
+            }
+            _spellDragSource = null;
+            renderSpellingGameState();
+        }
 
         function spellingDragStart(e, index, type) {
+            const letter = type === 'tile'
+                ? spellingGameState.scrambledLetters[index]
+                : spellingGameState.answerSlots[index];
+            if (!isSpellLetter(letter)) {
+                e.preventDefault();
+                return;
+            }
             _spellDragSource = { type, index };
+            _spellInsertAfter = false;
+            spellBeginLive(type, index);
             try {
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', String(index));
             } catch (err) { /* some browsers */ }
+        }
+
+        function spellingDragEnd(e) {
+            spellUnbindDocDrag();
+            if (_spellLive) {
+                if (_spellLive.lastKey && _spellLive.lastKey !== 'out') spellCommitLive();
+                else spellCancelLive();
+            } else {
+                clearSpellInsertMarks();
+                clearSpellDropHover();
+                spellClearLivePlaceholder();
+            }
+        }
+
+        function spellLetterSlotIndices() {
+            const slots = spellingGameState.answerSlots || [];
+            const idxs = [];
+            for (let i = 0; i < slots.length; i++) {
+                if (!isSpellSeparator(slots[i])) idxs.push(i);
+            }
+            return idxs;
+        }
+
+        function clearSpellInsertMarks() {
+            document.querySelectorAll('#spellingGameModal .answer-slot.spell-insert-before, #spellingGameModal .answer-slot.spell-insert-after').forEach(s => {
+                s.classList.remove('spell-insert-before', 'spell-insert-after');
+            });
+        }
+
+        function markSpellInsertSide(slotEl, insertAfter) {
+            clearSpellInsertMarks();
+            if (!slotEl) return;
+            slotEl.classList.add(insertAfter ? 'spell-insert-after' : 'spell-insert-before');
+        }
+
+        function spellingDragOver(e, destSlotIdx) {
+            e.preventDefault();
+            if (!_spellDragSource && !_spellLive) return;
+            spellLivePreview(e.clientX, e.clientY);
+        }
+
+        function spellingDragLeave(e) {
+            const slot = e.currentTarget;
+            if (!slot.contains(e.relatedTarget)) {
+                slot.classList.remove('spell-drop-hover', 'spell-insert-before', 'spell-insert-after');
+            }
+        }
+
+        /** Insert a letter at dest (before/after), shifting others like import-card reorder. */
+        function spellInsertLetter(fromType, fromIndex, destSlotIdx, insertAfter) {
+            const slots = spellingGameState.answerSlots;
+            if (!slots || destSlotIdx == null || isNaN(destSlotIdx)) return false;
+            if (isSpellSeparator(slots[destSlotIdx])) return false;
+
+            const letterIdxs = spellLetterSlotIndices();
+            let destPos = letterIdxs.indexOf(destSlotIdx);
+            if (destPos < 0) return false;
+            if (insertAfter) destPos += 1;
+
+            const seq = letterIdxs.map(i => slots[i]);
+
+            if (fromType === 'tile') {
+                const letter = spellingGameState.scrambledLetters[fromIndex];
+                if (letter == null || letter === undefined) return false;
+                // Empty slot + drop on the slot itself: just fill it
+                if (!insertAfter && !isSpellLetter(slots[destSlotIdx])) {
+                    return placeTileOnSlot(fromIndex, destSlotIdx);
+                }
+                spellingGameState.scrambledLetters[fromIndex] = null;
+                seq.splice(destPos, 0, letter);
+                const overflow = seq.length > letterIdxs.length ? seq.pop() : null;
+                if (isSpellLetter(overflow)) {
+                    const emptyBank = spellingGameState.scrambledLetters.findIndex(l => l === null);
+                    if (emptyBank !== -1) spellingGameState.scrambledLetters[emptyBank] = overflow;
+                    else spellingGameState.scrambledLetters.push(overflow);
+                }
+            } else if (fromType === 'slot') {
+                const letter = slots[fromIndex];
+                if (!isSpellLetter(letter)) return false;
+                const sourcePos = letterIdxs.indexOf(fromIndex);
+                if (sourcePos < 0) return false;
+                if (sourcePos === destPos || sourcePos + 1 === destPos) return false;
+                seq.splice(sourcePos, 1);
+                if (sourcePos < destPos) destPos -= 1;
+                seq.splice(destPos, 0, letter);
+            } else {
+                return false;
+            }
+
+            for (let i = 0; i < letterIdxs.length; i++) {
+                slots[letterIdxs[i]] = seq[i] == null ? null : seq[i];
+            }
+            return true;
         }
 
         /** Place a bank tile letter into destSlotIdx (swap if occupied). */
@@ -19318,24 +19890,36 @@
 
         function spellingDragDrop(e, destSlotIdx) {
             e.preventDefault();
-            if (!_spellDragSource) return;
-            const { type, index } = _spellDragSource;
-            _spellDragSource = null;
-
-            if (type === 'tile') {
-                if (!placeTileOnSlot(index, destSlotIdx)) return;
-            } else if (type === 'slot') {
-                const fromLetter = spellingGameState.answerSlots[index];
-                if (!isSpellLetter(fromLetter)) return;
-                const toExisting = spellingGameState.answerSlots[destSlotIdx];
-                spellingGameState.answerSlots[destSlotIdx] = fromLetter;
-                spellingGameState.answerSlots[index] = isSpellLetter(toExisting) ? toExisting : null;
+            if (_spellLive && _spellLive.lastKey && _spellLive.lastKey !== 'out') {
+                spellCommitLive();
+                return;
             }
+            const src = _spellLive || _spellDragSource;
+            const insertAfter = _spellInsertAfter;
+            if (_spellLive) spellRestoreLiveOrig();
+            _spellLive = null;
+            spellUnbindDocDrag();
+            if (src && spellInsertLetter(src.type, src.index, destSlotIdx, insertAfter)) {
+                _spellDragSource = null;
+                renderSpellingGameState();
+                return;
+            }
+            _spellDragSource = null;
             renderSpellingGameState();
         }
 
         function spellingDragDropToTile(e) {
             e.preventDefault();
+            const live = _spellLive;
+            spellUnbindDocDrag();
+            if (live) {
+                spellRestoreLiveOrig();
+                _spellLive = null;
+                _spellDragSource = null;
+                if (live.type === 'slot') selectAnswerSlot(live.index);
+                else renderSpellingGameState();
+                return;
+            }
             if (!_spellDragSource) return;
             const { type, index } = _spellDragSource;
             _spellDragSource = null;
@@ -19389,16 +19973,14 @@
             if (!_spellTouch.isDragging && (adx > SPELL_DRAG_THRESHOLD || ady > SPELL_DRAG_THRESHOLD)) {
                 _spellTouch.isDragging = true;
                 if (_spellTouch.ghost) _spellTouch.ghost.style.opacity = '0.92';
+                spellBeginLive(_spellTouch.type, _spellTouch.index);
             }
             if (_spellTouch.isDragging) {
                 e.preventDefault();
                 e.stopPropagation();
                 _spellTouch.ghost.style.left = (t.clientX - _spellTouch.offX) + 'px';
                 _spellTouch.ghost.style.top  = (t.clientY - _spellTouch.offY) + 'px';
-
-                clearSpellDropHover();
-                const slotEl = findSpellAnswerSlotAt(t.clientX, t.clientY);
-                if (slotEl) slotEl.classList.add('spell-drop-hover');
+                spellLivePreview(t.clientX, t.clientY);
             }
         }
 
@@ -19415,6 +19997,7 @@
             _spellTouch = null;
 
             clearSpellDropHover();
+            clearSpellInsertMarks();
             if (ghost) {
                 ghost.style.display = 'none';
                 ghost.remove();
@@ -19431,48 +20014,43 @@
             e.stopPropagation();
 
             const clientX = t.clientX, clientY = t.clientY;
-            const slotEl = findSpellAnswerSlotAt(clientX, clientY);
+            const slotEl = findSpellInsertSlotAt(clientX, clientY);
             const dropTarget = document.elementFromPoint(clientX, clientY);
             const inLetterRow = dropTarget && dropTarget.closest &&
                 (dropTarget.closest('#letterRow') || dropTarget.closest('#spellLetterBank'));
 
-            if (type === 'tile') {
-                if (slotEl) {
-                    const destIdx = parseInt(slotEl.getAttribute('data-index'), 10);
-                    if (placeTileOnSlot(index, destIdx)) {
-                        renderSpellingGameState();
-                        return;
-                    }
+            if (type === 'slot' && (inLetterRow || !slotEl)) {
+                if (_spellLive) {
+                    spellRestoreLiveOrig();
+                    _spellLive = null;
                 }
-                // Dropped on answer row / near blanks → fill first empty (helps last letter)
-                if (dropTarget && dropTarget.closest && dropTarget.closest('#answerRow')) {
-                    selectLetter(index);
-                    return;
-                }
-                // One empty slot left and drop was in the spell column → auto-place
-                const emptyIdx = spellingGameState.answerSlots.findIndex(s => s === null);
-                const emptyCount = spellingGameState.answerSlots.filter(s => s === null).length;
-                if (emptyCount === 1 && emptyIdx !== -1 &&
-                    dropTarget && dropTarget.closest && dropTarget.closest('#spellColumn')) {
-                    if (placeTileOnSlot(index, emptyIdx)) {
-                        renderSpellingGameState();
-                        return;
-                    }
-                }
-                renderSpellingGameState();
-            } else if (type === 'slot' && (inLetterRow || !slotEl)) {
+                spellUnbindDocDrag();
                 selectAnswerSlot(index);
-            } else if (type === 'slot' && slotEl) {
+                return;
+            }
+            if (slotEl && _spellLive && _spellLive.lastKey && _spellLive.lastKey !== 'out') {
+                spellCommitLive();
+                return;
+            }
+            if (slotEl) {
                 const destIdx = parseInt(slotEl.getAttribute('data-index'), 10);
-                if (destIdx === index || isNaN(destIdx)) {
+                const r = slotEl.getBoundingClientRect();
+                const insertAfter = clientX > r.left + r.width / 2;
+                if (_spellLive) spellRestoreLiveOrig();
+                _spellLive = null;
+                spellUnbindDocDrag();
+                if (spellInsertLetter(type, index, destIdx, insertAfter)) {
                     renderSpellingGameState();
                     return;
                 }
-                _spellDragSource = { type, index };
-                spellingDragDrop({ preventDefault: () => {} }, destIdx);
-            } else {
-                renderSpellingGameState();
             }
+            if (type === 'tile' && dropTarget && dropTarget.closest && dropTarget.closest('#answerRow')) {
+                if (_spellLive) { spellRestoreLiveOrig(); _spellLive = null; }
+                spellUnbindDocDrag();
+                selectLetter(index);
+                return;
+            }
+            spellCancelLive();
         }
 
         function renderSpellingGameState() {
@@ -19505,6 +20083,7 @@
                     letterEl.style.height = '100%';
                 }
 
+                slot.draggable = !!ch;
                 if (ch) {
                     slot.classList.add('spell-slot-filled');
                     slot.style.background = SPELL_FILL_BG;
