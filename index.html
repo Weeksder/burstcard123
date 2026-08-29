@@ -1170,7 +1170,11 @@
             object-fit: contain;
         }
 
-        /* Corner character overlay — letters only, no box/border */
+        /*
+         * Corner letters only: keep 1187's padded footprint (imaginary boundary)
+         * so the photo can't crowd the glyphs, but no visible outline/line.
+         * Middle + bottom layouts are unchanged.
+         */
         .card-char-label {
             position: absolute;
             top: 54px;
@@ -1183,15 +1187,16 @@
             pointer-events: none;
             z-index: 5;
             user-select: none;
-            background: transparent;
+            background: #fff; /* same as card face — invisible pad, masks image under letters */
             border: none;
-            border-radius: 0;
-            box-shadow: none;
-            padding: 0;
+            border-radius: 4px;
+            box-shadow: none; /* no faint square line */
+            outline: none;
+            /* Same padding footprint as 1187 */
+            padding: 4px 14px 18px 14px;
             display: inline-flex;
             align-items: flex-start;
             justify-content: center;
-            /* Subtle spread between E and e */
             letter-spacing: 0.02em;
         }
 
@@ -1200,7 +1205,7 @@
             .card-char-label {
                 font-size: 4rem !important;
                 top: 28px;
-                padding: 0;
+                padding: 2px 8px 10px 8px; /* 1187 phone footprint, still no outline */
             }
             .card-front-text {
                 font-size: 3.5rem;
@@ -1215,6 +1220,7 @@
                 font-size: 5rem;
             }
         }
+        /* Corner layout image: exact spacing from 1187 (bottom-right 80%) */
         .card-front.show-char-active .card-image {
             width: 80%;
             height: 80%;
@@ -1316,11 +1322,274 @@
                 font-size: 4rem !important;
             }
         }
+        /* (bottom-letter phone size is with the show-bottom-active block below) */
         @media (min-width: 481px) and (max-width: 768px) and (orientation: portrait) {
             .card-letter-banner-text,
-            .card-front.show-banner-active.show-text-active .card-letter-banner-text {
+            .card-front.show-banner-active.show-text-active .card-letter-banner-text,
+            .card-front.show-bottom-active .card-letter-banner-text,
+            .card-front.show-bottom-active.show-text-active .card-letter-banner-text {
                 font-size: 6rem !important;
             }
+        }
+
+        /*
+         * Bottom letters (Letters mode 3) — E e under the image (same size as corner).
+         * Stays at bottom even if Caption is turned off. DOM order uses flex `order`
+         * so the letter band (rendered before the img) still paints at the bottom.
+         */
+        .card-front.show-bottom-active {
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            overflow: hidden;
+            padding: 4px 6px;
+            padding-bottom: var(--card-btn-clearance);
+            box-sizing: border-box;
+        }
+        .card-front.show-bottom-active .card-image {
+            order: 1;
+            position: relative;
+            flex: 1 1 0;
+            min-height: 0;
+            width: 100%;
+            height: auto;
+            margin: 0;
+            object-fit: contain;
+            object-position: center center;
+        }
+        .card-front.show-bottom-active .card-front-text {
+            order: 2;
+            flex-shrink: 0;
+            width: 100%;
+        }
+        .card-front.show-bottom-active .card-letter-banner {
+            order: 3;
+            flex-direction: column;
+            padding: 4px 4px 0;
+            gap: 6px;
+        }
+        /* Divider between caption (or image) and bottom letters — 50% card width */
+        .card-front.show-bottom-active .card-letter-banner::before {
+            content: '';
+            display: block;
+            width: 50%;
+            height: 2px;
+            background: #1a1a1a;
+            flex-shrink: 0;
+            border-radius: 1px;
+            opacity: 0.85;
+        }
+        .card-front.show-bottom-active .card-letter-banner-text {
+            font-size: 9rem !important;
+        }
+        .card-front.show-bottom-active.show-text-active {
+            padding: 6px 10px;
+            padding-bottom: var(--card-btn-clearance);
+        }
+        .card-front.show-bottom-active.show-text-active .card-letter-banner {
+            gap: 8px;
+            padding-top: 2px;
+        }
+        @media (max-width: 480px) and (orientation: portrait) {
+            .card-front.show-bottom-active .card-letter-banner-text {
+                font-size: 4rem !important;
+            }
+        }
+
+        /* ===== Letter layout picker (gear → Layout) ===== */
+        .letter-layout-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 26000;
+            background: rgba(0,0,0,0.55);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .letter-layout-modal.open { display: flex; }
+        .letter-layout-card {
+            width: min(520px, 100%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px 16px 18px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+        }
+        .letter-layout-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .letter-layout-head h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .letter-layout-close {
+            border: none;
+            background: #f0f0f0;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #333;
+        }
+        .letter-layout-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .letter-layout-option {
+            border: 2px solid #e8e8e8;
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 10px 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: border-color 0.15s, background 0.15s, transform 0.1s;
+        }
+        .letter-layout-option:hover {
+            border-color: #35654D;
+            background: #fff;
+        }
+        .letter-layout-option:active { transform: scale(0.98); }
+        .letter-layout-option.is-selected {
+            border-color: #35654D;
+            background: #f0f9f4;
+            box-shadow: 0 0 0 1px #35654D;
+        }
+        .letter-layout-preview {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 3px;
+            box-sizing: border-box;
+        }
+        .letter-layout-preview .llp-img {
+            flex: 1 1 0;
+            min-height: 0;
+            margin: 0;
+            border-radius: 6px;
+            background: #f4f7f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .letter-layout-preview .llp-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            display: block;
+            pointer-events: none;
+            user-select: none;
+        }
+        .letter-layout-preview .llp-caption {
+            flex: 0 0 auto;
+            width: 100%;
+            text-align: center;
+            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 400);
+            font-size: 0.78rem;
+            color: #1a1a1a;
+            line-height: 1.15;
+            padding: 3px 2px 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        /* Corner: letters clear; image fills remaining area without covering Ee */
+        .letter-layout-preview--corner {
+            display: flex;
+            flex-direction: column;
+        }
+        .letter-layout-preview--corner .llp-corner {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            z-index: 2;
+            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 400);
+            font-size: 1.55rem;
+            color: #1a1a1a;
+            line-height: 1;
+            letter-spacing: 0.02em;
+            pointer-events: none;
+        }
+        .letter-layout-preview--corner .llp-img {
+            margin: 22px 2px 0 28%;
+            flex: 1 1 0;
+        }
+        .letter-layout-preview--corner .llp-caption {
+            padding-top: 2px;
+        }
+        .letter-layout-preview--banner {
+            align-items: stretch;
+        }
+        .letter-layout-preview--banner .llp-banner {
+            flex: 0 0 auto;
+            text-align: center;
+            padding: 2px 2px 1px;
+            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 400);
+            font-size: 1.45rem;
+            color: #1a1a1a;
+            letter-spacing: 0.06em;
+            line-height: 1;
+        }
+        .letter-layout-preview--banner .llp-img {
+            flex: 1 1 0;
+            min-height: 0;
+        }
+        .letter-layout-preview--bottom .llp-img {
+            flex: 1 1 0;
+            min-height: 0;
+            margin-bottom: 0;
+        }
+        .letter-layout-preview--bottom .llp-rule {
+            display: block;
+            width: 50%;
+            height: 2px;
+            background: #1a1a1a;
+            margin: 2px auto 2px;
+            border-radius: 1px;
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+        .letter-layout-preview--bottom .llp-bottom {
+            flex: 0 0 auto;
+            text-align: center;
+            padding: 0 2px 2px;
+            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 400);
+            font-size: 1.45rem;
+            color: #1a1a1a;
+            letter-spacing: 0.06em;
+            line-height: 1;
+        }
+        .letter-layout-preview--bottom .llp-caption {
+            padding-bottom: 0;
+        }
+        @media (max-width: 420px) {
+            .letter-layout-grid { gap: 8px; }
+            .letter-layout-option { padding: 8px 4px; }
+            .letter-layout-preview .llp-caption { font-size: 0.7rem; }
         }
 
         .card-front-text {
@@ -4702,6 +4971,14 @@
                     </svg>
                     Letters
                 </button>
+                <button id="letterLayoutBtn" onclick="event.stopPropagation(); openLetterLayoutPicker()" ontouchend="event.stopPropagation(); event.preventDefault(); openLetterLayoutPicker()"
+                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="18" rx="1"/>
+                        <rect x="14" y="3" width="7" height="18" rx="1"/>
+                    </svg>
+                    Layout
+                </button>
                 <button id="showTextBtn" onclick="event.stopPropagation(); toggleTextOnFront()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleTextOnFront()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4774,6 +5051,40 @@
         </div>
         <!-- cardOverlayNav replaced by embedded nav in card-stack — stub kept for JS references -->
         <div id="cardOverlayNav" style="display:none;"></div>
+    </div>
+
+    <!-- Letter layout picker: Corner / Middle / Bottom -->
+    <div id="letterLayoutModal" class="letter-layout-modal" role="dialog" aria-modal="true" aria-labelledby="letterLayoutTitle" onclick="if(event.target===this)closeLetterLayoutPicker()">
+        <div class="letter-layout-card" onclick="event.stopPropagation()">
+            <div class="letter-layout-head">
+                <h3 id="letterLayoutTitle">Cards layout</h3>
+                <button type="button" class="letter-layout-close" onclick="closeLetterLayoutPicker()" aria-label="Close">✕</button>
+            </div>
+            <div class="letter-layout-grid" id="letterLayoutGrid">
+                <button type="button" class="letter-layout-option" data-layout="corner" onclick="selectLetterLayout('corner')" aria-label="Corner letters">
+                    <div class="letter-layout-preview letter-layout-preview--corner">
+                        <span class="llp-corner">Cc</span>
+                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
+                        <div class="llp-caption">Circle</div>
+                    </div>
+                </button>
+                <button type="button" class="letter-layout-option" data-layout="banner" onclick="selectLetterLayout('banner')" aria-label="Middle letters">
+                    <div class="letter-layout-preview letter-layout-preview--banner">
+                        <span class="llp-banner">C c</span>
+                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
+                        <div class="llp-caption">Circle</div>
+                    </div>
+                </button>
+                <button type="button" class="letter-layout-option" data-layout="bottom" onclick="selectLetterLayout('bottom')" aria-label="Bottom letters">
+                    <div class="letter-layout-preview letter-layout-preview--bottom">
+                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
+                        <div class="llp-caption">Circle</div>
+                        <span class="llp-rule"></span>
+                        <span class="llp-bottom">C c</span>
+                    </div>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Manage Side Panel overlay -->
@@ -6638,15 +6949,22 @@
                 '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' + shackle + '</svg>';
         }
         let showTextOnFront = false; // overlay back text on card front
-        // Letters display: 'off' | 'corner' (clumped Aa) | 'banner' (full-width E e strip)
+        // Letters display: 'off' | 'corner' | 'banner' (middle) | 'bottom'
+        // Preferred layout (when Letters is turned on) is remembered separately.
+        let preferredLetterLayout = 'corner';
         let charDisplayMode = 'off';
         try {
+            const savedPref = localStorage.getItem('flashabc_char_layout_pref');
+            if (savedPref === 'corner' || savedPref === 'banner' || savedPref === 'bottom') {
+                preferredLetterLayout = savedPref;
+            }
             const savedChar = localStorage.getItem('flashabc_char_mode');
-            if (savedChar === 'corner' || savedChar === 'banner' || savedChar === 'off') {
+            if (savedChar === 'corner' || savedChar === 'banner' || savedChar === 'bottom' || savedChar === 'off') {
                 charDisplayMode = savedChar;
             } else if (savedChar === '1' || savedChar === 'true') {
                 charDisplayMode = 'corner';
             }
+            if (charDisplayMode !== 'off') preferredLetterLayout = charDisplayMode;
         } catch (e) {}
         // Legacy alias — some older checks may still read this name
         let showCharOnCard = charDisplayMode !== 'off';
@@ -11144,6 +11462,7 @@
         }
         updateSwipeDirButton();
         if (typeof updateCharToggleButton === 'function') updateCharToggleButton();
+        if (typeof updateLetterLayoutButton === 'function') updateLetterLayoutButton();
 
         function nextCard() {
             if (isShuffling) return;
@@ -16026,7 +16345,7 @@
             return m ? m[0] : '';
         }
 
-        /** Corner "Ee" or top "E e" markup for the card front (no colored strip). */
+        /** Corner / top / bottom letter markup for the card front (no colored strip). */
         function charOverlayMarkup(backText) {
             if (!backText || charDisplayMode === 'off') return '';
             const ch = cardFirstLetter(backText);
@@ -16036,7 +16355,8 @@
             if (charDisplayMode === 'corner') {
                 return '<span class="card-char-label">' + upper + lower + '</span>';
             }
-            if (charDisplayMode === 'banner') {
+            if (charDisplayMode === 'banner' || charDisplayMode === 'bottom') {
+                // Same markup; CSS order places it top (banner) or bottom (bottom mode)
                 return '<div class="card-letter-banner">' +
                     '<span class="card-letter-banner-text">' + upper + ' ' + lower + '</span></div>';
             }
@@ -16047,6 +16367,7 @@
             if (!backText || charDisplayMode === 'off') return '';
             if (charDisplayMode === 'corner') return ' show-char-active';
             if (charDisplayMode === 'banner') return ' show-banner-active';
+            if (charDisplayMode === 'bottom') return ' show-bottom-active';
             return '';
         }
 
@@ -16097,23 +16418,104 @@
             if (svgText) svgText.setAttribute('fill', on ? '#6b4e1a' : '#35654D');
         }
 
-        function toggleCharOnCard() {
-            // Cycle: off → corner → banner → off
-            charDisplayMode = charDisplayMode === 'off' ? 'corner'
-                : charDisplayMode === 'corner' ? 'banner'
-                : 'off';
-            showCharOnCard = charDisplayMode !== 'off';
+        function updateLetterLayoutButton() {
+            const btn = document.getElementById('letterLayoutBtn');
+            if (!btn) return;
+            // Highlight Layout when a letter layout is active
+            setSettingsItemOn(btn, charDisplayMode !== 'off');
+            const svg = btn.querySelector('svg');
+            if (svg) svg.setAttribute('stroke', charDisplayMode !== 'off' ? '#6b4e1a' : '#35654D');
+        }
+
+        function applyCharDisplayMode(mode, opts) {
+            opts = opts || {};
+            const valid = { off: 1, corner: 1, banner: 1, bottom: 1 };
+            if (!valid[mode]) return;
+            charDisplayMode = mode;
+            showCharOnCard = mode !== 'off';
+            if (mode !== 'off') {
+                preferredLetterLayout = mode;
+                try { localStorage.setItem('flashabc_char_layout_pref', preferredLetterLayout); } catch (e) {}
+            }
             try { localStorage.setItem('flashabc_char_mode', charDisplayMode); } catch (e) {}
-            // Caption size must remeasure when letter band appears/disappears
             if (typeof resetFrontTextCache === 'function') resetFrontTextCache();
             updateCharToggleButton();
-            closeSettingsMenu();
-            renderDisplay();
-            const msg = charDisplayMode === 'off' ? 'Letters off'
-                : charDisplayMode === 'corner' ? 'Letters: corner'
-                : 'Letters: banner';
-            if (typeof showToast === 'function') showToast(msg, 1600);
+            updateLetterLayoutButton();
+            if (opts.render !== false) renderDisplay();
         }
+
+        /** Letters = on/off using the saved preferred layout (use Layout to pick style). */
+        function toggleCharOnCard() {
+            if (charDisplayMode === 'off') {
+                applyCharDisplayMode(preferredLetterLayout || 'corner');
+                if (typeof showToast === 'function') {
+                    const label = preferredLetterLayout === 'banner' ? 'middle'
+                        : preferredLetterLayout === 'bottom' ? 'bottom' : 'corner';
+                    showToast('Letters: ' + label, 1600);
+                }
+            } else {
+                applyCharDisplayMode('off');
+                if (typeof showToast === 'function') showToast('Letters off', 1600);
+            }
+            closeSettingsMenu();
+        }
+
+        function refreshLetterLayoutPickerUI() {
+            const grid = document.getElementById('letterLayoutGrid');
+            if (!grid) return;
+            const active = charDisplayMode !== 'off' ? charDisplayMode : preferredLetterLayout;
+            grid.querySelectorAll('.letter-layout-option').forEach(function(btn) {
+                btn.classList.toggle('is-selected', btn.getAttribute('data-layout') === active);
+            });
+
+            // One simple filled-circle image for all previews; word = Circle / Cc
+            const circleSrc = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">' +
+                '<rect width="120" height="120" fill="#ffffff"/>' +
+                '<circle cx="60" cy="60" r="42" fill="#35654D"/>' +
+                '</svg>'
+            );
+            grid.querySelectorAll('.llp-photo').forEach(function(photo) {
+                photo.src = circleSrc;
+            });
+            grid.querySelectorAll('.llp-caption').forEach(function(cap) {
+                cap.textContent = 'Circle';
+            });
+            grid.querySelectorAll('.llp-corner').forEach(function(el) { el.textContent = 'Cc'; });
+            grid.querySelectorAll('.llp-banner, .llp-bottom').forEach(function(el) {
+                el.textContent = 'C c';
+            });
+        }
+
+        function openLetterLayoutPicker() {
+            closeSettingsMenu();
+            const modal = document.getElementById('letterLayoutModal');
+            if (!modal) return;
+            refreshLetterLayoutPickerUI();
+            modal.classList.add('open');
+        }
+
+        function closeLetterLayoutPicker() {
+            const modal = document.getElementById('letterLayoutModal');
+            if (modal) modal.classList.remove('open');
+        }
+
+        function selectLetterLayout(layout) {
+            if (layout !== 'corner' && layout !== 'banner' && layout !== 'bottom') return;
+            applyCharDisplayMode(layout);
+            closeLetterLayoutPicker();
+            const label = layout === 'banner' ? 'middle' : layout;
+            if (typeof showToast === 'function') showToast('Layout: ' + label, 1600);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            const m = document.getElementById('letterLayoutModal');
+            if (m && m.classList.contains('open')) {
+                e.preventDefault();
+                closeLetterLayoutPicker();
+            }
+        });
 
         let _lockAnimating = false;
 
