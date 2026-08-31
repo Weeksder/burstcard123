@@ -24,7 +24,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1188-folder-create-no-dupes">
+    <meta name="flashabc-build" content="1238-hide-ui-peek-eye">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -383,9 +383,10 @@
         }
         /* Long / portrait stack */
         #spellingGameModal #spellMain.spell-main-col #spellingImgWrap {
-            flex: 1 1 auto;
+            flex: 1 1 0;
             width: 100%;
             min-height: 0;
+            align-self: stretch;
         }
         #spellingGameModal #spellMain.spell-main-col.spell-tier-long #spellingImgWrap {
             flex: 0 1 auto;
@@ -656,6 +657,10 @@
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
+        }
+        /* Same face as Help / Add / Shuffle — Manage & More had extra white */
+        #topControls .btn {
+            background: #fff;
         }
 
         .top-bar {
@@ -1003,11 +1008,11 @@
             -webkit-transform-style: preserve-3d;
             -moz-transform-style: preserve-3d;
             -ms-transform-style: preserve-3d;
-            transition: transform 0.6s;
-            -webkit-transition: -webkit-transform 0.6s;
-            -moz-transition: -moz-transform 0.6s;
-            -ms-transition: -ms-transform 0.6s;
-            -o-transition: -o-transform 0.6s;
+            transition: transform 0.6s ease;
+            -webkit-transition: -webkit-transform 0.6s ease;
+            -moz-transition: -moz-transform 0.6s ease;
+            -ms-transition: -ms-transform 0.6s ease;
+            -o-transition: -o-transform 0.6s ease;
             cursor: pointer;
             z-index: 10;
             pointer-events: auto;
@@ -1068,6 +1073,9 @@
         .card.swiping {
             transition: none;
             z-index: 9999 !important;
+            /* Flatten during drag so rotateZ + translateX cannot clip a 3D face */
+            transform-style: flat;
+            -webkit-transform-style: flat;
         }
 
         .card-stack.swiping,
@@ -1396,6 +1404,73 @@
             }
         }
 
+        /*
+         * Large letters (Letters mode 4) — oversized A a take the image's
+         * usual spot. Picture sits in a short band at the top. Caption off.
+         */
+        .card-front.show-giant-active {
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            overflow: hidden;
+            padding: 8px 8px 6px;
+            padding-bottom: var(--card-btn-clearance);
+            box-sizing: border-box;
+        }
+        .card-front.show-giant-active .card-image {
+            order: 1;
+            position: relative;
+            flex: 0 0 30%;
+            max-height: 32%;
+            min-height: 0;
+            width: 100%;
+            height: auto;
+            margin: 0;
+            object-fit: contain;
+            object-position: center top;
+        }
+        .card-front.show-giant-active .card-letter-banner {
+            order: 2;
+            flex: 1 1 0;
+            min-height: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
+        .card-front.show-giant-active .card-letter-banner-text {
+            font-size: clamp(5.5rem, 28vw, 16rem) !important;
+            letter-spacing: 0.02em;
+            line-height: 0.95;
+        }
+        .card-front.show-giant-active .card-front-text {
+            display: none !important;
+        }
+        @media (orientation: portrait) {
+            .card-front.show-giant-active {
+                overflow: hidden;
+                justify-content: flex-start;
+                padding: 6px 8px 4px;
+            }
+            .card-front.show-giant-active .card-image {
+                flex: 0 0 38%;
+                max-height: 40%;
+                object-position: center center;
+            }
+            .card-front.show-giant-active .card-letter-banner {
+                flex: 1 1 0;
+                align-items: center;
+                justify-content: center;
+                padding: 4px 4px 12px;
+            }
+            .card-front.show-giant-active .card-letter-banner-text {
+                font-size: clamp(9.5rem, 48vw, 24rem) !important;
+                letter-spacing: 0.02em;
+                line-height: 0.9;
+            }
+        }
+
         /* ===== Letter layout picker (gear → Layout) ===== */
         .letter-layout-modal {
             display: none;
@@ -1405,16 +1480,19 @@
             background: rgba(0,0,0,0.55);
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 12px;
             box-sizing: border-box;
         }
         .letter-layout-modal.open { display: flex; }
         .letter-layout-card {
-            width: min(520px, 100%);
+            width: min(400px, calc(100vw - 28px));
+            max-height: min(88vh, 620px);
+            overflow: auto;
             background: #fff;
             border-radius: 16px;
-            padding: 16px 16px 18px;
+            padding: 12px 12px 14px;
             box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+            box-sizing: border-box;
         }
         .letter-layout-head {
             display: flex;
@@ -1441,15 +1519,15 @@
         }
         .letter-layout-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 8px;
         }
         .letter-layout-option {
             border: 2px solid #e8e8e8;
             background: #fafafa;
             border-radius: 12px;
-            padding: 10px 8px;
+            padding: 6px 6px 8px;
             cursor: pointer;
             display: flex;
             flex-direction: column;
@@ -1466,9 +1544,18 @@
             background: #f0f9f4;
             box-shadow: 0 0 0 1px #35654D;
         }
+        .letter-layout-option .llp-num {
+            margin-top: 4px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #35654D;
+            line-height: 1;
+            letter-spacing: 0.02em;
+        }
         .letter-layout-preview {
             width: 100%;
-            aspect-ratio: 3 / 4;
+            aspect-ratio: 3 / 3.4;
+            max-height: 26vh;
             background: #fff;
             border-radius: 10px;
             border: 1px solid #e0e0e0;
@@ -1586,10 +1673,50 @@
         .letter-layout-preview--bottom .llp-caption {
             padding-bottom: 0;
         }
+        /* Large: image up top, oversized letters fill the rest, no caption */
+        .letter-layout-preview--giant {
+            align-items: stretch;
+        }
+        .letter-layout-preview--giant .llp-img {
+            flex: 0 0 34%;
+            max-height: 38%;
+            min-height: 0;
+        }
+        .letter-layout-preview--giant .llp-giant {
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 400);
+            font-size: 2.15rem;
+            color: #1a1a1a;
+            letter-spacing: 0.06em;
+            line-height: 0.95;
+        }
         @media (max-width: 420px) {
-            .letter-layout-grid { gap: 8px; }
-            .letter-layout-option { padding: 8px 4px; }
+            .letter-layout-grid { gap: 6px; }
+            .letter-layout-option { padding: 6px 4px 7px; }
+            .letter-layout-preview { max-height: 24vh; }
             .letter-layout-preview .llp-caption { font-size: 0.7rem; }
+        }
+        @media (orientation: landscape) and (max-height: 700px) {
+            .letter-layout-card {
+                width: min(360px, calc(100vw - 24px));
+                max-height: 92vh;
+                padding: 8px 10px 10px;
+            }
+            .letter-layout-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+            .letter-layout-preview {
+                aspect-ratio: 3 / 3.2;
+                max-height: 28vh;
+            }
+            .letter-layout-option { padding: 4px 4px 6px; }
+            .letter-layout-option .llp-num { margin-top: 2px; font-size: 0.8rem; }
         }
 
         .card-front-text {
@@ -1731,18 +1858,34 @@
             cursor: pointer;
         }
 
-        /* Hide UI mode - only settings button and card visible */
-        body.hide-ui .top-bar,
-        body.hide-ui .navigation,
-        body.hide-ui .counter,
-        body.hide-ui #cardOverlayCounter,
-        body.hide-ui #cardOverlayTTS,
-        body.hide-ui .card-stack-tts,
-        body.hide-ui #cardOverlayNav,
-        body.hide-ui .nav-btn,
-        body.hide-ui #navIndexLabel,
-        body.hide-ui #navHintLabel {
+        /* Hide UI mode - only settings + card visible (unless peeking) */
+        body.hide-ui:not(.hide-ui-peek) .top-bar,
+        body.hide-ui:not(.hide-ui-peek) .navigation,
+        body.hide-ui:not(.hide-ui-peek) .counter,
+        body.hide-ui:not(.hide-ui-peek) #cardOverlayCounter,
+        body.hide-ui:not(.hide-ui-peek) #cardOverlayTTS,
+        body.hide-ui:not(.hide-ui-peek) .card-stack-tts,
+        body.hide-ui:not(.hide-ui-peek) #cardOverlayNav,
+        body.hide-ui:not(.hide-ui-peek) .nav-btn,
+        body.hide-ui:not(.hide-ui-peek) #navIndexLabel,
+        body.hide-ui:not(.hide-ui-peek) #navHintLabel {
             display: none !important;
+        }
+        body.hide-ui #cardOverlayHidePeek {
+            display: block !important;
+        }
+        body.hide-ui.hide-ui-peek #cardOverlayHidePeek {
+            display: none !important;
+        }
+        body:not(.hide-ui) #cardOverlayHidePeek {
+            display: none !important;
+        }
+        body.hide-ui.hide-ui-peek .top-bar {
+            animation: hideUiPeekDrop 0.22s ease-out;
+        }
+        @keyframes hideUiPeekDrop {
+            from { opacity: 0; transform: translateY(-12px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         body.hide-ui .container {
@@ -1816,6 +1959,7 @@
         }
         #cardOverlaySettings .fullscreen-btn,
         #cardOverlayLock .fullscreen-btn,
+        #cardOverlayHidePeek .fullscreen-btn,
         #cardOverlayTTS .tts-card-btn,
         .card-stack-tts .tts-card-btn {
             transition: transform 0.2s ease, opacity 0.2s ease;
@@ -1830,12 +1974,33 @@
         body.swipe-chrome-hide #settingsGearBtn:hover,
         body.swipe-chrome-hide #cardOverlayLock,
         body.swipe-chrome-hide #cardOverlayLock .fullscreen-btn,
+        body.swipe-chrome-hide #cardOverlayHidePeek,
+        body.swipe-chrome-hide #cardOverlayHidePeek .fullscreen-btn,
         body.swipe-chrome-hide #cardOverlayTTS .tts-card-btn,
         body.swipe-chrome-hide #cardOverlayTTS .tts-card-btn:hover,
         body.swipe-chrome-hide .card-stack-tts .tts-card-btn,
         body.swipe-chrome-hide .card-stack-tts .tts-card-btn:hover {
             transform: scale(0) !important;
             opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Shuffle animation: hide on-card chrome (nav + mic + gear). Nav/mic used
+           to be inline position:absolute so shuffle's query hid them; they are
+           class-positioned now and must be hidden explicitly. */
+        body.shuffling .card-nav-left,
+        body.shuffling .card-nav-right,
+        body.shuffling .card-stack-tts,
+        body.shuffling .nav-btn,
+        body.shuffling #navIndexLabel,
+        body.shuffling #navHintLabel,
+        body.shuffling #cardOverlaySettings,
+        body.shuffling #cardOverlayLock,
+        body.shuffling #cardOverlayHidePeek,
+        body.shuffling #cardOverlayTTS,
+        body.shuffling #settingsGearBtn {
+            display: none !important;
+            visibility: hidden !important;
             pointer-events: none !important;
         }
 
@@ -3207,7 +3372,7 @@
             /* Game Menu optimizations for mobile screens */
             #gameMenuModal .modal-content {
                 padding: 20px 15px;
-                max-width: 95%;
+                max-width: min(380px, 95%) !important;
                 border-radius: 15px;
             }
 
@@ -3229,6 +3394,26 @@
 
             #gameMenuModal .modal-content > div {
                 gap: 10px !important;
+            }
+        }
+
+        /* Games list: keep icon+label as a centered pair (no flex:1 on the
+           label — that shifted Spell Me). (Cont.) is short enough to fit. */
+        #gameMenuModal button {
+            min-width: 0;
+        }
+        #gameMenuModal button svg {
+            flex-shrink: 0;
+        }
+        #gameMenuModal [id$="GameBtnLabel"] {
+            white-space: nowrap;
+            text-align: center;
+            overflow: visible;
+            flex: 0 1 auto;
+        }
+        @media (min-width: 700px) {
+            #gameMenuModal .modal-content {
+                max-width: min(400px, 92vw) !important;
             }
         }
 
@@ -4302,6 +4487,18 @@
         }
         .word-size-thumb:active { cursor: grabbing; }
 
+        #showTextBtn.settings-caption-blocked {
+            opacity: 0.55;
+            color: #888 !important;
+        }
+        #showTextBtn.settings-caption-blocked svg {
+            stroke: #888 !important;
+        }
+        #showTextBtn.settings-caption-blocked .settings-caption-label {
+            text-decoration: line-through;
+            text-decoration-thickness: 2px;
+        }
+
         #settingsBackdrop {
             position: fixed;
             inset: 0;
@@ -4843,7 +5040,7 @@
 
             <!-- Quick Load Dropdown -->
             <div class="dropdown" id="quickLoadDropdown" style="position: relative; display: inline-block; z-index: 10001;">
-                <button class="btn btn-primary" onclick="openManageSidePanel()" data-tip="Manage" style="position: relative; z-index: 101;">
+                <button class="btn" onclick="openManageSidePanel()" data-tip="Manage" style="color:#35654D; position: relative; z-index: 101;">
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
                         <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
@@ -4863,7 +5060,7 @@
 
             <!-- Dropdown Menu - Only shows after cards are loaded -->
             <div class="dropdown" id="moreDropdown" style="display: none; position: relative; z-index: 100;">
-                <button class="btn more-btn" onclick="toggleMoreDropdown()" ontouchend="handleDropdownTouch(event)" data-tip="More" style="position: relative; z-index: 101;">
+                <button class="btn" onclick="toggleMoreDropdown()" ontouchend="handleDropdownTouch(event)" data-tip="More" style="color:#35654D; position: relative; z-index: 101;">
                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
                         <circle cx="5" cy="12" r="2" fill="currentColor"></circle>
                         <circle cx="12" cy="12" r="2" fill="currentColor"></circle>
@@ -4919,6 +5116,18 @@
 
         <!-- Lock indicator — appears above the gear only when Lock Side is
              active. Tap it to unlock (toggleLockSide). Hidden when unlocked. -->
+        <div id="cardOverlayHidePeek" style="display:none; position:fixed; z-index:10000;">
+            <button class="fullscreen-btn" id="hidePeekBtn"
+                    style="position:relative; bottom:auto; left:auto; color:#35654D;"
+                    onclick="event.stopPropagation(); peekHideUI()"
+                    ontouchend="event.stopPropagation(); event.preventDefault(); peekHideUI()"
+                    title="Show buttons">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </button>
+        </div>
         <div id="cardOverlayLock" style="display:none; position:fixed; z-index:10000;">
             <button class="fullscreen-btn"
                     style="position:relative; bottom:auto; left:auto; color:#35654D;"
@@ -4984,7 +5193,7 @@
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
                     </svg>
-                    Caption
+                    <span class="settings-caption-label">Caption</span>
                 </button>
                 <button id="swipeDirBtn" onclick="event.stopPropagation(); toggleSwipeDirection()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleSwipeDirection()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
@@ -5061,27 +5270,37 @@
                 <button type="button" class="letter-layout-close" onclick="closeLetterLayoutPicker()" aria-label="Close">✕</button>
             </div>
             <div class="letter-layout-grid" id="letterLayoutGrid">
-                <button type="button" class="letter-layout-option" data-layout="corner" onclick="selectLetterLayout('corner')" aria-label="Corner letters">
+                <button type="button" class="letter-layout-option" data-layout="corner" onclick="selectLetterLayout('corner')" aria-label="Layout 1, corner letters">
                     <div class="letter-layout-preview letter-layout-preview--corner">
                         <span class="llp-corner">Cc</span>
                         <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
                         <div class="llp-caption">Circle</div>
                     </div>
+                    <span class="llp-num">1</span>
                 </button>
-                <button type="button" class="letter-layout-option" data-layout="banner" onclick="selectLetterLayout('banner')" aria-label="Middle letters">
+                <button type="button" class="letter-layout-option" data-layout="banner" onclick="selectLetterLayout('banner')" aria-label="Layout 2, middle letters">
                     <div class="letter-layout-preview letter-layout-preview--banner">
                         <span class="llp-banner">C c</span>
                         <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
                         <div class="llp-caption">Circle</div>
                     </div>
+                    <span class="llp-num">2</span>
                 </button>
-                <button type="button" class="letter-layout-option" data-layout="bottom" onclick="selectLetterLayout('bottom')" aria-label="Bottom letters">
+                <button type="button" class="letter-layout-option" data-layout="bottom" onclick="selectLetterLayout('bottom')" aria-label="Layout 3, bottom letters">
                     <div class="letter-layout-preview letter-layout-preview--bottom">
                         <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
                         <div class="llp-caption">Circle</div>
                         <span class="llp-rule"></span>
                         <span class="llp-bottom">C c</span>
                     </div>
+                    <span class="llp-num">3</span>
+                </button>
+                <button type="button" class="letter-layout-option" data-layout="giant" onclick="selectLetterLayout('giant')" aria-label="Layout 4, large letters">
+                    <div class="letter-layout-preview letter-layout-preview--giant">
+                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
+                        <span class="llp-giant">C c</span>
+                    </div>
+                    <span class="llp-num">4</span>
                 </button>
             </div>
         </div>
@@ -5264,7 +5483,7 @@
     </div>
 
     <div class="modal" id="gameMenuModal">
-        <div class="modal-content" style="max-width:280px;position:relative;padding:18px 16px 16px;">
+        <div class="modal-content" style="max-width:380px;width:auto;min-width:min(280px,92vw);position:relative;padding:18px 16px 16px;overflow-x:visible;">
             <button onclick="closeGameMenu()" style="position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:#aaa;padding:4px;display:flex;align-items:center;justify-content:center;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -5275,13 +5494,13 @@
                 <button id="guessGameBtn" onclick="startGame('guess')"
                     style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #35654D;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
                     <svg width="36" height="36" viewBox="0 0 38 38" fill="none" stroke="#35654D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="0.9" y="12" width="10" height="14" rx="1.2"/><path d="M4.5 17a1.4 1.4 0 012.5 1c0 1.1-1.2 1.3-1.2 2.2"/><circle cx="5.8" cy="23.5" r="0.55" fill="#35654D" stroke="none"/><rect x="14" y="12" width="10" height="14" rx="1.2"/><rect x="27" y="12" width="10" height="14" rx="1.2"/></svg>
-                    <span style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word</span>
+                    <span id="guessGameBtnLabel" style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word</span>
                 </button>
 
-                <button onclick="startGame('bomb')"
+                <button id="bombGameBtn" onclick="startGame('bomb')"
                     style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #e53935;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
                     <svg width="26" height="26" viewBox="0 0 28 28" fill="none" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="17" r="8"/><path d="M17 11.5c1.2-1.2 2.5-3 4-3"/><path d="M19.5 8c.6-1 1.5-1.2 2.2-.6"/><line x1="22" y1="5.5" x2="22" y2="4"/><line x1="24" y1="7.5" x2="25.5" y2="7.5"/><line x1="23.5" y1="5" x2="25" y2="3.5"/></svg>
-                    <span style="font-size:1.15rem;font-weight:600;color:#e53935;font-family:inherit;">Bomb</span>
+                    <span id="bombGameBtnLabel" style="font-size:1.15rem;font-weight:600;color:#e53935;font-family:inherit;">Bomb</span>
                 </button>
 
                 <button id="spellingGameBtn" onclick="startGame('spelling')"
@@ -5290,10 +5509,10 @@
                     <span id="spellingGameBtnLabel" style="font-size:1.15rem;font-weight:600;color:#1565c0;font-family:inherit;">Spell Me</span>
                 </button>
 
-                <button onclick="startGame('match')"
+                <button id="matchGameBtn" onclick="startGame('match')"
                     style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #6a1b9a;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6a1b9a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <span style="font-size:1.15rem;font-weight:600;color:#6a1b9a;font-family:inherit;">Match the Picture</span>
+                    <span id="matchGameBtnLabel" style="font-size:1.15rem;font-weight:600;color:#6a1b9a;font-family:inherit;">Match the Picture</span>
                 </button>
 
                 <button onclick="startGame('saytheword')"
@@ -5831,6 +6050,21 @@
             margin-top: 2px;
         }
         .msp-unit-row.loaded .msp-unit-count { color: #6b4e1a; opacity: 0.85; }
+        .msp-add-cluster {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .msp-card-num {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #999;
+            min-width: 1.2em;
+            text-align: right;
+            line-height: 1;
+        }
+        .msp-unit-row.loaded .msp-card-num { color: #6b4e1a; opacity: 0.85; }
         .msp-btn {
             width: 36px; height: 36px;
             border: 2px solid #35654D;
@@ -6949,17 +7183,17 @@
                 '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' + shackle + '</svg>';
         }
         let showTextOnFront = false; // overlay back text on card front
-        // Letters display: 'off' | 'corner' | 'banner' (middle) | 'bottom'
+        // Letters display: 'off' | 'corner' | 'banner' (middle) | 'bottom' | 'giant' (large)
         // Preferred layout (when Letters is turned on) is remembered separately.
         let preferredLetterLayout = 'corner';
         let charDisplayMode = 'off';
         try {
             const savedPref = localStorage.getItem('flashabc_char_layout_pref');
-            if (savedPref === 'corner' || savedPref === 'banner' || savedPref === 'bottom') {
+            if (savedPref === 'corner' || savedPref === 'banner' || savedPref === 'bottom' || savedPref === 'giant') {
                 preferredLetterLayout = savedPref;
             }
             const savedChar = localStorage.getItem('flashabc_char_mode');
-            if (savedChar === 'corner' || savedChar === 'banner' || savedChar === 'bottom' || savedChar === 'off') {
+            if (savedChar === 'corner' || savedChar === 'banner' || savedChar === 'bottom' || savedChar === 'giant' || savedChar === 'off') {
                 charDisplayMode = savedChar;
             } else if (savedChar === '1' || savedChar === 'true') {
                 charDisplayMode = 'corner';
@@ -7031,6 +7265,15 @@
                     lockIcon.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
                 }
             }
+            const hidePeekOv = document.getElementById('cardOverlayHidePeek');
+            if (hidePeekOv) {
+                const eyeIcon = hidePeekOv.querySelector('svg');
+                if (eyeIcon) {
+                    eyeIcon.setAttribute('stroke', iconColor);
+                    eyeIcon.style.color = iconColor;
+                    eyeIcon.style.filter = isFlipped ? 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' : 'none';
+                }
+            }
         }
 
         function frontTextSizeRange() {
@@ -7049,8 +7292,12 @@
             return '<div class="card-front-text"' + style + '>' + highlightVowelsFront(text) + '</div>';
         }
 
+        function showFrontCaption(backText) {
+            return !!(showTextOnFront && backText && charDisplayMode !== 'giant');
+        }
+
         function hideCardOverlays() {
-            ['cardOverlaySettings','cardOverlayLock','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
+            ['cardOverlaySettings','cardOverlayLock','cardOverlayHidePeek','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
                 .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
             const ttsHide = document.getElementById('cardOverlayTTS');
             if (ttsHide) ttsHide.classList.remove('tts-ready');
@@ -7086,6 +7333,11 @@
                     if (lockOverlay) {
                         lockOverlay.style.bottom = (window.innerHeight - rect.bottom + offset + 58) + 'px';
                         lockOverlay.style.left   = (rect.left + offset) + 'px';
+                    }
+                    const hidePeek = document.getElementById('cardOverlayHidePeek');
+                    if (hidePeek) {
+                        hidePeek.style.top  = (rect.top + 8) + 'px';
+                        hidePeek.style.left = (rect.left + 8) + 'px';
                     }
                 }
                 if (showTtsButton && (force || needTts)) placeTtsAtCardTop(rect);
@@ -7785,6 +8037,7 @@
             function onStart(e) {
                 const target = e.target;
                 if (isShuffling) return;
+                if (typeof endHideUiPeek === 'function' && document.body.classList.contains('hide-ui-peek')) endHideUiPeek();
                 if (shouldExcludeTouchTarget(target)) return;
                 if (!target.closest('#cardDisplay') && !target.closest('.card-container')) return;
                 if (cards.length === 0) return;
@@ -7801,16 +8054,14 @@
                 peakDist = 0;
 
                 const cardEl = document.querySelector('.card');
-                const cardStack = document.querySelector('.card-stack');
                 const cardContainer = document.querySelector('.card-container');
                 if (cardEl) {
-                    cardEl.classList.add('swiping');
                     cardEl.style.userSelect = 'none';
                     cardEl.style.webkitUserSelect = 'none';
-                    cardEl.style.zIndex = '9999';
                 }
+                // Do not add .swiping yet — that sets transition:none and would
+                // make a tap-to-flip snap instead of the slow rotateY.
                 if (cardContainer) cardContainer.style.zIndex = '9999';
-                if (cardStack) cardStack.classList.add('swiping');
                 // Allow card to visually overflow body during drag
                 document.body.style.overflow = 'visible';
             }
@@ -7870,16 +8121,21 @@
                 const elapsed = Date.now() - startTime;
                 const finalDist = Math.sqrt(dragX * dragX + dragY * dragY);
 
+                // Any card gesture (tap, swipe, or cancel) must suppress the
+                // follow-up click, or a next/prev swipe also flips (1106 did
+                // not show that because nextCard() usually reset isFlipped
+                // after the click; current timing lets the click hit the new card).
+                lastTouchTime = Date.now();
+
                 // Restore overflow for non-swipe cases
                 if (finalDist < MIN_SWIPE) {
                     document.body.style.overflow = 'hidden';
                 }
 
-                // Tap
+                // Tap — same thresholds as 1106: tiny, quick press only
                 if (elapsed < MAX_TAP_TIME && peakDist < PEAK_DRAG_SUPPRESS_FLIP && finalDist < MIN_DRAG_TO_SUPPRESS_FLIP) {
                     setSwipeChromeHidden(false);
                     clearSideCarousel();
-                    lastTouchTime = Date.now();
                     requestAnimationFrame(() => flipCard());
                     return;
                 }
@@ -7985,6 +8241,7 @@
             document.addEventListener('touchcancel', function() {
                 if (!isDragging) return;
                 isDragging = false;
+                lastTouchTime = Date.now();
                 dragX = 0; dragY = 0; peakDist = 0;
                 startX = 0; startY = 0;
                 const cardEl = document.querySelector('.card');
@@ -8067,7 +8324,7 @@
         document.addEventListener('click', function(e) {
             // Ignore click events that are synthesized from touch events
             // Touch devices fire touchend then a click event ~300ms later
-            if (Date.now() - lastTouchTime < 500) {
+            if (Date.now() - lastTouchTime < 800) {
                 return;
             }
             
@@ -10702,12 +10959,18 @@
                     const img = new Image();
 
                     img.onload = function() {
+                        const finish = function() {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
 
                         // Calculate dimensions (max 1920px on longest side)
-                        let width = img.width;
-                        let height = img.height;
+                        // AVIF can report 0 on first onload in Edge — prefer naturalWidth after decode.
+                        let width = img.naturalWidth || img.width;
+                        let height = img.naturalHeight || img.height;
+                        if (width < 2 || height < 2) {
+                            reject(new Error('Image has no size'));
+                            return;
+                        }
                         const maxDimension = 1920;
 
                         if (width > maxDimension || height > maxDimension) {
@@ -10753,6 +11016,12 @@
 
                         // Start with 0.85 quality
                         tryCompress(0.85);
+                        };
+                        if (img.decode) {
+                            img.decode().then(finish).catch(finish);
+                        } else {
+                            finish();
+                        }
                     };
 
                     img.onerror = function() {
@@ -11258,9 +11527,10 @@
             if (cards.length === 0) return;
             if (isShuffling) return;
             isShuffling = true;
+            document.body.classList.add('shuffling');
 
             // Hide embedded nav immediately — same frame as the button click, before any paint
-            document.querySelectorAll('.card-stack div[style*="position:absolute"]').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.card-stack div[style*="position:absolute"], .card-nav-left, .card-nav-right, .card-stack-tts').forEach(el => el.style.display = 'none');
 
             playSound('shuffleSound');
             hideCardOverlays();
@@ -11273,6 +11543,7 @@
                 isFlipped = (lockSide === 'back');
                 saveCards();
                 isShuffling = false;
+                document.body.classList.remove('shuffling');
                 renderDisplay();
                 return;
             }
@@ -11402,6 +11673,7 @@
                 saveCards();
                 overlay.remove();
                 isShuffling = false;
+                document.body.classList.remove('shuffling');
                 renderDisplay();
             }, 1300);
         }
@@ -11463,9 +11735,11 @@
         updateSwipeDirButton();
         if (typeof updateCharToggleButton === 'function') updateCharToggleButton();
         if (typeof updateLetterLayoutButton === 'function') updateLetterLayoutButton();
+        if (typeof updateCaptionButton === 'function') updateCaptionButton();
 
         function nextCard() {
             if (isShuffling) return;
+            if (typeof endHideUiPeek === 'function') endHideUiPeek();
             if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
@@ -11477,6 +11751,7 @@
 
         function prevCard() {
             if (isShuffling) return;
+            if (typeof endHideUiPeek === 'function') endHideUiPeek();
             if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
             closeQuickLoadDropdown();
             window.speechSynthesis.cancel();
@@ -11489,6 +11764,7 @@
         let lastFlipTime = 0;
         function flipCard() {
             if (isShuffling) return;
+            if (typeof endHideUiPeek === 'function') endHideUiPeek();
             const now = Date.now();
             if (now - lastFlipTime < 400) return;
             lastFlipTime = now;
@@ -11498,7 +11774,12 @@
             if (document.getElementById('matchGameModal')?.style.display !== 'flex') playSound('flipSound');
             isFlipped = !isFlipped;
             const cardEl = document.querySelector('.card');
-            if (cardEl) cardEl.classList.toggle('flipped');
+            if (cardEl) {
+                cardEl.classList.remove('swiping');
+                cardEl.style.transform = '';
+                cardEl.style.transition = '';
+                cardEl.classList.toggle('flipped');
+            }
             const navHint = document.getElementById('navHintLabel');
             const navIndex = document.getElementById('navIndexLabel');
             const labelColor = isFlipped ? 'white' : '#333';
@@ -13597,12 +13878,14 @@
                 const ab = isLoaded
                     ? '<button class="msp-btn msp-deck-btn" title="Remove from deck" style="border-color:#FF9800;color:#FF9800;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'remove-added\')">' + svgRemove + '</button>'
                     : '<button class="msp-btn msp-deck-btn" title="Add to deck" style="border-color:#2196F3;color:#2196F3;" onclick="event.stopPropagation();mspAction(' + unit.id + ',\'add\')">' + svgAdd + '</button>';
+                const dateLine = unit.createdAt
+                    ? '<div class="msp-unit-count">' + new Date(unit.createdAt).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' }) + '</div>'
+                    : '';
                 return '<div class="msp-unit-row' + lc + '" id="msp-row-' + unit.id + '" draggable="true" data-unit-id="' + unit.id + '"' +
                     ' ondragstart="mspDragStart(event,' + unit.id + ')" ondragend="mspDragEnd(event)" ondragover="mspRowDragOver(event,this)" ondragleave="mspRowDragLeave(this)" ondrop="mspRowDrop(event,this,' + unit.id + ')">' +
                     '<span class="msp-drag-handle" title="Drag to group" onclick="event.stopPropagation()">' + svgHandle + '</span>' +
-                    '<div class="msp-unit-info"><div class="msp-unit-name">' + unit.name + '</div>' +
-                    '<div class="msp-unit-count">' + cardCount + ' card' + (cardCount !== 1 ? 's' : '') + (unit.createdAt ? ' (' + new Date(unit.createdAt).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' }) + ')' : '') + '</div></div>' +
-                    ab +
+                    '<div class="msp-unit-info"><div class="msp-unit-name">' + unit.name + '</div>' + dateLine + '</div>' +
+                    '<span class="msp-add-cluster"><span class="msp-card-num">' + cardCount + '</span>' + ab + '</span>' +
                     '<button class="msp-del-btn" id="msp-del-' + unit.id + '" onclick="event.stopPropagation();mspDelete(' + unit.id + ', this)" ontouchend="event.stopPropagation();event.preventDefault();mspDelete(' + unit.id + ',this)" title="Delete unit">' + svgTrash + '</button>' +
                     '</div>';
             }
@@ -14803,14 +15086,21 @@
                 if (dataUrl.startsWith('data:image/gif')) { resolve(dataUrl); return; }
                 const img = new Image();
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.naturalWidth || img.width;
-                    canvas.height = img.naturalHeight || img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    resolve(canvas.toDataURL('image/jpeg', 0.92));
+                    const paint = function() {
+                        const w = img.naturalWidth || img.width;
+                        const h = img.naturalHeight || img.height;
+                        if (w < 2 || h < 2) { resolve(dataUrl); return; }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/jpeg', 0.92));
+                    };
+                    if (img.decode) img.decode().then(paint).catch(paint);
+                    else paint();
                 };
                 img.onerror = () => resolve(dataUrl);
                 img.src = dataUrl;
@@ -15835,18 +16125,18 @@
                                 ${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}
                                 ${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}
                             </div>` : `
-                            <div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${charFrontClass(prevCard.backText)}">
+                            <div class="card-face card-front${showFrontCaption(prevCard.backText) ? ' show-text-active' : ''}${charFrontClass(prevCard.backText)}">
                                 ${charOverlayMarkup(prevCard.backText)}
                                 <img src="${gifSrc(prevCard.frontImage)}" class="card-image">
-                                ${showTextOnFront && prevCard.backText ? frontCaptionMarkup(prevCard.backText) : ''}
+                                ${showFrontCaption(prevCard.backText) ? frontCaptionMarkup(prevCard.backText) : ''}
                             </div>`}
                         </div>
                         ` : ''}
                         <div class="card ${isFlipped ? 'flipped' : ''}" style="cursor: pointer;">
-                            <div class="card-face card-front${showTextOnFront && card.backText ? ' show-text-active' : ''}${charFrontClass(card.backText)}">
+                            <div class="card-face card-front${showFrontCaption(card.backText) ? ' show-text-active' : ''}${charFrontClass(card.backText)}">
                                 ${charOverlayMarkup(card.backText)}
                                 <img src="${gifSrc(card.frontImage)}" class="card-image">
-                                ${showTextOnFront && card.backText ? frontCaptionMarkup(card.backText) : ''}
+                                ${showFrontCaption(card.backText) ? frontCaptionMarkup(card.backText) : ''}
                             </div>
                             <div class="card-face card-back">
                                 ${card.backImage ? '<img src="' + gifSrc(card.backImage) + '" class="card-image">' : ''}
@@ -15860,10 +16150,10 @@
                                 ${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}
                                 ${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}
                             </div>` : `
-                            <div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${charFrontClass(nextCard.backText)}">
+                            <div class="card-face card-front${showFrontCaption(nextCard.backText) ? ' show-text-active' : ''}${charFrontClass(nextCard.backText)}">
                                 ${charOverlayMarkup(nextCard.backText)}
                                 <img src="${gifSrc(nextCard.frontImage)}" class="card-image">
-                                ${showTextOnFront && nextCard.backText ? frontCaptionMarkup(nextCard.backText) : ''}
+                                ${showFrontCaption(nextCard.backText) ? frontCaptionMarkup(nextCard.backText) : ''}
                             </div>`}
                         </div>
                         ` : ''}
@@ -16309,15 +16599,29 @@
             setCardTextScaleIndex(cardTextScaleIndex - 1);
         }
 
+        function updateCaptionButton() {
+            const btn = document.getElementById('showTextBtn');
+            if (!btn) return;
+            const blocked = charDisplayMode === 'giant';
+            btn.classList.toggle('settings-caption-blocked', blocked);
+            if (blocked) {
+                setSettingsItemOn(btn, false);
+            } else {
+                setSettingsItemOn(btn, showTextOnFront);
+            }
+            const svg = btn.querySelector('svg');
+            if (svg) svg.setAttribute('stroke', (!blocked && showTextOnFront) ? '#6b4e1a' : '#35654D');
+        }
+
         function toggleTextOnFront() {
+            if (charDisplayMode === 'giant') {
+                if (typeof showToast === 'function') showToast('Switch layout to turn Caption on', 2000);
+                return;
+            }
             showTextOnFront = !showTextOnFront;
             resetFrontTextCache(); // recompute so every card shares one caption size
             Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-            const btn = document.getElementById('showTextBtn');
-            if (btn) {
-                setSettingsItemOn(btn, showTextOnFront);
-                btn.querySelector('svg').setAttribute('stroke', showTextOnFront ? '#6b4e1a' : '#35654D');
-            }
+            updateCaptionButton();
             closeSettingsMenu();
             renderDisplay();
         }
@@ -16355,8 +16659,8 @@
             if (charDisplayMode === 'corner') {
                 return '<span class="card-char-label">' + upper + lower + '</span>';
             }
-            if (charDisplayMode === 'banner' || charDisplayMode === 'bottom') {
-                // Same markup; CSS order places it top (banner) or bottom (bottom mode)
+            if (charDisplayMode === 'banner' || charDisplayMode === 'bottom' || charDisplayMode === 'giant') {
+                // Same markup; CSS order places it top / bottom / large-center
                 return '<div class="card-letter-banner">' +
                     '<span class="card-letter-banner-text">' + upper + ' ' + lower + '</span></div>';
             }
@@ -16368,15 +16672,16 @@
             if (charDisplayMode === 'corner') return ' show-char-active';
             if (charDisplayMode === 'banner') return ' show-banner-active';
             if (charDisplayMode === 'bottom') return ' show-bottom-active';
+            if (charDisplayMode === 'giant') return ' show-giant-active';
             return '';
         }
 
         /**
-         * Mic leaves top-center only for Letters banner (middle letters).
-         * Corner (side) and Off keep the original mid mic.
+         * Mic leaves top-center for layout 2 (middle) and layout 4 (large).
+         * Corner, bottom, and Off keep the original mid mic.
          */
         function lettersModeMovesMic() {
-            return charDisplayMode === 'banner';
+            return charDisplayMode === 'banner' || charDisplayMode === 'giant';
         }
 
         function ttsSpeakButtonHtml(backText) {
@@ -16429,7 +16734,7 @@
 
         function applyCharDisplayMode(mode, opts) {
             opts = opts || {};
-            const valid = { off: 1, corner: 1, banner: 1, bottom: 1 };
+            const valid = { off: 1, corner: 1, banner: 1, bottom: 1, giant: 1 };
             if (!valid[mode]) return;
             charDisplayMode = mode;
             showCharOnCard = mode !== 'off';
@@ -16441,6 +16746,7 @@
             if (typeof resetFrontTextCache === 'function') resetFrontTextCache();
             updateCharToggleButton();
             updateLetterLayoutButton();
+            if (typeof updateCaptionButton === 'function') updateCaptionButton();
             if (opts.render !== false) renderDisplay();
         }
 
@@ -16450,7 +16756,8 @@
                 applyCharDisplayMode(preferredLetterLayout || 'corner');
                 if (typeof showToast === 'function') {
                     const label = preferredLetterLayout === 'banner' ? 'middle'
-                        : preferredLetterLayout === 'bottom' ? 'bottom' : 'corner';
+                        : preferredLetterLayout === 'bottom' ? 'bottom'
+                        : preferredLetterLayout === 'giant' ? 'large' : 'corner';
                     showToast('Letters: ' + label, 1600);
                 }
             } else {
@@ -16482,7 +16789,7 @@
                 cap.textContent = 'Circle';
             });
             grid.querySelectorAll('.llp-corner').forEach(function(el) { el.textContent = 'Cc'; });
-            grid.querySelectorAll('.llp-banner, .llp-bottom').forEach(function(el) {
+            grid.querySelectorAll('.llp-banner, .llp-bottom, .llp-giant').forEach(function(el) {
                 el.textContent = 'C c';
             });
         }
@@ -16501,10 +16808,10 @@
         }
 
         function selectLetterLayout(layout) {
-            if (layout !== 'corner' && layout !== 'banner' && layout !== 'bottom') return;
+            if (layout !== 'corner' && layout !== 'banner' && layout !== 'bottom' && layout !== 'giant') return;
             applyCharDisplayMode(layout);
             closeLetterLayoutPicker();
-            const label = layout === 'banner' ? 'middle' : layout;
+            const label = layout === 'banner' ? 'middle' : layout === 'giant' ? 'large' : layout;
             if (typeof showToast === 'function') showToast('Layout: ' + label, 1600);
         }
 
@@ -16528,13 +16835,16 @@
         }
 
         // Same mechanics as flipCard() — toggles the .flipped class on the
-        // existing card element so the CSS rotateY transition (0.6s) plays
-        // smoothly. Calling renderDisplay() instead would destroy and rebuild
-        // the DOM and kill the animation.
+        // existing card element so the CSS rotateY transition (0.6s ease)
+        // plays smoothly. Calling renderDisplay() instead would destroy and
+        // rebuild the DOM and kill the animation.
         function _flipCardCss(targetFlipped) {
             isFlipped = targetFlipped;
             const cardEl = document.querySelector('.card');
             if (cardEl) {
+                cardEl.classList.remove('swiping');
+                cardEl.style.transform = '';
+                cardEl.style.transition = '';
                 if (targetFlipped) cardEl.classList.add('flipped');
                 else cardEl.classList.remove('flipped');
             }
@@ -16569,14 +16879,14 @@
                 if (lockSide === 'back') {
                     prevEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${prevCard.backImage ? '<img src="' + gifSrc(prevCard.backImage) + '" class="card-image">' : ''}${prevCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(prevCard.backText) + '</p>' : ''}</div>`;
                 } else {
-                    prevEl.innerHTML = `<div class="card-face card-front${showTextOnFront && prevCard.backText ? ' show-text-active' : ''}${charFrontClass(prevCard.backText)}">${charOverlayMarkup(prevCard.backText)}<img src="${gifSrc(prevCard.frontImage)}" class="card-image">${showTextOnFront && prevCard.backText ? frontCaptionMarkup(prevCard.backText) : ''}</div>`;
+                    prevEl.innerHTML = `<div class="card-face card-front${showFrontCaption(prevCard.backText) ? ' show-text-active' : ''}${charFrontClass(prevCard.backText)}">${charOverlayMarkup(prevCard.backText)}<img src="${gifSrc(prevCard.frontImage)}" class="card-image">${showFrontCaption(prevCard.backText) ? frontCaptionMarkup(prevCard.backText) : ''}</div>`;
                 }
             }
             if (nextEl && nextCard) {
                 if (lockSide === 'back') {
                     nextEl.innerHTML = `<div class="card-face" style="background:linear-gradient(135deg,#35654D 0%,#2d5542 100%);color:white;box-shadow:inset 0 0 0 3px white;padding:20px;overflow:hidden;">${nextCard.backImage ? '<img src="' + gifSrc(nextCard.backImage) + '" class="card-image">' : ''}${nextCard.backText ? '<p class="' + textClass + '" style="color:white;">' + highlightVowels(nextCard.backText) + '</p>' : ''}</div>`;
                 } else {
-                    nextEl.innerHTML = `<div class="card-face card-front${showTextOnFront && nextCard.backText ? ' show-text-active' : ''}${charFrontClass(nextCard.backText)}">${charOverlayMarkup(nextCard.backText)}<img src="${gifSrc(nextCard.frontImage)}" class="card-image">${showTextOnFront && nextCard.backText ? frontCaptionMarkup(nextCard.backText) : ''}</div>`;
+                    nextEl.innerHTML = `<div class="card-face card-front${showFrontCaption(nextCard.backText) ? ' show-text-active' : ''}${charFrontClass(nextCard.backText)}">${charOverlayMarkup(nextCard.backText)}<img src="${gifSrc(nextCard.frontImage)}" class="card-image">${showFrontCaption(nextCard.backText) ? frontCaptionMarkup(nextCard.backText) : ''}</div>`;
                 }
             }
         }
@@ -16788,8 +17098,19 @@
             if (btn) setSettingsItemOn(btn, isMuted);
         }
 
+        function endHideUiPeek() {
+            document.body.classList.remove('hide-ui-peek');
+        }
+
+        function peekHideUI() {
+            if (!document.body.classList.contains('hide-ui')) return;
+            document.body.classList.add('hide-ui-peek');
+            closeSettingsMenu();
+        }
+
         function toggleHideUI() {
             const isHidden = document.body.classList.toggle('hide-ui');
+            document.body.classList.remove('hide-ui-peek');
             const btn = document.getElementById('hideUIBtn');
             if (!btn) return;
             const stroke = isHidden ? '#6b4e1a' : 'currentColor';
@@ -16797,6 +17118,7 @@
                 ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
                 : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
             setSettingsItemOn(btn, isHidden);
+            if (typeof positionNavOverlay === 'function') positionNavOverlay(true);
         }
 
         function toggleSettingsMenu() {
@@ -17704,6 +18026,14 @@
 
     <!-- Deferred game code: parsed only when Games is first opened -->
     <script type="text/plain" id="deferredGameCode">
+        function hasActiveGuessSession() {
+            try {
+                const g = guessGameState;
+                return !!(g && g.gameCards && g.gameCards.length > 0 &&
+                    g.currentCardIndex < g.gameCards.length &&
+                    g.currentCardOrder > 0);
+            } catch (e) { return false; }
+        }
         function hasActiveSpellingSession() {
             try {
                 if (typeof spellingGameState === 'undefined' || !spellingGameState) return false;
@@ -17717,6 +18047,24 @@
                 return false;
             }
         }
+        function hasActiveBombSession() {
+            try {
+                const g = bombGameState;
+                return !!(g && g.gameCards && g.gameCards.length > 0 &&
+                    !g.eliminated && g.cardsRemaining > 0);
+            } catch (e) { return false; }
+        }
+        function hasActiveMatchSession() {
+            try {
+                const g = matchGameState;
+                return !!(g && g.questions && g.questions.length > 0 &&
+                    g.currentQ < g.questions.length);
+            } catch (e) { return false; }
+        }
+        function setGameMenuContLabel(id, baseName, active) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = active ? (baseName + ' (Cont.)') : baseName;
+        }
 
         function openGameMenu() {
             window.speechSynthesis.cancel();
@@ -17727,26 +18075,10 @@
             document.body.style.overflow = 'hidden'; // Disable background scrolling
             document.getElementById('gameMenuModal').classList.add('active');
 
-            // Check if there's an active game session AND at least one card has been flipped
-            const hasActiveSession = guessGameState.gameCards &&
-                                    guessGameState.gameCards.length > 0 &&
-                                    guessGameState.currentCardIndex < guessGameState.gameCards.length &&
-                                    guessGameState.currentCardOrder > 0; // Must have flipped at least one card
-
-            // Update button text
-            const guessBtn = document.getElementById('guessGameBtn');
-
-            if (hasActiveSession) {
-                guessBtn.innerHTML = `<svg width="36" height="36" viewBox="0 0 38 38" fill="none" stroke="#35654D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="0.9" y="12" width="10" height="14" rx="1.2"/><path d="M4.5 17a1.4 1.4 0 012.5 1c0 1.1-1.2 1.3-1.2 2.2"/><circle cx="5.8" cy="23.5" r="0.55" fill="#35654D" stroke="none"/><rect x="14" y="12" width="10" height="14" rx="1.2"/><rect x="27" y="12" width="10" height="14" rx="1.2"/></svg><span style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word (Continue)</span>`;
-            } else {
-                guessBtn.innerHTML = `<svg width="36" height="36" viewBox="0 0 38 38" fill="none" stroke="#35654D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="0.9" y="12" width="10" height="14" rx="1.2"/><path d="M4.5 17a1.4 1.4 0 012.5 1c0 1.1-1.2 1.3-1.2 2.2"/><circle cx="5.8" cy="23.5" r="0.55" fill="#35654D" stroke="none"/><rect x="14" y="12" width="10" height="14" rx="1.2"/><rect x="27" y="12" width="10" height="14" rx="1.2"/></svg><span style="font-size:1.15rem;font-weight:600;color:#35654D;font-family:inherit;">Guess the Word</span>`;
-            }
-
-            // Spell Me: show (Continue) when a mid-game session can be resumed
-            const spellLabel = document.getElementById('spellingGameBtnLabel');
-            if (spellLabel) {
-                spellLabel.textContent = hasActiveSpellingSession() ? 'Spell Me (Continue)' : 'Spell Me';
-            }
+            setGameMenuContLabel('guessGameBtnLabel', 'Guess the Word', hasActiveGuessSession());
+            setGameMenuContLabel('bombGameBtnLabel', 'Bomb', hasActiveBombSession());
+            setGameMenuContLabel('spellingGameBtnLabel', 'Spell Me', hasActiveSpellingSession());
+            setGameMenuContLabel('matchGameBtnLabel', 'Match the Picture', hasActiveMatchSession());
         }
 
         function closeGameMenu() {
@@ -17824,10 +18156,7 @@
 
             if (gameType === 'guess') {
                 // Check if there's an existing session to continue AND at least one card flipped
-                const hasActiveSession = guessGameState.gameCards &&
-                                        guessGameState.gameCards.length > 0 &&
-                                        guessGameState.currentCardIndex < guessGameState.gameCards.length &&
-                                        guessGameState.currentCardOrder > 0; // Must have flipped at least one card
+                const hasActiveSession = hasActiveGuessSession();
 
                 if (!hasActiveSession) {
                     // Start new game - reset game state
@@ -17860,7 +18189,7 @@
                     return;
                 }
 
-                setupBombRound();
+                if (!hasActiveBombSession()) setupBombRound();
 
                 document.body.style.overflow = 'hidden';
                 document.querySelector('.container').style.filter = 'blur(6px)';
@@ -17908,6 +18237,12 @@
                 if (cards.length === 0) {
                     alert('Please add some cards first!');
                     openGameMenu();
+                    return;
+                }
+                if (hasActiveMatchSession()) {
+                    document.body.style.overflow = 'hidden';
+                    document.getElementById('matchGameModal').style.display = 'flex';
+                    renderMatchGame();
                     return;
                 }
                 const cardsWithText = cards.filter(c => c.backText && c.backText.trim());
@@ -19756,6 +20091,10 @@
             renderSpellingGame();
         }
 
+        function skipSpellingCard() {
+            spellingNextCard();
+        }
+
         function spellingNextCard() {
             ensureSpellSets();
             const { gameCards, spelledCards, currentCardIndex } = spellingGameState;
@@ -20048,6 +20387,9 @@
                 </button>
                 <button type="button" class="spell-glass-btn" onclick="startNewSpellingGame()" style="color:#35654D;" title="Shuffle">
                     <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+                </button>
+                <button type="button" class="spell-glass-btn" onclick="skipSpellingCard()" style="color:#00838f;" title="Skip">
+                    <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
                 </button>
                 <button type="button" class="spell-glass-btn" onclick="event.stopPropagation();speakText('${speakEsc}')" style="color:#ff9500;" title="Say It">
                     <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
