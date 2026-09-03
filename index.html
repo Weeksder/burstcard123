@@ -24,7 +24,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1238-hide-ui-peek-eye">
+    <meta name="flashabc-build" content="1240-match-word-size">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -1817,6 +1817,81 @@
         #matchGameModal [id^="matchLabel"] .vowel {
             font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif) !important;
             font-weight: var(--spell-letter-weight, 400) !important;
+        }
+        #matchGameModal [id^="matchLabel"] {
+            white-space: normal !important;
+            overflow-wrap: break-word !important;
+            word-break: break-word !important;
+            max-width: 100%;
+            hyphens: none;
+        }
+        #matchGameModal #matchChoicesWrap {
+            min-width: 0;
+            box-sizing: border-box;
+        }
+        #matchGameModal #matchChoicesWrap button {
+            min-width: 0;
+            max-width: 100%;
+        }
+        #matchGameModal #matchImageWrap {
+            min-width: 0;
+            min-height: 0;
+        }
+        #matchGameModal #matchImageWrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        #matchSettingsBackdrop {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 25;
+            background: transparent;
+        }
+        #matchSettingsMenu .word-size-row {
+            border-bottom: none;
+        }
+        #matchGameModal.match-settings-open #matchSettingsBackdrop {
+            display: block;
+        }
+        #matchOverlaySettings {
+            display: none;
+            position: absolute;
+            z-index: 30;
+            overflow: visible;
+        }
+        #matchOverlaySettings .fullscreen-btn {
+            color: #35654D;
+        }
+        #matchSettingsMenu {
+            display: none;
+            position: absolute;
+            bottom: 60px;
+            left: 0;
+            z-index: 31;
+        }
+        #matchOverlaySettings.match-settings-open #matchSettingsMenu,
+        #matchSettingsMenu.match-open {
+            display: block;
+        }
+        @media (min-width: 700px) and (min-height: 520px) {
+            #matchSettingsMenu .settings-menu-main {
+                min-width: 248px;
+            }
+            #matchSettingsMenu .word-size-label {
+                font-size: 18px !important;
+            }
+            #matchSettingsMenu .word-size-a-sm { font-size: 15px !important; }
+            #matchSettingsMenu .word-size-a-lg { font-size: 26px !important; }
+            #matchSettingsMenu .word-size-thumb {
+                width: 32px;
+                height: 32px;
+            }
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            #matchSettingsMenu { bottom: 48px; }
         }
         #matchGameModal .match-mark-layer {
             position: absolute;
@@ -5661,6 +5736,33 @@
         </div>
         <!-- Card area — fills remaining height -->
         <div id="matchGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 16px;box-sizing:border-box;"></div>
+        <div id="matchSettingsBackdrop" onclick="closeMatchSettings()" ontouchend="event.preventDefault(); closeMatchSettings()"></div>
+        <div id="matchOverlaySettings" style="display:none; position:absolute; z-index:30;">
+            <button id="matchSettingsGearBtn" class="fullscreen-btn" style="position:relative; bottom:auto; left:auto; color:#35654D;"
+                    onclick="event.stopPropagation(); toggleMatchSettings()"
+                    ontouchend="event.stopPropagation(); event.preventDefault(); toggleMatchSettings()"
+                    title="Settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l-.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+            <div id="matchSettingsMenu" style="display:none; position:absolute; bottom:60px; left:0;">
+                <div class="settings-menu-main">
+                <div class="word-size-row" onclick="event.stopPropagation()">
+                    <div class="word-size-label">Word size</div>
+                    <div class="word-size-slider">
+                        <span class="word-size-a-sm" aria-hidden="true">A</span>
+                        <div class="word-size-track" id="matchWordSizeTrack" role="slider" aria-label="Word size" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+                            <span class="word-size-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                            <button type="button" class="word-size-thumb" id="matchWordSizeThumb" tabindex="-1" aria-hidden="true"></button>
+                        </div>
+                        <span class="word-size-a-lg" aria-hidden="true">A</span>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Match Game Help Modal -->
@@ -7492,6 +7594,14 @@
             extraWords: [],
             wrongAttempt: false
         };
+        // Match Word size: current tablet auto-fit is step 0; three steps up (4 stops).
+        const MATCH_WORD_SCALES = [1.0, 1.33, 1.66, 2.0];
+        const MATCH_CHOICE_WIDTHS = ['42%', '50%', '58%', '66%'];
+        let matchWordSizeIndex = 0;
+        try {
+            const savedMatchWord = parseInt(localStorage.getItem('flashabc_match_word_size'), 10);
+            if (savedMatchWord >= 0 && savedMatchWord <= 3) matchWordSizeIndex = savedMatchWord;
+        } catch (e) {}
 
         // DOM Cache - Performance optimization to avoid repeated queries
         const domCache = {
@@ -18954,6 +19064,9 @@
         }
 
         function closeMatchGame() {
+            closeMatchSettings();
+            const matchGear = document.getElementById('matchOverlaySettings');
+            if (matchGear) matchGear.style.display = 'none';
             document.body.style.overflow = '';
             document.getElementById('matchGameModal').style.display = 'none';
             openGameMenu();
@@ -18980,6 +19093,7 @@
         }
 
         function openMatchHelp() {
+            closeMatchSettings();
             document.getElementById('matchGameHelpModal').classList.add('active');
         }
 
@@ -18988,6 +19102,9 @@
             const { questions, currentQ, score } = matchGameState;
 
             if (currentQ >= questions.length) {
+                closeMatchSettings();
+                const matchGear = document.getElementById('matchOverlaySettings');
+                if (matchGear) matchGear.style.display = 'none';
                 playSound('winningSound');
                 content.innerHTML = `
                     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
@@ -19030,29 +19147,32 @@
                 (isTouchDevice && window.innerWidth >= 700)
             );
 
+            const sizeIdx = Math.max(0, Math.min(3, matchWordSizeIndex | 0));
             const shellBorder = isLandscape ? '#e53935' : '#35654D';
             const shellDir = isLandscape ? 'row' : 'column';
+            const choiceWidth = MATCH_CHOICE_WIDTHS[sizeIdx] || '42%';
             const choicesWrap = isLandscape
-                ? 'width:42%;flex-shrink:0;justify-content:center;padding:28px 12px 12px;gap:6px;'
-                : 'width:100%;flex-shrink:0;justify-content:flex-start;padding:4px 28px 22px;gap:4px;';
+                ? `width:${choiceWidth};flex-shrink:0;justify-content:center;padding:28px 12px 56px;gap:6px;min-width:0;box-sizing:border-box;`
+                : 'width:100%;flex-shrink:0;justify-content:flex-start;padding:4px 28px 56px;gap:4px;min-width:0;box-sizing:border-box;';
             const imageWrap = isLandscape
-                ? 'flex:1;min-width:0;min-height:0;border:3px solid #35654D;border-radius:14px;overflow:hidden;'
-                : 'flex:1 1 auto;min-height:0;width:100%;overflow:hidden;';
+                ? 'flex:1 1 0;min-width:0;min-height:0;border:3px solid #35654D;border-radius:14px;overflow:hidden;'
+                : 'flex:1 1 0;min-height:0;min-width:0;width:100%;overflow:hidden;';
             const imageBlock = `
-                    <div style="${imageWrap}">
+                    <div id="matchImageWrap" style="${imageWrap}">
                         <img src="${gifSrc(q.card.frontImage)}"
                              style="width:100%;height:100%;object-fit:contain;display:block;">
                     </div>`;
             const choicesBlock = `
-                    <div style="display:flex;flex-direction:column;${choicesWrap}">
+                    <div id="matchChoicesWrap" style="display:flex;flex-direction:column;${choicesWrap}">
                         ${choicesHTML}
                     </div>`;
             const tabletLift = isTabletPortrait
-                ? '<div aria-hidden="true" style="flex:0 0 5%;min-height:0;"></div>'
+                ? `<div id="matchTabletLift" aria-hidden="true" style="flex:0 0 5%;min-height:0;${sizeIdx === 0 ? '' : 'display:none;'}"></div>`
                 : '';
 
             content.innerHTML = `
-                <div style="width:100%;height:100%;background:white;border-radius:20px;
+                <div id="matchShell" data-orient="${isLandscape ? 'landscape' : 'portrait'}"
+                     style="width:100%;height:100%;background:white;border-radius:20px;
                             box-shadow:0 10px 40px rgba(0,0,0,0.2);border:3px solid ${shellBorder};
                             display:flex;flex-direction:${shellDir};gap:${isLandscape ? '10px' : '0'};
                             padding:${isLandscape ? '10px' : '8px 8px 0'};box-sizing:border-box;overflow:hidden;position:relative;">
@@ -19068,7 +19188,148 @@
 
                 </div>`;
 
-            document.fonts.ready.then(() => requestAnimationFrame(() => scaleMatchLabels()));
+            positionMatchGear();
+            document.fonts.ready.then(() => requestAnimationFrame(() => {
+                scaleMatchLabels();
+                positionMatchGear();
+            }));
+        }
+
+        function positionMatchGear() {
+            const modal = document.getElementById('matchGameModal');
+            const shell = document.getElementById('matchShell');
+            const gear = document.getElementById('matchOverlaySettings');
+            if (!modal || !gear) return;
+            if (!shell || modal.style.display !== 'flex') {
+                gear.style.display = 'none';
+                return;
+            }
+            const modalRect = modal.getBoundingClientRect();
+            const shellRect = shell.getBoundingClientRect();
+            const offset = -2;
+            gear.style.display = 'block';
+            gear.style.position = 'absolute';
+            gear.style.bottom = Math.max(0, (modalRect.bottom - shellRect.bottom + offset)) + 'px';
+            gear.style.left = Math.max(0, (shellRect.left - modalRect.left + offset)) + 'px';
+        }
+
+        function closeMatchSettings() {
+            const menu = document.getElementById('matchSettingsMenu');
+            const bd = document.getElementById('matchSettingsBackdrop');
+            const ov = document.getElementById('matchOverlaySettings');
+            const modal = document.getElementById('matchGameModal');
+            if (menu) {
+                menu.style.display = 'none';
+                menu.classList.remove('match-open');
+            }
+            if (bd) bd.classList.remove('open');
+            if (ov) ov.classList.remove('match-settings-open');
+            if (modal) modal.classList.remove('match-settings-open');
+        }
+
+        function toggleMatchSettings() {
+            const menu = document.getElementById('matchSettingsMenu');
+            const modal = document.getElementById('matchGameModal');
+            const ov = document.getElementById('matchOverlaySettings');
+            if (!menu) return;
+            const isOpen = menu.style.display === 'block' || menu.style.display === 'flex' ||
+                (ov && ov.classList.contains('match-settings-open'));
+            if (isOpen) {
+                closeMatchSettings();
+                return;
+            }
+            menu.style.display = 'block';
+            menu.classList.add('match-open');
+            if (ov) ov.classList.add('match-settings-open');
+            if (modal) modal.classList.add('match-settings-open');
+            bindMatchWordSizeSlider();
+            requestAnimationFrame(syncMatchWordSizeSlider);
+        }
+
+        function saveMatchWordSize() {
+            try { localStorage.setItem('flashabc_match_word_size', String(matchWordSizeIndex)); } catch (e) {}
+        }
+
+        function syncMatchWordSizeSlider() {
+            const track = document.getElementById('matchWordSizeTrack');
+            const thumb = document.getElementById('matchWordSizeThumb');
+            if (!track || !thumb) return;
+            const max = MATCH_WORD_SCALES.length - 1;
+            const t = max > 0 ? (matchWordSizeIndex / max) : 0;
+            const inset = 8;
+            const usable = Math.max(0, track.clientWidth - inset * 2);
+            thumb.style.left = (inset + t * usable) + 'px';
+            track.setAttribute('aria-valuenow', String(matchWordSizeIndex));
+        }
+
+        function matchWordSizeIndexFromClientX(clientX) {
+            const track = document.getElementById('matchWordSizeTrack');
+            if (!track) return matchWordSizeIndex;
+            const r = track.getBoundingClientRect();
+            const inset = 8;
+            const usable = Math.max(1, r.width - inset * 2);
+            const x = Math.max(0, Math.min(1, (clientX - r.left - inset) / usable));
+            return Math.round(x * (MATCH_WORD_SCALES.length - 1));
+        }
+
+        function applyMatchWordSizeLayout() {
+            const shell = document.getElementById('matchShell');
+            const choices = document.getElementById('matchChoicesWrap');
+            const lift = document.getElementById('matchTabletLift');
+            const idx = Math.max(0, Math.min(3, matchWordSizeIndex | 0));
+            if (shell && choices && shell.getAttribute('data-orient') === 'landscape') {
+                choices.style.width = MATCH_CHOICE_WIDTHS[idx] || '42%';
+            }
+            if (lift) lift.style.display = idx === 0 ? '' : 'none';
+            requestAnimationFrame(() => {
+                scaleMatchLabels();
+                positionMatchGear();
+            });
+        }
+
+        function setMatchWordSizeIndex(nextIndex) {
+            const max = MATCH_WORD_SCALES.length - 1;
+            nextIndex = Math.max(0, Math.min(max, nextIndex | 0));
+            if (nextIndex === matchWordSizeIndex) {
+                syncMatchWordSizeSlider();
+                return;
+            }
+            matchWordSizeIndex = nextIndex;
+            saveMatchWordSize();
+            applyMatchWordSizeLayout();
+            syncMatchWordSizeSlider();
+        }
+
+        function bindMatchWordSizeSlider() {
+            const track = document.getElementById('matchWordSizeTrack');
+            if (!track || track._wordSizeBound) return;
+            track._wordSizeBound = true;
+            let dragging = false;
+            function pointerX(e) {
+                if (e.touches && e.touches[0]) return e.touches[0].clientX;
+                if (e.changedTouches && e.changedTouches[0]) return e.changedTouches[0].clientX;
+                return e.clientX;
+            }
+            function onDown(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                dragging = true;
+                setMatchWordSizeIndex(matchWordSizeIndexFromClientX(pointerX(e)));
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                e.preventDefault();
+                setMatchWordSizeIndex(matchWordSizeIndexFromClientX(pointerX(e)));
+            }
+            function onUp() { dragging = false; }
+            track.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+            track.addEventListener('touchstart', onDown, { passive: false });
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onUp);
+            window.addEventListener('resize', syncMatchWordSizeSlider);
+            syncMatchWordSizeSlider();
         }
 
         function scaleMatchLabels() {
@@ -19076,8 +19337,33 @@
             const MIN_SIZE = 1.15;
             const STEP = 0.05;
             const numOpts = matchGameState.questions[matchGameState.currentQ]?.options.length ?? 3;
-            let globalMin = MAX_SIZE;
+            const idx = Math.max(0, Math.min(3, matchWordSizeIndex | 0));
+            const scale = MATCH_WORD_SCALES[idx] || 1;
+            const shell = document.getElementById('matchShell');
+            const choices = document.getElementById('matchChoicesWrap');
+            const isLandscape = !!(shell && shell.getAttribute('data-orient') === 'landscape');
 
+            function applySize(size) {
+                for (let i = 0; i < numOpts; i++) {
+                    const el = document.getElementById('matchLabel' + i);
+                    if (!el) continue;
+                    el.style.whiteSpace = 'normal';
+                    el.style.overflowWrap = 'break-word';
+                    el.style.wordBreak = 'break-word';
+                    el.style.maxWidth = '100%';
+                    el.style.fontSize = size + 'rem';
+                    el.style.lineHeight = '1.2';
+                }
+            }
+
+            // Measure the current tablet auto-fit at the smallest (42%) column
+            // so step 0 stays the existing size, then scale up from there.
+            if (isLandscape && choices) {
+                choices.style.width = MATCH_CHOICE_WIDTHS[0];
+                void choices.offsetWidth;
+            }
+
+            let globalMin = MAX_SIZE;
             for (let i = 0; i < numOpts; i++) {
                 const el = document.getElementById('matchLabel' + i);
                 if (!el) continue;
@@ -19098,10 +19384,28 @@
                 }
                 if (size < globalMin) globalMin = size;
             }
+            if (!isFinite(globalMin) || globalMin <= 0) globalMin = MIN_SIZE;
 
-            for (let i = 0; i < numOpts; i++) {
-                const el = document.getElementById('matchLabel' + i);
-                if (el) el.style.fontSize = globalMin + 'rem';
+            if (isLandscape && choices) {
+                choices.style.width = MATCH_CHOICE_WIDTHS[idx] || '42%';
+                void choices.offsetWidth;
+            }
+
+            applySize(Math.round(globalMin * scale * 100) / 100);
+
+            // Larger steps wrap onto the next line instead of clipping. If the
+            // choices still overflow the shell, ease the font down (never below
+            // the current tablet size) so the picture can keep shrinking.
+            if (shell && choices && idx > 0) {
+                const imageMin = isLandscape ? 0 : Math.round(shell.clientHeight * 0.16);
+                const budget = Math.max(80, shell.clientHeight - imageMin - 8);
+                let size = Math.round(globalMin * scale * 100) / 100;
+                let attempts = 0;
+                while (size > globalMin && attempts < 80 && choices.scrollHeight > budget) {
+                    size = Math.round((size - STEP) * 100) / 100;
+                    applySize(size);
+                    attempts++;
+                }
             }
         }
 
