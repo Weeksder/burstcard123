@@ -24,7 +24,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1250-match-image-floor">
+    <meta name="flashabc-build" content="1261-find-letter-random-mix">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -1448,12 +1448,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 4px;
+            padding: 0 4px 16px;
+            container-type: size;
+            overflow: visible;
         }
         .card-front.show-giant-active .card-letter-banner-text {
-            font-size: clamp(5.5rem, 28vw, 16rem) !important;
+            font-size: clamp(7rem, min(36vw, 30vh), 22rem) !important;
             letter-spacing: 0.02em;
-            line-height: 0.95;
+            line-height: 0.9;
+            transform: translateY(-10%);
+            white-space: nowrap !important;
+        }
+        @supports (font-size: 1cqh) {
+            .card-front.show-giant-active .card-letter-banner-text {
+                font-size: min(88cqh, 46cqi, 22rem) !important;
+            }
         }
         .card-front.show-giant-active .card-front-text {
             display: none !important;
@@ -1463,6 +1472,7 @@
                 overflow: hidden;
                 justify-content: flex-start;
                 padding: 6px 8px 4px;
+                padding-bottom: var(--card-btn-clearance);
             }
             .card-front.show-giant-active .card-image {
                 flex: 0 0 38%;
@@ -1473,12 +1483,19 @@
                 flex: 1 1 0;
                 align-items: center;
                 justify-content: center;
-                padding: 4px 4px 12px;
+                padding: 0 4px 18px;
             }
             .card-front.show-giant-active .card-letter-banner-text {
-                font-size: clamp(9.5rem, 48vw, 24rem) !important;
+                font-size: clamp(12rem, min(62vw, 44vh), 34rem) !important;
                 letter-spacing: 0.02em;
-                line-height: 0.9;
+                line-height: 0.88;
+                transform: translateY(-12%);
+                white-space: nowrap !important;
+            }
+            @supports (font-size: 1cqh) {
+                .card-front.show-giant-active .card-letter-banner-text {
+                    font-size: min(90cqh, 52cqi, 34rem) !important;
+                }
             }
         }
 
@@ -1994,6 +2011,54 @@
             align-items: center;
             justify-content: center;
             padding: 6px 16px 10px;
+        }
+        .fl-bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.22);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            border: 3px solid rgba(255,255,255,0.95);
+            padding: 0;
+            margin: 0;
+        }
+        .fl-bubble span {
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 700);
+            line-height: 1;
+            pointer-events: none;
+        }
+        .fl-bubble img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            display: block;
+        }
+        .fl-bubble.fl-pop {
+            animation: fl-pop 0.28s ease-in forwards;
+            pointer-events: none;
+        }
+        .fl-bubble.fl-shake {
+            animation: fl-shake 0.38s ease;
+        }
+        @keyframes fl-pop {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        @keyframes fl-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-7px); }
+            40% { transform: translateX(7px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
         }
         @media (orientation: landscape) and (max-height: 700px) {
             #matchGameModal #matchBottomBar {
@@ -5718,6 +5783,12 @@
                     <span id="matchGameBtnLabel" style="font-size:1.15rem;font-weight:600;color:#6a1b9a;font-family:inherit;">Match the Picture</span>
                 </button>
 
+                <button id="findLetterGameBtn" onclick="startGame('findletter')"
+                    style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #00897b;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00897b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="3.2"/><circle cx="16.5" cy="7.5" r="2.4"/><circle cx="15" cy="16" r="3.6"/><path d="M7.2 9.2l.4.2M16.2 7.3l.3.2"/></svg>
+                    <span id="findLetterGameBtnLabel" style="font-size:1.15rem;font-weight:600;color:#00897b;font-family:inherit;">Find the Letter</span>
+                </button>
+
                 <button onclick="startGame('saytheword')"
                     style="display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 14px;background:white;border:2.5px solid #e65100;border-radius:10px;cursor:pointer;transition:opacity 0.2s;font-family:inherit;">
                     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e65100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
@@ -5888,6 +5959,46 @@
                 <li>One question per card in your deck</li>
             </ul>
             <button class="btn btn-success" onclick="document.getElementById('matchGameHelpModal').classList.remove('active')" style="width:100%;padding:12px;justify-content:center;">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Find the Letter Game Modal -->
+    <div id="findLetterModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#35654D;z-index:20000;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0;">
+            <button type="button" onclick="closeFindLetterGame()" style="background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;gap:6px;color:white;font-size:1rem;font-weight:600;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back
+            </button>
+            <div id="findLetterCoins" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:1.25rem;font-weight:800;">
+                <span aria-hidden="true">🪙</span><span id="findLetterCoinNum">0</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;">
+                <button type="button" onclick="skipFindLetterRound()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;" title="Next letter">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                </button>
+                <button type="button" onclick="openFindLetterHelp()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;font-size:1.4rem;">❓</button>
+            </div>
+        </div>
+        <div id="findLetterPrompt" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 16px 10px;">
+            <span id="findLetterUpper" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(3.2rem,12vw,6.5rem);line-height:0.95;color:#f5ead0;">A</span>
+            <span id="findLetterLower" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(3.2rem,12vw,6.5rem);line-height:0.95;color:#ff9500;">a</span>
+        </div>
+        <div id="findLetterField" style="flex:1;min-height:0;position:relative;overflow:hidden;margin:0 12px;border-radius:20px;background:rgba(255,255,255,0.08);"></div>
+        <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 16px 10px;">
+            <span style="font-size:0.9rem;font-weight:700;color:rgba(255,255,255,0.7);">🔤 Find the Letter</span>
+        </div>
+    </div>
+    <div class="modal" id="findLetterHelpModal">
+        <div class="modal-content" style="max-width:400px;">
+            <h2>🔤 Find the Letter</h2>
+            <p style="margin-bottom:15px;color:#666;">Look at the letter at the top. Tap every bubble that matches it.</p>
+            <ul style="text-align:left;color:#555;margin-bottom:20px;padding-left:20px;line-height:2;">
+                <li>The big letter itself (A or a)</li>
+                <li>A picture whose word starts with that letter</li>
+                <li>🪙 Correct tap — earn a coin</li>
+                <li>Wrong letter or picture — lose a coin</li>
+            </ul>
+            <button class="btn btn-success" onclick="document.getElementById('findLetterHelpModal').classList.remove('active')" style="width:100%;padding:12px;justify-content:center;">Got it!</button>
         </div>
     </div>
 
@@ -7699,6 +7810,349 @@
             if (!(spellingGameState.skippedCards instanceof Set)) spellingGameState.skippedCards = new Set();
         }
 
+        let findLetterState = {
+            active: false,
+            coins: 0,
+            letter: 'A',
+            letterQueue: [],
+            letterIndex: 0,
+            bubbles: [],
+            remainingCorrect: 0,
+            raf: 0,
+            deckSig: '',
+            idSeq: 0
+        };
+        function resetFindLetterSession() {
+            if (findLetterState.raf) {
+                cancelAnimationFrame(findLetterState.raf);
+                findLetterState.raf = 0;
+            }
+            findLetterState.active = false;
+            findLetterState.coins = 0;
+            findLetterState.bubbles = [];
+            findLetterState.remainingCorrect = 0;
+            findLetterState.deckSig = '';
+            findLetterState.letterQueue = [];
+            findLetterState.letterIndex = 0;
+            const field = document.getElementById('findLetterField');
+            if (field) field.innerHTML = '';
+        }
+        function findLetterDeckSig() {
+            return (cards || []).map(function (c) {
+                const t = (c && c.backText) ? String(c.backText) : '';
+                const ch = t.replace(/<[^>]*>/g, '').replace(/[^A-Za-z]/g, '').charAt(0).toUpperCase();
+                return ch + ':' + ((c && c.frontImage) ? String(c.frontImage).length : 0);
+            }).sort().join('|');
+        }
+        function hasActiveFindLetterSession() {
+            try {
+                const g = findLetterState;
+                if (!g || !g.active) return false;
+                if (g.deckSig && g.deckSig !== findLetterDeckSig()) {
+                    resetFindLetterSession();
+                    return false;
+                }
+                return true;
+            } catch (e) { return false; }
+        }
+        function flLetterOf(text) {
+            if (typeof cardFirstLetter === 'function') {
+                const ch = cardFirstLetter(text);
+                return ch ? ch.toUpperCase() : '';
+            }
+            const m = String(text || '').replace(/<[^>]*>/g, '').match(/[A-Za-z]/);
+            return m ? m[0].toUpperCase() : '';
+        }
+        function flUpdateCoins() {
+            const el = document.getElementById('findLetterCoinNum');
+            if (el) el.textContent = String(findLetterState.coins);
+        }
+        function flStopLoop() {
+            if (findLetterState.raf) {
+                cancelAnimationFrame(findLetterState.raf);
+                findLetterState.raf = 0;
+            }
+        }
+        function startFindLetterGame() {
+            const sig = findLetterDeckSig();
+            if (hasActiveFindLetterSession() && findLetterState.bubbles.length) {
+                flUpdateCoins();
+                const up = document.getElementById('findLetterUpper');
+                const lo = document.getElementById('findLetterLower');
+                if (up) up.textContent = findLetterState.letter;
+                if (lo) lo.textContent = findLetterState.letter.toLowerCase();
+                flStartLoop();
+                return;
+            }
+            const letters = [];
+            const seen = {};
+            (cards || []).forEach(function (c) {
+                const L = flLetterOf(c && c.backText);
+                if (L && !seen[L]) { seen[L] = 1; letters.push(L); }
+            });
+            if (!letters.length) {
+                showToast('Need words that start with a letter', 2500);
+                closeFindLetterGame();
+                return;
+            }
+            findLetterState.active = true;
+            findLetterState.coins = 0;
+            findLetterState.deckSig = sig;
+            findLetterState.letterQueue = fisherYatesShuffle(letters.slice());
+            findLetterState.letterIndex = 0;
+            findLetterState.idSeq = 0;
+            flUpdateCoins();
+            requestAnimationFrame(function () {
+                requestAnimationFrame(flBuildRound);
+            });
+        }
+        function closeFindLetterGame() {
+            flStopLoop();
+            const modal = document.getElementById('findLetterModal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = '';
+            if (typeof openGameMenu === 'function') openGameMenu();
+        }
+        function openFindLetterHelp() {
+            document.getElementById('findLetterHelpModal').classList.add('active');
+        }
+        function skipFindLetterRound() {
+            if (!findLetterState.active) return;
+            findLetterState.letterIndex++;
+            flBuildRound();
+        }
+        function flBuildRound() {
+            flStopLoop();
+            const field = document.getElementById('findLetterField');
+            if (!field) return;
+            field.innerHTML = '';
+            let queue = findLetterState.letterQueue;
+            if (!queue.length) return;
+            if (findLetterState.letterIndex >= queue.length) {
+                findLetterState.letterQueue = fisherYatesShuffle(queue.slice());
+                findLetterState.letterIndex = 0;
+                queue = findLetterState.letterQueue;
+            }
+            const letter = queue[findLetterState.letterIndex];
+            findLetterState.letter = letter;
+            const up = document.getElementById('findLetterUpper');
+            const lo = document.getElementById('findLetterLower');
+            if (up) up.textContent = letter;
+            if (lo) lo.textContent = letter.toLowerCase();
+
+            const matchImgs = [];
+            const otherImgs = [];
+            (cards || []).forEach(function (c) {
+                if (!c || !c.frontImage) return;
+                const L = flLetterOf(c.backText);
+                if (!L) return;
+                if (L === letter) matchImgs.push(c);
+                else otherImgs.push(c);
+            });
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.replace(letter, '');
+            const W = field.clientWidth || 320;
+            const H = field.clientHeight || 400;
+            const isPhone = Math.min(window.innerWidth, window.innerHeight) <= 500;
+            const r = isPhone ? 34 : (W < 700 ? 42 : 50);
+            const correctPool = [
+                { kind: 'letter', ch: letter, correct: true },
+                { kind: 'letter', ch: letter.toLowerCase(), correct: true }
+            ];
+            matchImgs.forEach(function (c) {
+                correctPool.push({ kind: 'image', card: c, correct: true });
+            });
+            const correctN = 3 + Math.floor(Math.random() * 3);
+            const items = [];
+            for (let n = 0; n < correctN; n++) {
+                const pick = correctPool[Math.floor(Math.random() * correctPool.length)];
+                items.push(pick.kind === 'image'
+                    ? { kind: 'image', card: pick.card, correct: true }
+                    : { kind: 'letter', ch: pick.ch, correct: true });
+            }
+            const wrongN = Math.max(correctN * 2, isPhone ? 8 : 10);
+            const distractors = [];
+            fisherYatesShuffle(otherImgs).forEach(function (c) {
+                if (distractors.length >= Math.ceil(wrongN / 2)) return;
+                distractors.push({ kind: 'image', card: c, correct: false });
+            });
+            const lettersPool = alphabet.split('');
+            let guard = 0;
+            while (distractors.length < wrongN && guard < 80) {
+                if (!lettersPool.length) {
+                    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.replace(letter, '').split('').forEach(function (d) { lettersPool.push(d); });
+                    fisherYatesShuffle(lettersPool);
+                }
+                const d = lettersPool.pop();
+                distractors.push({ kind: 'letter', ch: Math.random() < 0.5 ? d : d.toLowerCase(), correct: false });
+                guard++;
+            }
+            fisherYatesShuffle(distractors).slice(0, wrongN).forEach(function (d) { items.push(d); });
+            fisherYatesShuffle(items);
+
+            const placed = [];
+            function fits(x, y) {
+                for (let i = 0; i < placed.length; i++) {
+                    const p = placed[i];
+                    const dx = p.x - x, dy = p.y - y;
+                    if (dx * dx + dy * dy < (r * 2 + 8) * (r * 2 + 8)) return false;
+                }
+                return x >= 4 && y >= 4 && x <= W - r * 2 - 4 && y <= H - r * 2 - 4;
+            }
+            const bubbles = [];
+            const PRIMARY = '#35654D';
+            const SECONDARY = '#ff9500';
+            items.forEach(function (it) {
+                let x = 8, y = 8, tries = 0;
+                do {
+                    x = 8 + Math.random() * Math.max(8, W - r * 2 - 16);
+                    y = 8 + Math.random() * Math.max(8, H - r * 2 - 16);
+                    tries++;
+                } while (!fits(x, y) && tries < 80);
+                placed.push({ x: x, y: y });
+                const speed = 0.12 + Math.random() * 0.16;
+                const ang = Math.random() * Math.PI * 2;
+                const id = ++findLetterState.idSeq;
+                const color = Math.random() < 0.5 ? PRIMARY : SECONDARY;
+                const el = document.createElement('button');
+                el.type = 'button';
+                el.className = 'fl-bubble';
+                el.dataset.id = String(id);
+                el.style.width = (r * 2) + 'px';
+                el.style.height = (r * 2) + 'px';
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                if (it.kind === 'letter') {
+                    const sp = document.createElement('span');
+                    sp.textContent = it.ch;
+                    sp.style.color = color;
+                    sp.style.fontSize = Math.round(r * 1.25) + 'px';
+                    el.appendChild(sp);
+                    el.style.background = '#fff';
+                } else {
+                    const img = document.createElement('img');
+                    img.alt = (it.card.backText || '').trim();
+                    img.src = (typeof gifSrc === 'function') ? gifSrc(it.card.frontImage) : it.card.frontImage;
+                    el.appendChild(img);
+                }
+                el.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    flTapBubble(id);
+                });
+                field.appendChild(el);
+                bubbles.push({
+                    id: id, el: el, x: x, y: y,
+                    vx: Math.cos(ang) * speed,
+                    vy: Math.sin(ang) * speed,
+                    r: r, correct: !!it.correct, popped: false
+                });
+            });
+            findLetterState.bubbles = bubbles;
+            findLetterState.remainingCorrect = bubbles.filter(function (b) { return b.correct; }).length;
+            flStartLoop();
+        }
+        function flTapBubble(id) {
+            const b = findLetterState.bubbles.find(function (x) { return x.id === id; });
+            if (!b || b.popped) return;
+            if (b.correct) {
+                b.popped = true;
+                b.el.classList.add('fl-pop');
+                findLetterState.coins += 1;
+                findLetterState.remainingCorrect = Math.max(0, findLetterState.remainingCorrect - 1);
+                flUpdateCoins();
+                if (typeof playSound === 'function') playSound('correctSound');
+                setTimeout(function () {
+                    if (b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el);
+                }, 260);
+                if (findLetterState.remainingCorrect <= 0) {
+                    setTimeout(function () {
+                        findLetterState.letterIndex++;
+                        flBuildRound();
+                    }, 420);
+                }
+            } else {
+                findLetterState.coins = Math.max(0, findLetterState.coins - 1);
+                flUpdateCoins();
+                if (typeof playSound === 'function') playSound('errorSound');
+                b.el.classList.remove('fl-shake');
+                void b.el.offsetWidth;
+                b.el.classList.add('fl-shake');
+            }
+        }
+        function flStartLoop() {
+            flStopLoop();
+            const field = document.getElementById('findLetterField');
+            function tick() {
+                if (!findLetterState.active) return;
+                const modal = document.getElementById('findLetterModal');
+                if (!modal || modal.style.display !== 'flex') {
+                    findLetterState.raf = 0;
+                    return;
+                }
+                const W = field.clientWidth;
+                const H = field.clientHeight;
+                const list = findLetterState.bubbles;
+                for (let i = 0; i < list.length; i++) {
+                    const b = list[i];
+                    if (b.popped) continue;
+                    b.x += b.vx;
+                    b.y += b.vy;
+                    const d = b.r * 2;
+                    if (b.x <= 0) { b.x = 0; b.vx = Math.abs(b.vx); }
+                    else if (b.x + d >= W) { b.x = Math.max(0, W - d); b.vx = -Math.abs(b.vx); }
+                    if (b.y <= 0) { b.y = 0; b.vy = Math.abs(b.vy); }
+                    else if (b.y + d >= H) { b.y = Math.max(0, H - d); b.vy = -Math.abs(b.vy); }
+                }
+                for (let i = 0; i < list.length; i++) {
+                    const a = list[i];
+                    if (a.popped) continue;
+                    for (let j = i + 1; j < list.length; j++) {
+                        const b = list[j];
+                        if (b.popped) continue;
+                        const dx = (b.x + b.r) - (a.x + a.r);
+                        const dy = (b.y + b.r) - (a.y + a.r);
+                        const minDist = a.r + b.r;
+                        const distSq = dx * dx + dy * dy;
+                        if (distSq >= minDist * minDist || distSq === 0) continue;
+                        const dist = Math.sqrt(distSq);
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        const overlap = minDist - dist;
+                        a.x -= nx * overlap * 0.5;
+                        a.y -= ny * overlap * 0.5;
+                        b.x += nx * overlap * 0.5;
+                        b.y += ny * overlap * 0.5;
+                        const rvx = b.vx - a.vx;
+                        const rvy = b.vy - a.vy;
+                        const velN = rvx * nx + rvy * ny;
+                        if (velN < 0) {
+                            a.vx += velN * nx;
+                            a.vy += velN * ny;
+                            b.vx -= velN * nx;
+                            b.vy -= velN * ny;
+                        }
+                    }
+                }
+                for (let i = 0; i < list.length; i++) {
+                    const b = list[i];
+                    if (b.popped) continue;
+                    const d = b.r * 2;
+                    if (b.x < 0) b.x = 0;
+                    else if (b.x + d > W) b.x = Math.max(0, W - d);
+                    if (b.y < 0) b.y = 0;
+                    else if (b.y + d > H) b.y = Math.max(0, H - d);
+                    b.el.style.left = b.x + 'px';
+                    b.el.style.top = b.y + 'px';
+                }
+                findLetterState.raf = requestAnimationFrame(tick);
+            }
+            findLetterState.raf = requestAnimationFrame(tick);
+        }
+        function relayoutFindLetterGame() {
+            if (!findLetterState.active) return;
+            if (document.getElementById('findLetterModal')?.style.display !== 'flex') return;
+            flBuildRound();
+        }
         let matchGameState = {
             questions: [],       // [{card, wrongOptions:[]}]
             currentQ: 0,
@@ -12235,6 +12689,8 @@
                     imageHashCache.clear();
                     sessionStorage.removeItem('flashcards');
                     if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
+            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
+                    if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
                     renderDisplay();
 
                     // Reset button
@@ -13735,6 +14191,8 @@
                     setLoadedFileName('');
                     _ucmPendingUnit = null;
                     if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
+            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
+                    if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
                     saveCards(); renderDisplay(); syncUnitsEverywhere();
                     updateOrganizePendingUI();
                     updateFoldersPendingUI();
@@ -14554,6 +15012,7 @@
             setLoadedFileName('');
             Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
             if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
+            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
             saveCards();
             renderDisplay();
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
@@ -16531,6 +16990,7 @@
                 scaleTextToFit();
                 applyCardTextScale();
                 if (showTextOnFront) scaleFrontText();
+                if (typeof scaleGiantLetters === 'function') scaleGiantLetters();
                 // Reveal the now-sized back text everywhere
                 document.querySelectorAll(
                     '.card > .card-back .card-text-auto-scale, ' +
@@ -16984,6 +17444,28 @@
          */
         function lettersModeMovesMic() {
             return charDisplayMode === 'banner' || charDisplayMode === 'giant';
+        }
+
+        function scaleGiantLetters() {
+            if (charDisplayMode !== 'giant') return;
+            const els = document.querySelectorAll('.card-front.show-giant-active .card-letter-banner-text');
+            for (let i = 0; i < els.length; i++) {
+                const el = els[i];
+                const box = el.parentElement;
+                if (!box) continue;
+                el.style.whiteSpace = 'nowrap';
+                el.style.fontSize = '';
+                const avail = box.clientWidth - 12;
+                if (avail <= 0) continue;
+                let fs = parseFloat(window.getComputedStyle(el).fontSize);
+                if (!fs) continue;
+                let guard = 0;
+                while (el.scrollWidth > avail && fs > 28 && guard < 50) {
+                    fs = Math.round(fs * 0.94);
+                    el.style.setProperty('font-size', fs + 'px', 'important');
+                    guard++;
+                }
+            }
         }
 
         function ttsSpeakButtonHtml(backText) {
@@ -17552,6 +18034,7 @@
                 spellingGameState = { currentCardIndex: 0, gameCards: [], spelledCards: new Set(), skippedCards: new Set(), scrambledLetters: [], answerSlots: [], correctWord: '' };
             }
             if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
+            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
 
             // Save to sessionStorage using the correct function
             saveCards();
@@ -17988,6 +18471,7 @@
                 if (document.getElementById('matchGameModal')?.style.display === 'flex') {
                     renderMatchGame();
                 }
+                if (typeof relayoutFindLetterGame === 'function') relayoutFindLetterGame();
                 // Re-render guess game on rotation so grid columns update
                 if (document.getElementById('guessGameModal')?.classList.contains('active')) {
                     rerenderGuessGameForResize();
@@ -18033,6 +18517,7 @@
                     resetFrontTextCache();
                     Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
                     scaleFrontText();
+                    if (typeof scaleGiantLetters === 'function') scaleGiantLetters();
                 }
                 positionNavOverlay(true);
                 if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
@@ -18042,6 +18527,7 @@
                 if (document.getElementById('matchGameModal')?.style.display === 'flex') {
                     renderMatchGame();
                 }
+                if (typeof relayoutFindLetterGame === 'function') relayoutFindLetterGame();
                 // Re-render guess game on window resize so grid columns update
                 if (document.getElementById('guessGameModal')?.classList.contains('active')) {
                     rerenderGuessGameForResize();
@@ -18388,6 +18874,7 @@
             setGameMenuContLabel('bombGameBtnLabel', 'Bomb', hasActiveBombSession());
             setGameMenuContLabel('spellingGameBtnLabel', 'Spell Me', hasActiveSpellingSession());
             setGameMenuContLabel('matchGameBtnLabel', 'Match the Picture', hasActiveMatchSession());
+            setGameMenuContLabel('findLetterGameBtnLabel', 'Find the Letter', hasActiveFindLetterSession());
         }
 
         function closeGameMenu() {
@@ -18565,6 +19052,21 @@
                 document.getElementById('matchExtraWordsInput').value = '';
                 document.body.style.overflow = 'hidden';
                 document.getElementById('matchExtraWordsModal').classList.add('active');
+            } else if (gameType === 'findletter') {
+                if (cards.length === 0) {
+                    alert('Please add some cards first!');
+                    openGameMenu();
+                    return;
+                }
+                const withText = cards.filter(c => c.backText && String(c.backText).trim() && /[A-Za-z]/.test(c.backText));
+                if (withText.length === 0) {
+                    alert('Cards need a word starting with a letter to play Find the Letter!');
+                    openGameMenu();
+                    return;
+                }
+                document.body.style.overflow = 'hidden';
+                document.getElementById('findLetterModal').style.display = 'flex';
+                if (typeof startFindLetterGame === 'function') startFindLetterGame();
             } else if (gameType === 'saytheword') {
                 closeGameMenu();
                 stwOpen();
