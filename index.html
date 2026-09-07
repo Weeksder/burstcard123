@@ -24,7 +24,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1261-find-letter-random-mix">
+    <meta name="flashabc-build" content="1265-find-letter-marks-bigger">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -1499,6 +1499,130 @@
             }
         }
 
+        /* Layout 5 — one letter only, no image */
+        .card-front.show-solo-active {
+            flex-direction: column;
+            justify-content: center;
+            align-items: stretch;
+            overflow: hidden;
+            padding: 4px;
+            padding-bottom: 4px;
+            box-sizing: border-box;
+        }
+        .card-front.show-solo-active .card-image {
+            display: none !important;
+        }
+        .card-front.show-solo-active .card-front-text {
+            display: none !important;
+        }
+        .card-front.show-solo-active .card-letter-banner {
+            flex: 1 1 0;
+            min-height: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 8px 58px 8px;
+            container-type: size;
+        }
+        .card-front.show-solo-active .card-letter-banner-text {
+            font-size: 90vmin !important;
+            letter-spacing: 0;
+            line-height: 0.88;
+            white-space: nowrap !important;
+        }
+        @media (orientation: landscape) {
+            .card-front.show-solo-active .card-letter-banner {
+                padding: 2px 8px 58px 8px;
+            }
+        }
+
+        #cardOverlayCaseToggle {
+            display: none;
+            position: fixed;
+            z-index: 10001;
+            height: 56px;
+            border-radius: 16px;
+            overflow: visible;
+            border: 2px solid #c8b89a;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.16);
+            background: #efe6d8;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #caseToggleViewport {
+            position: relative;
+            height: 56px;
+            width: 112px;
+            overflow: visible;
+            touch-action: none;
+            cursor: ew-resize;
+            background: linear-gradient(90deg, #f6f0e6 0%, #efe6d8 100%);
+            border-radius: 14px;
+        }
+        #caseToggleTrack {
+            display: flex;
+            flex-direction: row;
+            width: 112px;
+            height: 56px;
+            position: relative;
+            z-index: 1;
+        }
+        .case-toggle-opt {
+            width: 56px;
+            height: 56px;
+            border: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            padding: 0;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 700);
+            font-size: 1.65rem;
+            color: #35654D;
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        #caseToggleGlass {
+            position: absolute;
+            left: 2px;
+            top: 50%;
+            width: 52px;
+            height: 64px;
+            z-index: 3;
+            margin-top: -32px;
+            border-radius: 16px;
+            pointer-events: none;
+            box-sizing: border-box;
+            background: transparent;
+            border: 3px solid #6b5a45;
+            box-shadow:
+                0 0 0 2px rgba(255,255,255,0.9),
+                0 3px 10px rgba(60,45,30,0.22),
+                inset 0 0 0 1px rgba(255,255,255,0.5);
+            transition: transform 0.28s cubic-bezier(0.22,0.9,0.3,1);
+            will-change: transform;
+        }
+        #caseToggleGlass::after {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 6px;
+            width: 22px;
+            height: 11px;
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.45), rgba(255,255,255,0));
+            pointer-events: none;
+        }
+        body.shuffling #cardOverlayCaseToggle {
+            display: none !important;
+        }
+
         /* ===== Letter layout picker (gear → Layout) ===== */
         .letter-layout-modal {
             display: none;
@@ -1722,6 +1846,26 @@
             color: #1a1a1a;
             letter-spacing: 0.06em;
             line-height: 0.95;
+        }
+        .letter-layout-preview--solo {
+            align-items: stretch;
+            justify-content: center;
+        }
+        .letter-layout-preview--solo .llp-solo {
+            flex: 1 1 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 400);
+            font-size: 3.1rem;
+            color: #1a1a1a;
+            line-height: 0.95;
+        }
+        .letter-layout-option[data-layout="solo"] {
+            grid-column: 1 / -1;
+            max-width: calc(50% - 4px);
+            justify-self: center;
         }
         @media (max-width: 420px) {
             .letter-layout-grid { gap: 6px; }
@@ -2048,6 +2192,20 @@
         }
         .fl-bubble.fl-shake {
             animation: fl-shake 0.38s ease;
+        }
+        .fl-bubble .fl-mark {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 4;
+        }
+        .fl-bubble .fl-mark svg {
+            width: 78%;
+            height: 78%;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
         }
         @keyframes fl-pop {
             0% { transform: scale(1); opacity: 1; }
@@ -5396,6 +5554,15 @@
                 </svg>
             </button>
         </div>
+        <div id="cardOverlayCaseToggle" style="display:none;">
+            <div id="caseToggleViewport">
+                <div id="caseToggleTrack">
+                    <button type="button" class="case-toggle-opt" id="caseToggleUpper" onclick="event.stopPropagation(); setLetterCaseMode('upper')" title="Uppercase">A</button>
+                    <button type="button" class="case-toggle-opt" id="caseToggleLower" onclick="event.stopPropagation(); setLetterCaseMode('lower')" title="Lowercase">a</button>
+                </div>
+                <div id="caseToggleGlass" aria-hidden="true"></div>
+            </div>
+        </div>
         <div id="cardOverlayLock" style="display:none; position:fixed; z-index:10000;">
             <button class="fullscreen-btn"
                     style="position:relative; bottom:auto; left:auto; color:#35654D;"
@@ -5569,6 +5736,12 @@
                         <span class="llp-giant">C c</span>
                     </div>
                     <span class="llp-num">4</span>
+                </button>
+                <button type="button" class="letter-layout-option" data-layout="solo" onclick="selectLetterLayout('solo')" aria-label="Layout 5, letter only">
+                    <div class="letter-layout-preview letter-layout-preview--solo">
+                        <span class="llp-solo">A</span>
+                    </div>
+                    <span class="llp-num">5</span>
                 </button>
             </div>
         </div>
@@ -5980,8 +6153,8 @@
             </div>
         </div>
         <div id="findLetterPrompt" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 16px 10px;">
-            <span id="findLetterUpper" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(3.2rem,12vw,6.5rem);line-height:0.95;color:#f5ead0;">A</span>
-            <span id="findLetterLower" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(3.2rem,12vw,6.5rem);line-height:0.95;color:#ff9500;">a</span>
+            <span id="findLetterUpper" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(4.8rem,18vw,9.75rem);line-height:0.95;color:#f5ead0;">A</span>
+            <span id="findLetterLower" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(4.8rem,18vw,9.75rem);line-height:0.95;color:#ff9500;">a</span>
         </div>
         <div id="findLetterField" style="flex:1;min-height:0;position:relative;overflow:hidden;margin:0 12px;border-radius:20px;background:rgba(255,255,255,0.08);"></div>
         <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 16px 10px;">
@@ -7508,17 +7681,17 @@
                 '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' + shackle + '</svg>';
         }
         let showTextOnFront = false; // overlay back text on card front
-        // Letters display: 'off' | 'corner' | 'banner' (middle) | 'bottom' | 'giant' (large)
+        // Letters display: 'off' | 'corner' | 'banner' (middle) | 'bottom' | 'giant' (large) | 'solo' (letter only)
         // Preferred layout (when Letters is turned on) is remembered separately.
         let preferredLetterLayout = 'corner';
         let charDisplayMode = 'off';
         try {
             const savedPref = localStorage.getItem('flashabc_char_layout_pref');
-            if (savedPref === 'corner' || savedPref === 'banner' || savedPref === 'bottom' || savedPref === 'giant') {
+            if (savedPref === 'corner' || savedPref === 'banner' || savedPref === 'bottom' || savedPref === 'giant' || savedPref === 'solo') {
                 preferredLetterLayout = savedPref;
             }
             const savedChar = localStorage.getItem('flashabc_char_mode');
-            if (savedChar === 'corner' || savedChar === 'banner' || savedChar === 'bottom' || savedChar === 'giant' || savedChar === 'off') {
+            if (savedChar === 'corner' || savedChar === 'banner' || savedChar === 'bottom' || savedChar === 'giant' || savedChar === 'solo' || savedChar === 'off') {
                 charDisplayMode = savedChar;
             } else if (savedChar === '1' || savedChar === 'true') {
                 charDisplayMode = 'corner';
@@ -7527,6 +7700,11 @@
         } catch (e) {}
         // Legacy alias — some older checks may still read this name
         let showCharOnCard = charDisplayMode !== 'off';
+        let letterCaseMode = 'upper';
+        try {
+            const savedCase = localStorage.getItem('flashabc_letter_case');
+            if (savedCase === 'lower' || savedCase === 'upper') letterCaseMode = savedCase;
+        } catch (e) {}
         let cachedFrontTextSize = null; // rem — same size for every card so swipes don't reflow
         let ttsPlaced = false; // mic stays at top-center once placed
         const cachedBackTextSizes = {}; // per-card font size cache keyed by card index
@@ -7618,11 +7796,11 @@
         }
 
         function showFrontCaption(backText) {
-            return !!(showTextOnFront && backText && charDisplayMode !== 'giant');
+            return !!(showTextOnFront && backText && charDisplayMode !== 'giant' && charDisplayMode !== 'solo');
         }
 
         function hideCardOverlays() {
-            ['cardOverlaySettings','cardOverlayLock','cardOverlayHidePeek','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
+            ['cardOverlaySettings','cardOverlayLock','cardOverlayHidePeek','cardOverlayCaseToggle','cardOverlayNav','cardOverlayTTS','cardOverlayCounter']
                 .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
             const ttsHide = document.getElementById('cardOverlayTTS');
             if (ttsHide) ttsHide.classList.remove('tts-ready');
@@ -7666,6 +7844,20 @@
                     }
                 }
                 if (showTtsButton && (force || needTts)) placeTtsAtCardTop(rect);
+            }
+            const caseToggle = document.getElementById('cardOverlayCaseToggle');
+            if (caseToggle) {
+                if (charDisplayMode === 'solo' && cards.length > 0) {
+                    const rect = container.getBoundingClientRect();
+                    caseToggle.style.display = 'block';
+                    const tw = caseToggle.offsetWidth || 112;
+                    caseToggle.style.left = (rect.right - tw - 8) + 'px';
+                    caseToggle.style.bottom = (window.innerHeight - rect.bottom + 8) + 'px';
+                    caseToggle.style.top = 'auto';
+                    if (typeof updateCaseToggleUI === 'function') updateCaseToggleUI();
+                } else {
+                    caseToggle.style.display = 'none';
+                }
             }
             updateOverlayIconColors();
         }
@@ -7953,7 +8145,7 @@
             const W = field.clientWidth || 320;
             const H = field.clientHeight || 400;
             const isPhone = Math.min(window.innerWidth, window.innerHeight) <= 500;
-            const r = isPhone ? 34 : (W < 700 ? 42 : 50);
+            const r = isPhone ? 51 : (W < 700 ? 63 : 75);
             const correctPool = [
                 { kind: 'letter', ch: letter, correct: true },
                 { kind: 'letter', ch: letter.toLowerCase(), correct: true }
@@ -8051,32 +8243,52 @@
             findLetterState.remainingCorrect = bubbles.filter(function (b) { return b.correct; }).length;
             flStartLoop();
         }
+        function flShowMark(el, kind) {
+            if (!el) return;
+            let mark = el.querySelector('.fl-mark');
+            if (!mark) {
+                mark = document.createElement('span');
+                mark.className = 'fl-mark';
+                el.appendChild(mark);
+            }
+            const tick = '<svg viewBox="0 0 100 100" fill="none"><path d="M12 56 C 28 70, 36 86, 43 88 C 52 66, 72 32, 92 14" stroke="#22c55e" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            const cross = '<svg viewBox="0 0 100 100" fill="none"><path d="M18 18 L 82 82" stroke="#ef4444" stroke-width="14" stroke-linecap="round"/><path d="M82 18 L 18 82" stroke="#ef4444" stroke-width="14" stroke-linecap="round"/></svg>';
+            mark.innerHTML = kind === 'ok' ? tick : cross;
+            return mark;
+        }
         function flTapBubble(id) {
             const b = findLetterState.bubbles.find(function (x) { return x.id === id; });
             if (!b || b.popped) return;
             if (b.correct) {
                 b.popped = true;
-                b.el.classList.add('fl-pop');
+                flShowMark(b.el, 'ok');
                 findLetterState.coins += 1;
                 findLetterState.remainingCorrect = Math.max(0, findLetterState.remainingCorrect - 1);
                 flUpdateCoins();
-                if (typeof playSound === 'function') playSound('correctSound');
+                setTimeout(function () {
+                    if (b.el) b.el.classList.add('fl-pop');
+                }, 380);
                 setTimeout(function () {
                     if (b.el && b.el.parentNode) b.el.parentNode.removeChild(b.el);
-                }, 260);
+                }, 680);
                 if (findLetterState.remainingCorrect <= 0) {
                     setTimeout(function () {
                         findLetterState.letterIndex++;
                         flBuildRound();
-                    }, 420);
+                    }, 820);
                 }
             } else {
                 findLetterState.coins = Math.max(0, findLetterState.coins - 1);
                 flUpdateCoins();
                 if (typeof playSound === 'function') playSound('errorSound');
+                flShowMark(b.el, 'no');
                 b.el.classList.remove('fl-shake');
                 void b.el.offsetWidth;
                 b.el.classList.add('fl-shake');
+                setTimeout(function () {
+                    const mark = b.el && b.el.querySelector('.fl-mark');
+                    if (mark) mark.innerHTML = '';
+                }, 700);
             }
         }
         function flStartLoop() {
@@ -8574,7 +8786,7 @@
             if (typeof bindWordSizeSlider === 'function') bindWordSizeSlider();
 
             // Hide all card overlays when any modal is open, restore when all closed
-            const overlayIds = ['cardOverlaySettings','cardOverlayNav','cardOverlayTTS','cardOverlayCounter'];
+            const overlayIds = ['cardOverlaySettings','cardOverlayNav','cardOverlayTTS','cardOverlayCounter','cardOverlayCaseToggle'];
             const observer = new MutationObserver(() => {
                 const anyOpen = document.querySelector('.modal.active') !== null;
                 if (anyOpen) {
@@ -8693,7 +8905,7 @@
                    target.closest('.nav-btn') || target.closest('.audio-btn') ||
                    target.closest('.fullscreen-btn') || target.closest('.counter') ||
                    target.closest('.controls') || target.closest('.header') ||
-                   target.closest('#settingsMenu');
+                   target.closest('#settingsMenu') || target.closest('#cardOverlayCaseToggle');
         }
 
         // Flag to prevent click event from firing after touch event (prevents double flip)
@@ -16991,6 +17203,14 @@
                 applyCardTextScale();
                 if (showTextOnFront) scaleFrontText();
                 if (typeof scaleGiantLetters === 'function') scaleGiantLetters();
+                if (typeof scaleSoloLetters === 'function') {
+                    scaleSoloLetters();
+                    if (document.fonts && document.fonts.ready) {
+                        document.fonts.ready.then(function () {
+                            requestAnimationFrame(scaleSoloLetters);
+                        });
+                    }
+                }
                 // Reveal the now-sized back text everywhere
                 document.querySelectorAll(
                     '.card > .card-back .card-text-auto-scale, ' +
@@ -17364,7 +17584,7 @@
         function updateCaptionButton() {
             const btn = document.getElementById('showTextBtn');
             if (!btn) return;
-            const blocked = charDisplayMode === 'giant';
+            const blocked = charDisplayMode === 'giant' || charDisplayMode === 'solo';
             btn.classList.toggle('settings-caption-blocked', blocked);
             if (blocked) {
                 setSettingsItemOn(btn, false);
@@ -17376,7 +17596,7 @@
         }
 
         function toggleTextOnFront() {
-            if (charDisplayMode === 'giant') {
+            if (charDisplayMode === 'giant' || charDisplayMode === 'solo') {
                 if (typeof showToast === 'function') showToast('Switch layout to turn Caption on', 2000);
                 return;
             }
@@ -17421,6 +17641,11 @@
             if (charDisplayMode === 'corner') {
                 return '<span class="card-char-label">' + upper + lower + '</span>';
             }
+            if (charDisplayMode === 'solo') {
+                const glyph = letterCaseMode === 'lower' ? lower : upper;
+                return '<div class="card-letter-banner">' +
+                    '<span class="card-letter-banner-text">' + glyph + '</span></div>';
+            }
             if (charDisplayMode === 'banner' || charDisplayMode === 'bottom' || charDisplayMode === 'giant') {
                 // Same markup; CSS order places it top / bottom / large-center
                 return '<div class="card-letter-banner">' +
@@ -17435,6 +17660,7 @@
             if (charDisplayMode === 'banner') return ' show-banner-active';
             if (charDisplayMode === 'bottom') return ' show-bottom-active';
             if (charDisplayMode === 'giant') return ' show-giant-active';
+            if (charDisplayMode === 'solo') return ' show-solo-active';
             return '';
         }
 
@@ -17443,7 +17669,7 @@
          * Corner, bottom, and Off keep the original mid mic.
          */
         function lettersModeMovesMic() {
-            return charDisplayMode === 'banner' || charDisplayMode === 'giant';
+            return charDisplayMode === 'banner' || charDisplayMode === 'giant' || charDisplayMode === 'solo';
         }
 
         function scaleGiantLetters() {
@@ -17467,6 +17693,142 @@
                 }
             }
         }
+
+        const CASE_TOGGLE_ITEM_W = 56;
+        function updateCaseToggleUI() {
+            const glass = document.getElementById('caseToggleGlass');
+            const upperBtn = document.getElementById('caseToggleUpper');
+            const lowerBtn = document.getElementById('caseToggleLower');
+            if (glass) {
+                const x = letterCaseMode === 'lower' ? CASE_TOGGLE_ITEM_W : 0;
+                glass.style.transform = 'translateX(' + x + 'px)';
+            }
+            const dull = 'grayscale(1) brightness(0.92) contrast(0.85)';
+            if (upperBtn && lowerBtn) {
+                if (letterCaseMode === 'upper') {
+                    upperBtn.style.opacity = '1';
+                    upperBtn.style.filter = 'none';
+                    upperBtn.style.transform = 'scale(1.18)';
+                    lowerBtn.style.opacity = '0.38';
+                    lowerBtn.style.filter = dull;
+                    lowerBtn.style.transform = 'scale(0.9)';
+                } else {
+                    lowerBtn.style.opacity = '1';
+                    lowerBtn.style.filter = 'none';
+                    lowerBtn.style.transform = 'scale(1.18)';
+                    upperBtn.style.opacity = '0.38';
+                    upperBtn.style.filter = dull;
+                    upperBtn.style.transform = 'scale(0.9)';
+                }
+            }
+        }
+        function setLetterCaseMode(mode) {
+            letterCaseMode = mode === 'lower' ? 'lower' : 'upper';
+            try { localStorage.setItem('flashabc_letter_case', letterCaseMode); } catch (e) {}
+            updateCaseToggleUI();
+            const ch = cards[currentIndex] ? cardFirstLetter(cards[currentIndex].backText) : '';
+            const glyph = !ch ? '' : (letterCaseMode === 'lower' ? ch.toLowerCase() : ch.toUpperCase());
+            document.querySelectorAll('.card-front.show-solo-active .card-letter-banner-text').forEach(function (el) {
+                el.textContent = glyph;
+            });
+            if (typeof scaleSoloLetters === 'function') scaleSoloLetters();
+        }
+        function scaleSoloLetters() {
+            if (charDisplayMode !== 'solo') return;
+            const els = document.querySelectorAll('.card-front.show-solo-active .card-letter-banner-text');
+            for (let i = 0; i < els.length; i++) {
+                const el = els[i];
+                const box = el.parentElement;
+                if (!box) continue;
+                el.style.whiteSpace = 'nowrap';
+                el.style.lineHeight = '0.88';
+                const availW = Math.max(8, box.clientWidth - 8);
+                const availH = Math.max(8, box.clientHeight - 8);
+                if (availW <= 8 || availH <= 8) continue;
+                let lo = 24;
+                let hi = Math.max(availW, availH);
+                let best = lo;
+                for (let n = 0; n < 18; n++) {
+                    const mid = (lo + hi) / 2;
+                    el.style.setProperty('font-size', mid + 'px', 'important');
+                    if (el.scrollWidth <= availW + 1 && el.scrollHeight <= availH + 1) {
+                        best = mid;
+                        lo = mid;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                el.style.setProperty('font-size', best + 'px', 'important');
+            }
+        }
+        (function bindCaseToggleScroller() {
+            let startX = 0;
+            let dragging = false;
+            let moved = false;
+            function onStart(e) {
+                const vp = document.getElementById('caseToggleViewport');
+                if (!vp) return;
+                const t = e.touches ? e.touches[0] : e;
+                if (!t) return;
+                if (e.target !== vp && !vp.contains(e.target)) return;
+                dragging = true;
+                moved = false;
+                startX = t.clientX;
+            }
+            function onMove(e) {
+                if (!dragging) return;
+                const t = e.touches ? e.touches[0] : e;
+                if (!t) return;
+                const dx = t.clientX - startX;
+                if (Math.abs(dx) > 8) moved = true;
+                const glass = document.getElementById('caseToggleGlass');
+                if (glass && Math.abs(dx) > 2) {
+                    const base = (letterCaseMode === 'lower') ? CASE_TOGGLE_ITEM_W : 0;
+                    const nudge = Math.max(-28, Math.min(28, dx * 0.4));
+                    let x = Math.max(0, Math.min(CASE_TOGGLE_ITEM_W, base + nudge));
+                    glass.style.transition = 'none';
+                    glass.style.transform = 'translateX(' + x + 'px)';
+                }
+                e.preventDefault();
+            }
+            function onEnd(e) {
+                if (!dragging) return;
+                dragging = false;
+                const t = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : e;
+                const dx = t && t.clientX != null ? (t.clientX - startX) : 0;
+                const glass = document.getElementById('caseToggleGlass');
+                if (glass) glass.style.transition = 'transform 0.28s cubic-bezier(0.22,0.9,0.3,1)';
+                if (moved && Math.abs(dx) > 16) {
+                    if (dx > 0) setLetterCaseMode('lower');
+                    else setLetterCaseMode('upper');
+                } else {
+                    updateCaseToggleUI();
+                }
+            }
+            function onWheel(e) {
+                const toggle = document.getElementById('cardOverlayCaseToggle');
+                if (!toggle || !toggle.contains(e.target)) return;
+                e.preventDefault();
+                if (e.deltaY > 4 || e.deltaX > 4) setLetterCaseMode('lower');
+                else if (e.deltaY < -4 || e.deltaX < -4) setLetterCaseMode('upper');
+            }
+            function bind() {
+                const vp = document.getElementById('caseToggleViewport');
+                const toggle = document.getElementById('cardOverlayCaseToggle');
+                if (!vp || vp.dataset.scrollBound === '1') return;
+                vp.dataset.scrollBound = '1';
+                vp.addEventListener('mousedown', onStart);
+                vp.addEventListener('touchstart', onStart, { passive: false });
+                window.addEventListener('mousemove', onMove, { passive: false });
+                window.addEventListener('touchmove', onMove, { passive: false });
+                window.addEventListener('mouseup', onEnd);
+                window.addEventListener('touchend', onEnd);
+                if (toggle) toggle.addEventListener('wheel', onWheel, { passive: false });
+                updateCaseToggleUI();
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+            else bind();
+        })();
 
         function ttsSpeakButtonHtml(backText) {
             if (!showTtsButton || !backText) return '';
@@ -17518,7 +17880,7 @@
 
         function applyCharDisplayMode(mode, opts) {
             opts = opts || {};
-            const valid = { off: 1, corner: 1, banner: 1, bottom: 1, giant: 1 };
+            const valid = { off: 1, corner: 1, banner: 1, bottom: 1, giant: 1, solo: 1 };
             if (!valid[mode]) return;
             charDisplayMode = mode;
             showCharOnCard = mode !== 'off';
@@ -17541,7 +17903,8 @@
                 if (typeof showToast === 'function') {
                     const label = preferredLetterLayout === 'banner' ? 'middle'
                         : preferredLetterLayout === 'bottom' ? 'bottom'
-                        : preferredLetterLayout === 'giant' ? 'large' : 'corner';
+                        : preferredLetterLayout === 'giant' ? 'large'
+                        : preferredLetterLayout === 'solo' ? 'letter' : 'corner';
                     showToast('Letters: ' + label, 1600);
                 }
             } else {
@@ -17576,6 +17939,9 @@
             grid.querySelectorAll('.llp-banner, .llp-bottom, .llp-giant').forEach(function(el) {
                 el.textContent = 'C c';
             });
+            grid.querySelectorAll('.llp-solo').forEach(function(el) {
+                el.textContent = letterCaseMode === 'lower' ? 'a' : 'A';
+            });
         }
 
         function openLetterLayoutPicker() {
@@ -17592,10 +17958,10 @@
         }
 
         function selectLetterLayout(layout) {
-            if (layout !== 'corner' && layout !== 'banner' && layout !== 'bottom' && layout !== 'giant') return;
+            if (layout !== 'corner' && layout !== 'banner' && layout !== 'bottom' && layout !== 'giant' && layout !== 'solo') return;
             applyCharDisplayMode(layout);
             closeLetterLayoutPicker();
-            const label = layout === 'banner' ? 'middle' : layout === 'giant' ? 'large' : layout;
+            const label = layout === 'banner' ? 'middle' : layout === 'giant' ? 'large' : layout === 'solo' ? 'letter' : layout;
             if (typeof showToast === 'function') showToast('Layout: ' + label, 1600);
         }
 
@@ -18518,6 +18884,7 @@
                     Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
                     scaleFrontText();
                     if (typeof scaleGiantLetters === 'function') scaleGiantLetters();
+                if (typeof scaleSoloLetters === 'function') scaleSoloLetters();
                 }
                 positionNavOverlay(true);
                 if (document.querySelector('.modal.active') || document.getElementById('previewOverlayModal')?.style.display === 'flex' || document.getElementById('cropOverlay')?.style.display === 'flex') {
