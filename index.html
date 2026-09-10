@@ -2218,6 +2218,136 @@
             60% { transform: translateX(-5px); }
             80% { transform: translateX(5px); }
         }
+
+        /* Find the Letter — gold coins (Mario / collector HUD style) */
+        .fl-coin-svg {
+            display: block;
+            flex-shrink: 0;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+        }
+        /* Find the Letter top bar: Back | A a | coin + controls — frees bubble space */
+        #findLetterTopBar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px 10px;
+            flex-shrink: 0;
+            overflow: visible;
+            min-height: 64px;
+            box-sizing: border-box;
+        }
+        #findLetterPrompt {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 12px;
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: visible;
+            padding: 0 6px 2px;
+        }
+        #findLetterUpper,
+        #findLetterLower {
+            font-family: var(--spell-letter-font, 'Fredoka', Arial, sans-serif);
+            font-weight: var(--spell-letter-weight, 700);
+            /* Fit header row; line-height leaves room for g/y/j/p/q tails */
+            font-size: clamp(2.6rem, 9vw, 4.4rem);
+            line-height: 1.2;
+            display: inline-block;
+            overflow: visible;
+            padding: 0 2px 0.18em;
+            margin: 0;
+            vertical-align: baseline;
+        }
+        #findLetterUpper { color: #f5ead0; }
+        #findLetterLower { color: #ff9500; }
+        #findLetterTopRight {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        /* Big gold bank — header right, away from bubble field */
+        #findLetterCoinBank {
+            position: relative;
+            right: auto;
+            top: auto;
+            transform: none;
+            z-index: 5;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none;
+            padding: 0 4px 0 0;
+        }
+        #findLetterCoinBank .fl-coin-bank-glyph {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            perspective: 220px;
+        }
+        #findLetterCoinBank .fl-coin-bank-glyph .fl-coin-svg {
+            width: 64px;
+            height: 64px;
+            transform: rotateX(18deg) rotateZ(-6deg);
+            filter: drop-shadow(0 6px 8px rgba(0,0,0,0.45));
+        }
+        #findLetterCoinNumBig {
+            font-size: 1.45rem;
+            font-weight: 900;
+            color: #ffe566;
+            text-shadow: 0 2px 0 #8a6a00, 0 3px 8px rgba(0,0,0,0.35);
+            line-height: 1;
+            min-width: 1.3em;
+            text-align: left;
+        }
+        #findLetterCoinBank.fl-coin-bank-pulse .fl-coin-bank-glyph {
+            animation: fl-coin-pulse 0.38s ease;
+        }
+        @keyframes fl-coin-pulse {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.18); }
+            100% { transform: scale(1); }
+        }
+        /* Flying coin — soft canvas spinner (gentle fly + fade) */
+        .fl-fly-coin {
+            position: fixed;
+            z-index: 30050;
+            width: 72px;
+            height: 72px;
+            pointer-events: none;
+            will-change: transform, opacity;
+            filter: drop-shadow(0 6px 8px rgba(0,0,0,0.28));
+        }
+        .fl-fly-coin canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        @media (max-width: 480px) {
+            #findLetterTopBar {
+                padding: 6px 8px 8px;
+                min-height: 56px;
+                gap: 4px;
+            }
+            #findLetterUpper,
+            #findLetterLower {
+                font-size: clamp(2.1rem, 11vw, 3.2rem);
+                padding-bottom: 0.2em;
+            }
+            #findLetterCoinBank .fl-coin-bank-glyph,
+            #findLetterCoinBank .fl-coin-bank-glyph .fl-coin-svg {
+                width: 52px;
+                height: 52px;
+            }
+            #findLetterCoinNumBig { font-size: 1.2rem; }
+        }
         @media (orientation: landscape) and (max-height: 700px) {
             #matchGameModal #matchBottomBar {
                 padding-top: 2px !important;
@@ -6137,24 +6267,25 @@
 
     <!-- Find the Letter Game Modal -->
     <div id="findLetterModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#35654D;z-index:20000;flex-direction:column;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;flex-shrink:0;">
-            <button type="button" onclick="closeFindLetterGame()" style="background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;gap:6px;color:white;font-size:1rem;font-weight:600;">
+        <div id="findLetterTopBar">
+            <button type="button" onclick="closeFindLetterGame()" style="background:none;border:none;cursor:pointer;padding:6px;display:flex;align-items:center;gap:6px;color:white;font-size:1rem;font-weight:600;flex-shrink:0;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                 Back
             </button>
-            <div id="findLetterCoins" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:1.25rem;font-weight:800;">
-                <span aria-hidden="true">🪙</span><span id="findLetterCoinNum">0</span>
+            <div id="findLetterPrompt">
+                <span id="findLetterUpper">A</span>
+                <span id="findLetterLower">a</span>
             </div>
-            <div style="display:flex;align-items:center;gap:4px;">
+            <div id="findLetterTopRight">
+                <div id="findLetterCoinBank" aria-label="Coin collection">
+                    <div class="fl-coin-bank-glyph" aria-hidden="true"></div>
+                    <span id="findLetterCoinNumBig">0</span>
+                </div>
                 <button type="button" onclick="skipFindLetterRound()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;" title="Next letter">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
                 </button>
                 <button type="button" onclick="openFindLetterHelp()" style="background:none;border:none;cursor:pointer;padding:6px;color:white;font-size:1.4rem;">❓</button>
             </div>
-        </div>
-        <div id="findLetterPrompt" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 16px 10px;">
-            <span id="findLetterUpper" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(4.8rem,18vw,9.75rem);line-height:0.95;color:#f5ead0;">A</span>
-            <span id="findLetterLower" style="font-family:var(--spell-letter-font,'Fredoka',Arial,sans-serif);font-weight:var(--spell-letter-weight,700);font-size:clamp(4.8rem,18vw,9.75rem);line-height:0.95;color:#ff9500;">a</span>
         </div>
         <div id="findLetterField" style="flex:1;min-height:0;position:relative;overflow:hidden;margin:0 12px;border-radius:20px;background:rgba(255,255,255,0.08);"></div>
         <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 16px 10px;">
@@ -6168,7 +6299,7 @@
             <ul style="text-align:left;color:#555;margin-bottom:20px;padding-left:20px;line-height:2;">
                 <li>The big letter itself (A or a)</li>
                 <li>A picture whose word starts with that letter</li>
-                <li>🪙 Correct tap — earn a coin</li>
+                <li>Correct tap — a gold coin spins into your bank</li>
                 <li>Wrong letter or picture — lose a coin</li>
             </ul>
             <button class="btn btn-success" onclick="document.getElementById('findLetterHelpModal').classList.remove('active')" style="width:100%;padding:12px;justify-content:center;">Got it!</button>
@@ -8055,9 +8186,249 @@
             const m = String(text || '').replace(/<[^>]*>/g, '').match(/[A-Za-z]/);
             return m ? m[0].toUpperCase() : '';
         }
+        /** 3D gold coin: thick rim, specular highlight, $ + engravings */
+        let _flCoinSvgSeq = 0;
+        function flGoldCoinSvg(size) {
+            const s = size || 64;
+            const uid = 'flc' + (++_flCoinSvgSeq);
+            const face = uid + 'Face';
+            const rim = uid + 'Rim';
+            const edge = uid + 'Edge';
+            const gloss = uid + 'Gloss';
+            let ticks = '';
+            for (let i = 0; i < 28; i++) {
+                const a = (i * (360 / 28)) * Math.PI / 180;
+                const x1 = 32 + Math.cos(a) * 25.4;
+                const y1 = 32 + Math.sin(a) * 25.4;
+                const x2 = 32 + Math.cos(a) * 28.2;
+                const y2 = 32 + Math.sin(a) * 28.2;
+                ticks += '<line x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) +
+                    '" x2="' + x2.toFixed(2) + '" y2="' + y2.toFixed(2) +
+                    '" stroke="#8a6a00" stroke-width="1.4" stroke-linecap="round" opacity="0.9"/>';
+            }
+            return (
+                '<svg class="fl-coin-svg" width="' + s + '" height="' + s + '" viewBox="0 0 64 64" aria-hidden="true">' +
+                '<defs>' +
+                '<radialGradient id="' + face + '" cx="32%" cy="26%" r="75%">' +
+                '<stop offset="0%" stop-color="#fff8c4"/>' +
+                '<stop offset="35%" stop-color="#ffd54a"/>' +
+                '<stop offset="78%" stop-color="#d4a017"/>' +
+                '<stop offset="100%" stop-color="#a67c00"/>' +
+                '</radialGradient>' +
+                '<linearGradient id="' + rim + '" x1="0" y1="0" x2="0" y2="1">' +
+                '<stop offset="0%" stop-color="#ffe98a"/>' +
+                '<stop offset="45%" stop-color="#e0b422"/>' +
+                '<stop offset="100%" stop-color="#8a6a00"/>' +
+                '</linearGradient>' +
+                '<linearGradient id="' + edge + '" x1="0" y1="0" x2="0" y2="1">' +
+                '<stop offset="0%" stop-color="#c9920f"/>' +
+                '<stop offset="100%" stop-color="#5c4508"/>' +
+                '</linearGradient>' +
+                '<radialGradient id="' + gloss + '" cx="30%" cy="22%" r="40%">' +
+                '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>' +
+                '<stop offset="55%" stop-color="#ffffff" stop-opacity="0.15"/>' +
+                '<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>' +
+                '</radialGradient>' +
+                '<filter id="' + uid + 'Sh" x="-20%" y="-10%" width="140%" height="140%">' +
+                '<feDropShadow dx="0" dy="3" stdDeviation="2.2" flood-color="#000" flood-opacity="0.35"/>' +
+                '</filter>' +
+                '</defs>' +
+                // Depth / thickness disc sitting behind (3D edge)
+                '<ellipse cx="32" cy="35.5" rx="30" ry="28.5" fill="url(#' + edge + ')" filter="url(#' + uid + 'Sh)"/>' +
+                '<circle cx="32" cy="31" r="29.5" fill="url(#' + rim + ')"/>' +
+                '<circle cx="32" cy="31" r="28" fill="none" stroke="#6b5200" stroke-width="1" opacity="0.45"/>' +
+                ticks +
+                '<circle cx="32" cy="31" r="23.8" fill="url(#' + face + ')" stroke="#b8860b" stroke-width="1.5"/>' +
+                '<circle cx="32" cy="31" r="19.5" fill="none" stroke="#8a6a00" stroke-width="1.15" opacity="0.7"/>' +
+                '<circle cx="32" cy="31" r="16" fill="none" stroke="#f0c040" stroke-width="1" opacity="0.45"/>' +
+                // Embossed $
+                '<text x="32.6" y="40.2" text-anchor="middle" font-size="25" font-weight="800" ' +
+                'font-family="Georgia,Times New Roman,serif" fill="#5c4508" opacity="0.35">$</text>' +
+                '<text x="32" y="39" text-anchor="middle" font-size="25" font-weight="800" ' +
+                'font-family="Georgia,Times New Roman,serif" fill="#8a6a00" ' +
+                'stroke="#6b5200" stroke-width="0.55">$</text>' +
+                // Specular highlight for 3D shine
+                '<ellipse cx="24" cy="22" rx="10" ry="7" fill="url(#' + gloss + ')"/>' +
+                '</svg>'
+            );
+        }
+        function flMountGoldCoins() {
+            const bankGlyph = document.querySelector('#findLetterCoinBank .fl-coin-bank-glyph');
+            if (bankGlyph && !bankGlyph.querySelector('.fl-coin-svg')) {
+                bankGlyph.innerHTML = flGoldCoinSvg(64);
+            }
+        }
         function flUpdateCoins() {
-            const el = document.getElementById('findLetterCoinNum');
-            if (el) el.textContent = String(findLetterState.coins);
+            flMountGoldCoins();
+            const n = String(findLetterState.coins);
+            const big = document.getElementById('findLetterCoinNumBig');
+            if (big) big.textContent = n;
+        }
+        /**
+         * Draw a thick Mario-like coin at yaw angle (radians).
+         * Face is an ellipse; rim height is visible when turned — like a sprite turntable.
+         */
+        function flDrawThickCoin(ctx, w, h, yaw) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const R = Math.min(w, h) * 0.38;
+            const thickness = R * 0.42; // noticeable rim height
+            const c = Math.cos(yaw);
+            const s = Math.abs(Math.sin(yaw));
+            const faceW = Math.max(R * 0.1, R * Math.abs(c));
+            const rimW = thickness * s + R * 0.06;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.save();
+            // Soft ground shadow
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + R * 0.85, faceW * 0.9, R * 0.18, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            ctx.fill();
+
+            // Thickness / rim (visible height when turned — Mario turntable look)
+            if (s > 0.04) {
+                const dir = c >= 0 ? 1 : -1;
+                const grad = ctx.createLinearGradient(cx - rimW, cy, cx + rimW, cy);
+                grad.addColorStop(0, '#5c4508');
+                grad.addColorStop(0.35, '#c9920f');
+                grad.addColorStop(0.5, '#ffe566');
+                grad.addColorStop(0.65, '#d4a017');
+                grad.addColorStop(1, '#5c4508');
+                ctx.beginPath();
+                const rw = faceW + rimW;
+                ctx.ellipse(cx + (dir > 0 ? rimW * 0.45 : -rimW * 0.45), cy, rw, R * 1.05, 0, 0, Math.PI * 2);
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.strokeStyle = '#6b5200';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            // Coin face (ellipse)
+            const faceGrad = ctx.createRadialGradient(cx - faceW * 0.25, cy - R * 0.3, R * 0.1, cx, cy, R);
+            faceGrad.addColorStop(0, '#fff8c4');
+            faceGrad.addColorStop(0.4, '#ffd54a');
+            faceGrad.addColorStop(0.85, '#d4a017');
+            faceGrad.addColorStop(1, '#a67c00');
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, faceW, R, 0, 0, Math.PI * 2);
+            ctx.fillStyle = faceGrad;
+            ctx.fill();
+            ctx.strokeStyle = '#8a6a00';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Inner engraving rings (only when mostly face-on)
+            if (Math.abs(c) > 0.35) {
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, faceW * 0.72, R * 0.72, 0, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(138,106,0,0.65)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                // $
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.scale(c >= 0 ? 1 : -1, 1);
+                ctx.fillStyle = '#8a6a00';
+                ctx.strokeStyle = '#6b5200';
+                ctx.lineWidth = 1;
+                ctx.font = 'bold ' + Math.round(R * 0.95) + 'px Georgia,serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('$', 0, 2);
+                ctx.restore();
+            }
+
+            // Specular highlight
+            if (Math.abs(c) > 0.2) {
+                ctx.beginPath();
+                ctx.ellipse(cx - faceW * 0.25, cy - R * 0.35, faceW * 0.35, R * 0.22, -0.4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        /**
+         * Soft collect: gentle spin, smooth arc into the bank, fade away.
+         */
+        function flFlyCoinToBank(fromEl) {
+            return new Promise(function (resolve) {
+                const bankGlyph = document.querySelector('#findLetterCoinBank .fl-coin-bank-glyph');
+                const bank = document.getElementById('findLetterCoinBank');
+                if (!fromEl || !bankGlyph) {
+                    resolve();
+                    return;
+                }
+                flMountGoldCoins();
+                const fr = fromEl.getBoundingClientRect();
+                const tr = bankGlyph.getBoundingClientRect();
+                const size = 72;
+                const fly = document.createElement('div');
+                fly.className = 'fl-fly-coin';
+                fly.style.width = size + 'px';
+                fly.style.height = size + 'px';
+                const canvas = document.createElement('canvas');
+                canvas.width = 160;
+                canvas.height = 160;
+                fly.appendChild(canvas);
+                const ctx = canvas.getContext('2d');
+                const startX = fr.left + fr.width / 2 - size / 2;
+                const startY = fr.top + fr.height / 2 - size / 2;
+                fly.style.left = startX + 'px';
+                fly.style.top = startY + 'px';
+                fly.style.opacity = '0';
+                document.body.appendChild(fly);
+
+                const dx = (tr.left + tr.width / 2) - (fr.left + fr.width / 2);
+                const dy = (tr.top + tr.height / 2) - (fr.top + fr.height / 2);
+                // Mild arc control point (not a big hop)
+                const midX = dx * 0.55;
+                const midY = dy * 0.55 - 18;
+                const duration = 900;
+                const t0 = performance.now();
+
+                function easeInOut(t) {
+                    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                }
+                function posAt(p) {
+                    const e = easeInOut(p);
+                    const omt = 1 - e;
+                    const x = omt * omt * 0 + 2 * omt * e * midX + e * e * dx;
+                    const y = omt * omt * 0 + 2 * omt * e * midY + e * e * dy;
+                    // Gentle shrink into bank (no big pop)
+                    const scale = 1.05 + (0.35 - 1.05) * e;
+                    return { x: x, y: y, s: scale };
+                }
+
+                function frame(now) {
+                    const p = Math.min(1, (now - t0) / duration);
+                    // Slow, calm spin (~1 turn over the flight)
+                    const yaw = p * Math.PI * 2;
+                    flDrawThickCoin(ctx, canvas.width, canvas.height, yaw);
+                    const pos = posAt(p);
+                    fly.style.transform = 'translate(' + pos.x + 'px,' + pos.y + 'px) scale(' + pos.s + ')';
+                    // Fade in briefly, then fade out into the bank
+                    let op = 1;
+                    if (p < 0.12) op = p / 0.12;
+                    else if (p > 0.55) op = 1 - ((p - 0.55) / 0.45);
+                    fly.style.opacity = String(Math.max(0, Math.min(1, op)));
+                    if (p < 1) {
+                        requestAnimationFrame(frame);
+                    } else {
+                        if (fly.parentNode) fly.parentNode.removeChild(fly);
+                        if (bank) {
+                            bank.classList.remove('fl-coin-bank-pulse');
+                            void bank.offsetWidth;
+                            bank.classList.add('fl-coin-bank-pulse');
+                            setTimeout(function () { bank.classList.remove('fl-coin-bank-pulse'); }, 280);
+                        }
+                        resolve();
+                    }
+                }
+                requestAnimationFrame(frame);
+            });
         }
         function flStopLoop() {
             if (findLetterState.raf) {
@@ -8066,6 +8437,7 @@
             }
         }
         function startFindLetterGame() {
+            flMountGoldCoins();
             const sig = findLetterDeckSig();
             if (hasActiveFindLetterSession() && findLetterState.bubbles.length) {
                 flUpdateCoins();
@@ -8261,10 +8633,13 @@
             if (!b || b.popped) return;
             if (b.correct) {
                 b.popped = true;
-                flShowMark(b.el, 'ok');
-                findLetterState.coins += 1;
+                // No green swoosh — the 3D coin flying to the bank is the success cue
                 findLetterState.remainingCorrect = Math.max(0, findLetterState.remainingCorrect - 1);
-                flUpdateCoins();
+                const fromEl = b.el;
+                flFlyCoinToBank(fromEl).then(function () {
+                    findLetterState.coins += 1;
+                    flUpdateCoins();
+                });
                 setTimeout(function () {
                     if (b.el) b.el.classList.add('fl-pop');
                 }, 380);
@@ -8275,7 +8650,7 @@
                     setTimeout(function () {
                         findLetterState.letterIndex++;
                         flBuildRound();
-                    }, 820);
+                    }, 1250);
                 }
             } else {
                 findLetterState.coins = Math.max(0, findLetterState.coins - 1);
