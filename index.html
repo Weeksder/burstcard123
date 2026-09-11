@@ -24,7 +24,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1265-find-letter-marks-bigger">
+    <meta name="flashabc-build" content="1277-match-similar-scramble">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -1087,6 +1087,28 @@
             /* Flatten during drag so rotateZ + translateX cannot clip a 3D face */
             transform-style: flat;
             -webkit-transform-style: flat;
+        }
+
+        /* Lock/back: flattening would flash the picture. Hide the front and
+           un-rotate the back so the locked face stays visible as 2D. */
+        .card.swiping.flipped .card-front {
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+        .card.swiping.flipped .card-back {
+            transform: none !important;
+            -webkit-transform: none !important;
+            backface-visibility: visible !important;
+            -webkit-backface-visibility: visible !important;
+        }
+
+        /* New cards already on the back must not play the 0.6s flip-in */
+        .card.skip-flip-transition {
+            transition: none !important;
+            -webkit-transition: none !important;
+            -moz-transition: none !important;
+            -ms-transition: none !important;
+            -o-transition: none !important;
         }
 
         .card-stack.swiping,
@@ -2219,13 +2241,13 @@
             80% { transform: translateX(5px); }
         }
 
-        /* Find the Letter — gold coins (Mario / collector HUD style) */
+        /* Find the Letter — gold stars (collector HUD) */
         .fl-coin-svg {
             display: block;
             flex-shrink: 0;
             filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
         }
-        /* Find the Letter top bar: Back | A a | coin + controls — frees bubble space */
+        /* Find the Letter top bar: Back | A a | star + controls — frees bubble space */
         #findLetterTopBar {
             display: flex;
             align-items: center;
@@ -2269,7 +2291,7 @@
             gap: 4px;
             flex-shrink: 0;
         }
-        /* Big gold bank — header right, away from bubble field */
+        /* Big gold star bank — header right, away from bubble field */
         #findLetterCoinBank {
             position: relative;
             right: auto;
@@ -2315,7 +2337,7 @@
             40% { transform: scale(1.18); }
             100% { transform: scale(1); }
         }
-        /* Flying coin — soft canvas spinner (gentle fly + fade) */
+        /* Flying star — soft canvas spinner (gentle fly + fade) */
         .fl-fly-coin {
             position: fixed;
             z-index: 30050;
@@ -3897,6 +3919,14 @@
                 font-size: 1rem;
             }
 
+            /* Phone: hide FlashABC logo so toolbar buttons keep the top row */
+            .header h1 img {
+                display: none !important;
+            }
+            .header {
+                margin-right: 0;
+            }
+
             .card-text {
                 font-size: 5rem;
             }
@@ -5191,6 +5221,8 @@
         /* Landscape phones — compact everything */
         @media (orientation: landscape) and (max-height: 500px) {
             .top-bar { margin-bottom: 6px; }
+            .header h1 img { display: none !important; }
+            .header { margin-right: 0; }
             .fullscreen-btn { width: 38px; height: 38px; bottom: 10px; left: 10px; }
             #cardOverlayCounter { bottom: 10px; }
             .counter { padding: 5px 12px; font-size: 0.85rem; border-radius: 10px; }
@@ -6249,6 +6281,16 @@
                 </div>
             </div>
         </div>
+        <div id="matchEndConfirm" onclick="declineEndMatchGame()" style="display:none;position:absolute;inset:0;z-index:80;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+            <div onclick="event.stopPropagation()" ontouchend="event.stopPropagation()" style="background:white;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                <h2 style="margin:0 0 10px;color:#35654D;font-size:1.45rem;">Do you want to end this game?</h2>
+                <p style="margin:0 0 22px;color:#666;font-size:0.98rem;line-height:1.4;">Yes ends it so you can start a new game. No keeps this game so you can continue.</p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <button type="button" class="btn btn-secondary" onclick="event.stopPropagation(); declineEndMatchGame()" style="flex:1;padding:12px;justify-content:center;">No</button>
+                    <button type="button" class="btn btn-success" onclick="event.stopPropagation(); confirmEndMatchGame()" style="flex:1;padding:12px;justify-content:center;">Yes</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Match Game Help Modal -->
@@ -6277,7 +6319,7 @@
                 <span id="findLetterLower">a</span>
             </div>
             <div id="findLetterTopRight">
-                <div id="findLetterCoinBank" aria-label="Coin collection">
+                <div id="findLetterCoinBank" aria-label="Star collection">
                     <div class="fl-coin-bank-glyph" aria-hidden="true"></div>
                     <span id="findLetterCoinNumBig">0</span>
                 </div>
@@ -6299,8 +6341,8 @@
             <ul style="text-align:left;color:#555;margin-bottom:20px;padding-left:20px;line-height:2;">
                 <li>The big letter itself (A or a)</li>
                 <li>A picture whose word starts with that letter</li>
-                <li>Correct tap — a gold coin spins into your bank</li>
-                <li>Wrong letter or picture — lose a coin</li>
+                <li>Correct tap — a gold star flies into your bank</li>
+                <li>Wrong letter or picture — lose a star</li>
             </ul>
             <button class="btn btn-success" onclick="document.getElementById('findLetterHelpModal').classList.remove('active')" style="width:100%;padding:12px;justify-content:center;">Got it!</button>
         </div>
@@ -6310,7 +6352,11 @@
     <div class="modal" id="matchExtraWordsModal">
         <div class="modal-content" style="max-width:420px;">
             <h2>➕ Extra Answer Words</h2>
-            <p style="color:#666;margin-bottom:15px;">Add extra words to make the choices harder. One word per line.</p>
+            <p style="color:#666;margin-bottom:10px;">Add extra words to make the choices harder. One word per line.</p>
+            <button type="button" class="btn" onclick="fillMatchSimilarWords()" style="width:100%;padding:10px 12px;justify-content:center;margin-bottom:10px;background:#f0f9f4;border:1.5px solid #35654D;color:#35654D;font-weight:700;">
+                Scramble similar words
+            </button>
+            <p style="color:#888;font-size:0.82rem;margin:-4px 0 10px;line-height:1.35;">Auto-fills 3–6 letter lookalikes (same length, close spelling). Skips two-word names and hyphens.</p>
             <textarea id="matchExtraWordsInput" style="width:100%;height:140px;border:1.5px solid #ddd;border-radius:8px;padding:10px;font-size:15px;resize:vertical;box-sizing:border-box;" placeholder="e.g.&#10;Dog&#10;Cat&#10;Fish"></textarea>
             <div style="display:flex;gap:10px;margin-top:14px;">
                 <button class="btn btn-secondary" onclick="document.getElementById('matchExtraWordsModal').classList.remove('active')" style="flex:1;padding:12px;justify-content:center;">Cancel</button>
@@ -6469,6 +6515,7 @@
         #manageSidePanel.behind-modal { z-index: 15000; }
         #manageSidePanelOverlay.behind-modal { z-index: 14999; }
         #manageSidePanel:not(.msp-edit-mode) .msp-del-btn { display: none; }
+        #manageSidePanel:not(.msp-edit-mode) .msp-drag-handle { display: none; }
         #manageSidePanel.msp-edit-mode .msp-deck-btn { display: none; }
         #manageSidePanel .msp-toolbar {
             padding: 6px 10px;
@@ -7222,6 +7269,24 @@
         .msp-insert-below { box-shadow:0 3px 0 0 #35654D; position:relative; }
         .msp-insert-above::before { content:''; position:absolute; left:8px; top:-5px; width:8px; height:8px; border-radius:50%; background:#35654D; z-index:10; }
         .msp-insert-below::after  { content:''; position:absolute; left:8px; bottom:-5px; width:8px; height:8px; border-radius:50%; background:#35654D; z-index:10; }
+        /* Edit mode: reorder folder headers (Uncategorized stays fixed at bottom) */
+        .msp-header-handle {
+            color:#7a9a7a;cursor:grab;padding:8px 10px;margin:-8px 0 -8px -4px;flex-shrink:0;
+            display:none;align-items:center;justify-content:center;touch-action:none;
+            min-width:36px;min-height:42px;box-sizing:border-box;
+            -webkit-user-select:none;user-select:none;
+        }
+        .msp-header-handle:active { cursor:grabbing; background:rgba(53,101,77,0.12); border-radius:8px; }
+        #manageSidePanel.msp-edit-mode .msp-header-handle { display:flex; }
+        .msp-group-header.msp-header-dragging { opacity:0.4; }
+        .msp-group-header.msp-header-insert-above {
+            box-shadow: inset 0 3px 0 0 #35654D;
+            position: relative;
+        }
+        .msp-group-header.msp-header-insert-below {
+            box-shadow: inset 0 -3px 0 0 #35654D;
+            position: relative;
+        }
         </style>
         <div style="display:flex;align-items:center;justify-content:space-between;
                     padding:10px 16px;flex-shrink:0;">
@@ -8186,69 +8251,42 @@
             const m = String(text || '').replace(/<[^>]*>/g, '').match(/[A-Za-z]/);
             return m ? m[0].toUpperCase() : '';
         }
-        /** 3D gold coin: thick rim, specular highlight, $ + engravings */
+        /** Gold 5-point star for the Find the Letter bank. */
         let _flCoinSvgSeq = 0;
         function flGoldCoinSvg(size) {
             const s = size || 64;
-            const uid = 'flc' + (++_flCoinSvgSeq);
+            const uid = 'fls' + (++_flCoinSvgSeq);
             const face = uid + 'Face';
-            const rim = uid + 'Rim';
-            const edge = uid + 'Edge';
             const gloss = uid + 'Gloss';
-            let ticks = '';
-            for (let i = 0; i < 28; i++) {
-                const a = (i * (360 / 28)) * Math.PI / 180;
-                const x1 = 32 + Math.cos(a) * 25.4;
-                const y1 = 32 + Math.sin(a) * 25.4;
-                const x2 = 32 + Math.cos(a) * 28.2;
-                const y2 = 32 + Math.sin(a) * 28.2;
-                ticks += '<line x1="' + x1.toFixed(2) + '" y1="' + y1.toFixed(2) +
-                    '" x2="' + x2.toFixed(2) + '" y2="' + y2.toFixed(2) +
-                    '" stroke="#8a6a00" stroke-width="1.4" stroke-linecap="round" opacity="0.9"/>';
+            const pts = [];
+            for (let i = 0; i < 10; i++) {
+                const r = (i % 2 === 0) ? 28 : 12.2;
+                const a = -Math.PI / 2 + i * Math.PI / 5;
+                pts.push((32 + r * Math.cos(a)).toFixed(2) + ',' + (33 + r * Math.sin(a)).toFixed(2));
             }
             return (
                 '<svg class="fl-coin-svg" width="' + s + '" height="' + s + '" viewBox="0 0 64 64" aria-hidden="true">' +
                 '<defs>' +
-                '<radialGradient id="' + face + '" cx="32%" cy="26%" r="75%">' +
+                '<radialGradient id="' + face + '" cx="38%" cy="30%" r="70%">' +
                 '<stop offset="0%" stop-color="#fff8c4"/>' +
-                '<stop offset="35%" stop-color="#ffd54a"/>' +
+                '<stop offset="38%" stop-color="#ffd54a"/>' +
                 '<stop offset="78%" stop-color="#d4a017"/>' +
                 '<stop offset="100%" stop-color="#a67c00"/>' +
                 '</radialGradient>' +
-                '<linearGradient id="' + rim + '" x1="0" y1="0" x2="0" y2="1">' +
-                '<stop offset="0%" stop-color="#ffe98a"/>' +
-                '<stop offset="45%" stop-color="#e0b422"/>' +
-                '<stop offset="100%" stop-color="#8a6a00"/>' +
-                '</linearGradient>' +
-                '<linearGradient id="' + edge + '" x1="0" y1="0" x2="0" y2="1">' +
-                '<stop offset="0%" stop-color="#c9920f"/>' +
-                '<stop offset="100%" stop-color="#5c4508"/>' +
-                '</linearGradient>' +
-                '<radialGradient id="' + gloss + '" cx="30%" cy="22%" r="40%">' +
-                '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>' +
-                '<stop offset="55%" stop-color="#ffffff" stop-opacity="0.15"/>' +
+                '<radialGradient id="' + gloss + '" cx="35%" cy="28%" r="38%">' +
+                '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>' +
+                '<stop offset="55%" stop-color="#ffffff" stop-opacity="0.12"/>' +
                 '<stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>' +
                 '</radialGradient>' +
-                '<filter id="' + uid + 'Sh" x="-20%" y="-10%" width="140%" height="140%">' +
+                '<filter id="' + uid + 'Sh" x="-25%" y="-15%" width="150%" height="150%">' +
                 '<feDropShadow dx="0" dy="3" stdDeviation="2.2" flood-color="#000" flood-opacity="0.35"/>' +
                 '</filter>' +
                 '</defs>' +
-                // Depth / thickness disc sitting behind (3D edge)
-                '<ellipse cx="32" cy="35.5" rx="30" ry="28.5" fill="url(#' + edge + ')" filter="url(#' + uid + 'Sh)"/>' +
-                '<circle cx="32" cy="31" r="29.5" fill="url(#' + rim + ')"/>' +
-                '<circle cx="32" cy="31" r="28" fill="none" stroke="#6b5200" stroke-width="1" opacity="0.45"/>' +
-                ticks +
-                '<circle cx="32" cy="31" r="23.8" fill="url(#' + face + ')" stroke="#b8860b" stroke-width="1.5"/>' +
-                '<circle cx="32" cy="31" r="19.5" fill="none" stroke="#8a6a00" stroke-width="1.15" opacity="0.7"/>' +
-                '<circle cx="32" cy="31" r="16" fill="none" stroke="#f0c040" stroke-width="1" opacity="0.45"/>' +
-                // Embossed $
-                '<text x="32.6" y="40.2" text-anchor="middle" font-size="25" font-weight="800" ' +
-                'font-family="Georgia,Times New Roman,serif" fill="#5c4508" opacity="0.35">$</text>' +
-                '<text x="32" y="39" text-anchor="middle" font-size="25" font-weight="800" ' +
-                'font-family="Georgia,Times New Roman,serif" fill="#8a6a00" ' +
-                'stroke="#6b5200" stroke-width="0.55">$</text>' +
-                // Specular highlight for 3D shine
-                '<ellipse cx="24" cy="22" rx="10" ry="7" fill="url(#' + gloss + ')"/>' +
+                '<polygon points="' + pts.join(' ') + '" fill="url(#' + face + ')" stroke="#8a6a00" stroke-width="1.6" ' +
+                'stroke-linejoin="round" filter="url(#' + uid + 'Sh)"/>' +
+                '<polygon points="' + pts.join(' ') + '" fill="none" stroke="#f0c040" stroke-width="0.8" ' +
+                'stroke-linejoin="round" opacity="0.55" transform="translate(0,-0.6)"/>' +
+                '<ellipse cx="26" cy="24" rx="8" ry="5" fill="url(#' + gloss + ')"/>' +
                 '</svg>'
             );
         }
@@ -8265,88 +8303,50 @@
             if (big) big.textContent = n;
         }
         /**
-         * Draw a thick Mario-like coin at yaw angle (radians).
-         * Face is an ellipse; rim height is visible when turned — like a sprite turntable.
+         * Draw a gold star, optionally rotated (yaw used as spin angle).
          */
         function flDrawThickCoin(ctx, w, h, yaw) {
             const cx = w / 2;
             const cy = h / 2;
-            const R = Math.min(w, h) * 0.38;
-            const thickness = R * 0.42; // noticeable rim height
-            const c = Math.cos(yaw);
-            const s = Math.abs(Math.sin(yaw));
-            const faceW = Math.max(R * 0.1, R * Math.abs(c));
-            const rimW = thickness * s + R * 0.06;
+            const R = Math.min(w, h) * 0.42;
+            const rInner = R * 0.42;
 
             ctx.clearRect(0, 0, w, h);
             ctx.save();
-            // Soft ground shadow
+            ctx.translate(cx, cy + R * 0.04);
+            ctx.rotate(yaw);
+
             ctx.beginPath();
-            ctx.ellipse(cx, cy + R * 0.85, faceW * 0.9, R * 0.18, 0, 0, Math.PI * 2);
+            ctx.ellipse(0, R * 0.62, R * 0.55, R * 0.16, 0, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(0,0,0,0.22)';
             ctx.fill();
 
-            // Thickness / rim (visible height when turned — Mario turntable look)
-            if (s > 0.04) {
-                const dir = c >= 0 ? 1 : -1;
-                const grad = ctx.createLinearGradient(cx - rimW, cy, cx + rimW, cy);
-                grad.addColorStop(0, '#5c4508');
-                grad.addColorStop(0.35, '#c9920f');
-                grad.addColorStop(0.5, '#ffe566');
-                grad.addColorStop(0.65, '#d4a017');
-                grad.addColorStop(1, '#5c4508');
-                ctx.beginPath();
-                const rw = faceW + rimW;
-                ctx.ellipse(cx + (dir > 0 ? rimW * 0.45 : -rimW * 0.45), cy, rw, R * 1.05, 0, 0, Math.PI * 2);
-                ctx.fillStyle = grad;
-                ctx.fill();
-                ctx.strokeStyle = '#6b5200';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
+            ctx.beginPath();
+            for (let i = 0; i < 10; i++) {
+                const rad = (i % 2 === 0) ? R : rInner;
+                const a = -Math.PI / 2 + i * Math.PI / 5;
+                const x = rad * Math.cos(a);
+                const y = rad * Math.sin(a);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             }
-
-            // Coin face (ellipse)
-            const faceGrad = ctx.createRadialGradient(cx - faceW * 0.25, cy - R * 0.3, R * 0.1, cx, cy, R);
+            ctx.closePath();
+            const faceGrad = ctx.createRadialGradient(-R * 0.2, -R * 0.25, R * 0.08, 0, 0, R);
             faceGrad.addColorStop(0, '#fff8c4');
             faceGrad.addColorStop(0.4, '#ffd54a');
-            faceGrad.addColorStop(0.85, '#d4a017');
+            faceGrad.addColorStop(0.82, '#d4a017');
             faceGrad.addColorStop(1, '#a67c00');
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, faceW, R, 0, 0, Math.PI * 2);
             ctx.fillStyle = faceGrad;
             ctx.fill();
             ctx.strokeStyle = '#8a6a00';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2.2;
+            ctx.lineJoin = 'round';
             ctx.stroke();
 
-            // Inner engraving rings (only when mostly face-on)
-            if (Math.abs(c) > 0.35) {
-                ctx.beginPath();
-                ctx.ellipse(cx, cy, faceW * 0.72, R * 0.72, 0, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(138,106,0,0.65)';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                // $
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.scale(c >= 0 ? 1 : -1, 1);
-                ctx.fillStyle = '#8a6a00';
-                ctx.strokeStyle = '#6b5200';
-                ctx.lineWidth = 1;
-                ctx.font = 'bold ' + Math.round(R * 0.95) + 'px Georgia,serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('$', 0, 2);
-                ctx.restore();
-            }
-
-            // Specular highlight
-            if (Math.abs(c) > 0.2) {
-                ctx.beginPath();
-                ctx.ellipse(cx - faceW * 0.25, cy - R * 0.35, faceW * 0.35, R * 0.22, -0.4, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255,255,255,0.35)';
-                ctx.fill();
-            }
+            ctx.beginPath();
+            ctx.ellipse(-R * 0.18, -R * 0.28, R * 0.28, R * 0.16, -0.4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.32)';
+            ctx.fill();
             ctx.restore();
         }
 
@@ -8364,7 +8364,7 @@
                 flMountGoldCoins();
                 const fr = fromEl.getBoundingClientRect();
                 const tr = bankGlyph.getBoundingClientRect();
-                const size = 72;
+                const size = 96;
                 const fly = document.createElement('div');
                 fly.className = 'fl-fly-coin';
                 fly.style.width = size + 'px';
@@ -8397,15 +8397,15 @@
                     const omt = 1 - e;
                     const x = omt * omt * 0 + 2 * omt * e * midX + e * e * dx;
                     const y = omt * omt * 0 + 2 * omt * e * midY + e * e * dy;
-                    // Gentle shrink into bank (no big pop)
-                    const scale = 1.05 + (0.35 - 1.05) * e;
+                    // Starts bigger, then shrinks into the bank
+                    const scale = 1.55 + (0.38 - 1.55) * e;
                     return { x: x, y: y, s: scale };
                 }
 
                 function frame(now) {
                     const p = Math.min(1, (now - t0) / duration);
-                    // Slow, calm spin (~1 turn over the flight)
-                    const yaw = p * Math.PI * 2;
+                    // Two full spins while flying
+                    const yaw = p * Math.PI * 4;
                     flDrawThickCoin(ctx, canvas.width, canvas.height, yaw);
                     const pos = posAt(p);
                     fly.style.transform = 'translate(' + pos.x + 'px,' + pos.y + 'px) scale(' + pos.s + ')';
@@ -9344,7 +9344,6 @@
             function applyFanSwipe(x, withTransition) {
                 const els = swipeEls();
                 const t = withTransition ? 'transform 0.28s ease-out' : 'none';
-                const flipRot = isFlipped ? ' rotateY(180deg)' : '';
                 const rotation = x * FAN_ROTATION;
                 if (els.stack) {
                     els.stack.classList.add('swiping');
@@ -9362,7 +9361,7 @@
                 if (els.card) {
                     els.card.classList.add('swiping');
                     els.card.style.transition = t;
-                    els.card.style.transform = 'translateX(' + x + 'px) rotateZ(' + rotation + 'deg)' + flipRot;
+                    els.card.style.transform = 'translateX(' + x + 'px) rotateZ(' + rotation + 'deg)';
                 }
                 // Neighbors stay as peek cards (not sliding with the finger)
                 if (els.next) { els.next.style.transition = ''; els.next.style.transform = ''; }
@@ -9431,8 +9430,7 @@
                             // Swipe goes next: unchanged free multi-direction drag
                             const rotation = dragX * 0.03;
                             const tiltY = dragY * 0.01;
-                            const flipRot = isFlipped ? ' rotateY(180deg)' : '';
-                            cardEl.style.transform = `translateX(${dragX}px) translateY(${dragY}px) rotateZ(${rotation}deg) rotateX(${-tiltY}deg)${flipRot}`;
+                            cardEl.style.transform = `translateX(${dragX}px) translateY(${dragY}px) rotateZ(${rotation}deg) rotateX(${-tiltY}deg)`;
                             cardEl.classList.add('swiping');
                             if (cardStack) {
                                 cardStack.classList.add('swiping', 'swipe-show-next');
@@ -9492,12 +9490,11 @@
                     const goingNext = dragX < 0;
                     const flyX = goingNext ? -window.innerWidth * 1.2 : window.innerWidth * 1.2;
                     const flyRot = dragX * 0.15;
-                    const flipRot = isFlipped ? ' rotateY(180deg)' : '';
                     document.body.style.overflow = 'visible';
                     if (cardEl) {
                         cardEl.classList.add('swiping');
                         cardEl.style.transition = 'transform 0.28s ease-in';
-                        cardEl.style.transform = 'translateX(' + flyX + 'px) rotateZ(' + flyRot + 'deg)' + flipRot;
+                        cardEl.style.transform = 'translateX(' + flyX + 'px) rotateZ(' + flyRot + 'deg)';
                     }
                     if (cardStack) {
                         cardStack.classList.add('swiping');
@@ -9521,12 +9518,11 @@
                         : 0;
                     const flyY = absX < absY ? (dragY > 0 ? window.innerHeight * 1.2 : -window.innerHeight * 1.2) : 0;
                     const flyRot = dragX * 0.15;
-                    const flipRot = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
                     if (cardEl) {
-                        cardEl.classList.remove('flipped');
+                        cardEl.classList.add('swiping');
                         cardEl.style.transition = 'transform 0.28s ease-in';
-                        cardEl.style.transform = `translateX(${flyX}px) translateY(${flyY}px) rotateZ(${flyRot}deg) ${flipRot}`;
+                        cardEl.style.transform = `translateX(${flyX}px) translateY(${flyY}px) rotateZ(${flyRot}deg)`;
                     }
 
                     document.body.style.overflow = 'visible';
@@ -14536,6 +14532,12 @@
         function toggleMspEdit() {
             _mspEditMode = !_mspEditMode;
             updateMspEditUI();
+            // Re-render so folder-header reorder handles appear/disappear
+            if (typeof loadUnitsFromDB === 'function') {
+                loadUnitsFromDB().then(function(units) {
+                    if (typeof renderMspList === 'function') renderMspList(units || []);
+                }).catch(function() {});
+            }
         }
 
         function updateMspEditUI() {
@@ -15240,11 +15242,23 @@
             groups.forEach(function(g) {
                 var gu = unitsInGroup(sorted, g.unitIds);
                 var ac = g.collapsed ? ' collapsed' : '';
-                html += '<div class="msp-group-header" onclick="mspToggleGroup(\'' + g.id + '\',this)" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
+                var headerHandle = _mspEditMode
+                    ? '<span class="msp-header-handle" title="Drag to reorder folder"' +
+                      ' onpointerdown="mspHeaderPointerDown(event,\'' + g.id + '\')"' +
+                      ' onclick="event.stopPropagation()">' + svgHandle + '</span>'
+                    : '';
+                html += '<div class="msp-group-header" data-group-id="' + g.id + '"' +
+                    ' onclick="mspToggleGroup(\'' + g.id + '\',this)"' +
+                    ' ondragover="mspHeaderOrUnitDragOver(event,this,\'' + g.id + '\')"' +
+                    ' ondragleave="mspHeaderDragLeave(this)"' +
+                    ' ondrop="mspHeaderOrUnitDrop(event,this,\'' + g.id + '\')">' +
+                    headerHandle +
                     '<span class="msp-group-arrow' + ac + '">&#9660;</span>' +
                     '<span class="msp-group-name">' + g.name + '</span>' +
                     '<span class="msp-group-count">' + gu.length + '</span></div>' +
-                    '<div class="msp-group-body' + ac + '" id="msp-gbody-' + g.id + '" ondragover="event.preventDefault();this.classList.add(\'msp-drop-active\')" ondragleave="this.classList.remove(\'msp-drop-active\')" ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
+                    '<div class="msp-group-body' + ac + '" id="msp-gbody-' + g.id + '"' +
+                    ' ondragover="mspGroupBodyDragOver(event,this)" ondragleave="this.classList.remove(\'msp-drop-active\')"' +
+                    ' ondrop="mspDropOnGroup(event,\'' + g.id + '\',this)">' +
                     (gu.length === 0 ? '<div class="msp-group-empty">Drop units here</div>' : gu.map(makeUnitRow).join('')) +
                     '</div>';
             });
@@ -15262,12 +15276,13 @@
                     html += '<div class="msp-uncat-gap"></div>';
                 }
                 html += '<div class="msp-group-header msp-uncat-header' + (groups.length > 0 ? ' msp-uncat-spaced' : '') + '" onclick="mspToggleUncat(this)"' +
-                    ' ondragover="event.preventDefault()" ondrop="mspDropOnUncat(event,this)">' +
+                    ' ondragover="mspUncatHeaderDragOver(event)" ondrop="mspDropOnUncat(event,this)">' +
                     '<span class="msp-group-arrow' + uac + '">&#9660;</span>' +
                     '<span class="msp-group-name">Uncategorized</span>' +
                     '<span class="msp-group-count">' + uncat.length + '</span></div>' +
                     '<div class="msp-group-body' + uac + '" id="msp-uncat-body"' +
-                    ' ondragover="event.preventDefault()" ondrop="mspDropOnUncat(event,this)">' +
+                    ' ondragover="mspGroupBodyDragOver(event,this)" ondragleave="this.classList.remove(\'msp-drop-active\')"' +
+                    ' ondrop="mspDropOnUncat(event,this)">' +
                     (uncat.length === 0 ? '<div class="msp-group-empty">Drop decks here</div>' : uncat.map(makeUnitRow).join('')) +
                     '</div></div>';
             }
@@ -15276,12 +15291,297 @@
         }
 
         var _mspDragId = null;
+        var _mspHeaderDragId = null;
         var _mspDropLock = 0;
         function mspCanApplyDrop() {
             var now = Date.now();
             if (now - _mspDropLock < 250) return false;
             _mspDropLock = now;
             return true;
+        }
+
+        function mspClearHeaderInsertMarks() {
+            document.querySelectorAll('.msp-header-insert-above,.msp-header-insert-below').forEach(function(el) {
+                el.classList.remove('msp-header-insert-above');
+                el.classList.remove('msp-header-insert-below');
+            });
+        }
+        function mspClearHeaderDragging() {
+            document.querySelectorAll('.msp-header-dragging').forEach(function(el) {
+                el.classList.remove('msp-header-dragging');
+            });
+        }
+
+        // Pointer-based folder header drag (mouse + touch) — whole header ghost moves like subunits
+        var _mspHdrPtr = {
+            active: false,
+            groupId: null,
+            ghost: null,
+            pointerId: null,
+            offsetY: 0,
+            startY: 0,
+            moved: false,
+            targetId: null,
+            insertBefore: true
+        };
+
+        function mspHeaderPointerDown(event, groupId) {
+            if (!_mspEditMode) return;
+            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            var handle = event.currentTarget;
+            var header = handle && handle.closest ? handle.closest('.msp-group-header') : null;
+            if (!header || header.classList.contains('msp-uncat-header')) return;
+
+            mspHeaderPointerCancel();
+            _mspHeaderDragId = groupId;
+            _mspDragId = null;
+            _mspHdrPtr.active = true;
+            _mspHdrPtr.groupId = groupId;
+            _mspHdrPtr.pointerId = event.pointerId;
+            _mspHdrPtr.targetId = null;
+            _mspHdrPtr.insertBefore = true;
+            _mspHdrPtr.moved = false;
+            _mspHdrPtr.startY = event.clientY;
+
+            var rect = header.getBoundingClientRect();
+            _mspHdrPtr.offsetY = event.clientY - rect.top;
+            header.classList.add('msp-header-dragging');
+
+            // Full header bar ghost (same size/look as subunits' whole-row ghost)
+            var ghost = header.cloneNode(true);
+            ghost.classList.remove('msp-header-dragging');
+            ghost.classList.remove('msp-header-insert-above');
+            ghost.classList.remove('msp-header-insert-below');
+            ghost.style.cssText = [
+                'position:fixed',
+                'left:' + rect.left + 'px',
+                'top:' + rect.top + 'px',
+                'width:' + rect.width + 'px',
+                'height:' + rect.height + 'px',
+                'z-index:99999',
+                'pointer-events:none',
+                'margin:0',
+                'box-sizing:border-box',
+                'box-shadow:0 8px 24px rgba(0,0,0,0.28)',
+                'opacity:0.95',
+                'background:#c8dfc8',
+                'border-radius:0',
+                'display:flex',
+                'align-items:center'
+            ].join(';');
+            document.body.appendChild(ghost);
+            _mspHdrPtr.ghost = ghost;
+
+            try { handle.setPointerCapture(event.pointerId); } catch (err) {}
+            document.addEventListener('pointermove', mspHeaderPointerMove, { passive: false });
+            document.addEventListener('pointerup', mspHeaderPointerUp);
+            document.addEventListener('pointercancel', mspHeaderPointerUp);
+        }
+
+        function mspHeaderPointerMove(event) {
+            if (!_mspHdrPtr.active) return;
+            if (_mspHdrPtr.pointerId != null && event.pointerId !== _mspHdrPtr.pointerId) return;
+            event.preventDefault();
+            if (Math.abs(event.clientY - _mspHdrPtr.startY) > 6) _mspHdrPtr.moved = true;
+            var ghost = _mspHdrPtr.ghost;
+            if (ghost) {
+                ghost.style.top = (event.clientY - _mspHdrPtr.offsetY) + 'px';
+            }
+
+            mspClearHeaderInsertMarks();
+            var src = document.querySelector('.msp-group-header[data-group-id="' + _mspHdrPtr.groupId + '"]');
+            if (src) src.classList.add('msp-header-dragging');
+
+            if (ghost) ghost.style.visibility = 'hidden';
+            var under = document.elementFromPoint(event.clientX, event.clientY);
+            if (ghost) ghost.style.visibility = '';
+            _mspHdrPtr.targetId = null;
+
+            var th = under && under.closest ? under.closest('.msp-group-header') : null;
+            // If over a folder body, use that folder's header as the drop target
+            if ((!th || th.classList.contains('msp-uncat-header')) && under) {
+                var body = under.closest('.msp-group-body');
+                if (body && body.id && body.id.indexOf('msp-gbody-') === 0) {
+                    var bid = body.id.replace('msp-gbody-', '');
+                    th = document.querySelector('.msp-group-header[data-group-id="' + bid + '"]');
+                }
+            }
+            if (!th || th.classList.contains('msp-uncat-header')) return;
+            var tid = th.getAttribute('data-group-id');
+            if (!tid || String(tid) === String(_mspHdrPtr.groupId)) return;
+
+            var rect = th.getBoundingClientRect();
+            var above = event.clientY < (rect.top + rect.height / 2);
+            _mspHdrPtr.targetId = tid;
+            _mspHdrPtr.insertBefore = above;
+            th.classList.add(above ? 'msp-header-insert-above' : 'msp-header-insert-below');
+        }
+
+        function mspHeaderPointerUp(event) {
+            if (!_mspHdrPtr.active) return;
+            if (_mspHdrPtr.pointerId != null && event.pointerId !== _mspHdrPtr.pointerId) return;
+
+            var dragId = _mspHdrPtr.groupId;
+            var targetId = _mspHdrPtr.targetId;
+            var insertBefore = _mspHdrPtr.insertBefore;
+
+            // If no target from move, hit-test once more on release
+            if (!targetId && event) {
+                var ghost = _mspHdrPtr.ghost;
+                if (ghost) ghost.style.visibility = 'hidden';
+                var under = document.elementFromPoint(event.clientX, event.clientY);
+                if (ghost) ghost.style.visibility = '';
+                var th = under && under.closest ? under.closest('.msp-group-header') : null;
+                if ((!th || th.classList.contains('msp-uncat-header')) && under) {
+                    var body = under.closest('.msp-group-body');
+                    if (body && body.id && body.id.indexOf('msp-gbody-') === 0) {
+                        th = document.querySelector('.msp-group-header[data-group-id="' + body.id.replace('msp-gbody-', '') + '"]');
+                    }
+                }
+                if (th && !th.classList.contains('msp-uncat-header')) {
+                    var tid = th.getAttribute('data-group-id');
+                    if (tid && String(tid) !== String(dragId)) {
+                        targetId = tid;
+                        var rect = th.getBoundingClientRect();
+                        insertBefore = event.clientY < (rect.top + rect.height / 2);
+                    }
+                }
+            }
+
+            var didMove = _mspHdrPtr.moved;
+            mspHeaderPointerCancel();
+
+            if (didMove && dragId && targetId && mspCanApplyDrop()) {
+                if (mspReorderGroupHeaders(dragId, targetId, insertBefore)) {
+                    loadUnitsFromDB().then(function(units) { renderMspList(units); });
+                }
+            }
+        }
+
+        function mspHeaderPointerCancel() {
+            document.removeEventListener('pointermove', mspHeaderPointerMove);
+            document.removeEventListener('pointerup', mspHeaderPointerUp);
+            document.removeEventListener('pointercancel', mspHeaderPointerUp);
+            if (_mspHdrPtr.ghost) {
+                try { _mspHdrPtr.ghost.remove(); } catch (e) {}
+                _mspHdrPtr.ghost = null;
+            }
+            mspClearHeaderInsertMarks();
+            mspClearHeaderDragging();
+            _mspHdrPtr.active = false;
+            _mspHdrPtr.groupId = null;
+            _mspHdrPtr.pointerId = null;
+            _mspHdrPtr.targetId = null;
+            _mspHeaderDragId = null;
+        }
+
+        // Legacy HTML5 stubs (headers now use pointer events)
+        function mspHeaderDragStart(event, groupId) {
+            event.preventDefault();
+        }
+        function mspHeaderDragEnd(event) {
+            mspHeaderPointerCancel();
+        }
+        function mspIsHeaderDrag(raw) {
+            return typeof raw === 'string' && raw.indexOf('header:') === 0;
+        }
+        function mspHeaderOrUnitDragOver(event, headerEl, groupId) {
+            event.preventDefault();
+            event.stopPropagation();
+            var raw = '';
+            try { raw = event.dataTransfer.getData('text/plain') || ''; } catch (e) { raw = ''; }
+            // During dragover, getData is often empty in Chrome — use sticky state
+            if (_mspHeaderDragId || mspIsHeaderDrag(raw)) {
+                event.dataTransfer.dropEffect = 'move';
+                headerEl.classList.remove('msp-drop-active');
+                document.querySelectorAll('.msp-header-insert-above,.msp-header-insert-below').forEach(function(el) {
+                    if (el !== headerEl) {
+                        el.classList.remove('msp-header-insert-above');
+                        el.classList.remove('msp-header-insert-below');
+                    }
+                });
+                // Don't show insert on self
+                if (_mspHeaderDragId && String(groupId) === String(_mspHeaderDragId)) {
+                    headerEl.classList.remove('msp-header-insert-above');
+                    headerEl.classList.remove('msp-header-insert-below');
+                    return;
+                }
+                var rect = headerEl.getBoundingClientRect();
+                var above = event.clientY < (rect.top + rect.height / 2);
+                headerEl.classList.toggle('msp-header-insert-above', above);
+                headerEl.classList.toggle('msp-header-insert-below', !above);
+                return;
+            }
+            // Unit drop onto folder header (existing behavior)
+            headerEl.classList.add('msp-drop-active');
+            headerEl.classList.remove('msp-header-insert-above');
+            headerEl.classList.remove('msp-header-insert-below');
+        }
+        function mspHeaderDragLeave(headerEl) {
+            if (!headerEl) return;
+            headerEl.classList.remove('msp-drop-active');
+            headerEl.classList.remove('msp-header-insert-above');
+            headerEl.classList.remove('msp-header-insert-below');
+        }
+        function mspReorderGroupHeaders(dragId, targetId, insertBefore) {
+            if (!dragId || !targetId || String(dragId) === String(targetId)) return false;
+            var groups = loadGroups();
+            var fromIdx = groups.findIndex(function(g) { return String(g.id) === String(dragId); });
+            var toIdx = groups.findIndex(function(g) { return String(g.id) === String(targetId); });
+            if (fromIdx < 0 || toIdx < 0) return false;
+            var moved = groups.splice(fromIdx, 1)[0];
+            // After removal, target index may shift
+            toIdx = groups.findIndex(function(g) { return String(g.id) === String(targetId); });
+            if (toIdx < 0) {
+                groups.push(moved);
+            } else {
+                groups.splice(insertBefore ? toIdx : toIdx + 1, 0, moved);
+            }
+            saveGroups(groups);
+            return true;
+        }
+        function mspHeaderOrUnitDrop(event, headerEl, groupId) {
+            event.preventDefault();
+            event.stopPropagation();
+            var raw = '';
+            try { raw = event.dataTransfer.getData('text/plain') || ''; } catch (e) { raw = ''; }
+            if (!raw && _mspHeaderDragId) raw = 'header:' + _mspHeaderDragId;
+            var insertBefore = headerEl.classList.contains('msp-header-insert-above');
+            mspClearHeaderInsertMarks();
+            headerEl.classList.remove('msp-drop-active');
+
+            if (mspIsHeaderDrag(raw) || _mspHeaderDragId) {
+                if (!_mspEditMode) return;
+                if (!mspCanApplyDrop()) return;
+                var dragId = mspIsHeaderDrag(raw) ? raw.slice(7) : _mspHeaderDragId;
+                _mspHeaderDragId = null;
+                if (mspReorderGroupHeaders(dragId, groupId, insertBefore)) {
+                    loadUnitsFromDB().then(function(units) { renderMspList(units); });
+                }
+                return;
+            }
+            // Fall through: drop a deck onto this folder
+            mspDropOnGroup(event, groupId, headerEl);
+        }
+
+        /** Folder headers may only reorder among headers — never into deck lists. */
+        function mspGroupBodyDragOver(event, el) {
+            if (_mspHeaderDragId) {
+                if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+                if (el) el.classList.remove('msp-drop-active');
+                return;
+            }
+            event.preventDefault();
+            if (el) el.classList.add('msp-drop-active');
+        }
+        function mspUncatHeaderDragOver(event) {
+            if (_mspHeaderDragId) {
+                if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+                return;
+            }
+            event.preventDefault();
         }
         function mspRemoveFromAllGroups(groups, unitId) {
             var n = Number(unitId);
@@ -15302,6 +15602,13 @@
             _mspDragId = null;
         }
         function mspRowDragOver(event, rowEl) {
+            // Headers cannot be dropped into subunit/deck rows
+            if (_mspHeaderDragId) {
+                if (event.dataTransfer) event.dataTransfer.dropEffect = 'none';
+                rowEl.classList.remove('msp-insert-above');
+                rowEl.classList.remove('msp-insert-below');
+                return;
+            }
             event.preventDefault();
             event.dataTransfer.dropEffect = 'move';
             document.querySelectorAll('.msp-insert-above,.msp-insert-below').forEach(function(el){ el.classList.remove('msp-insert-above'); el.classList.remove('msp-insert-below'); });
@@ -15315,6 +15622,13 @@
             event.preventDefault(); event.stopPropagation();
             rowEl.classList.remove('msp-insert-above'); rowEl.classList.remove('msp-insert-below');
             document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
+            var rawCheck = '';
+            try { rawCheck = event.dataTransfer.getData('text/plain') || ''; } catch (e) { rawCheck = ''; }
+            if (_mspHeaderDragId || mspIsHeaderDrag(rawCheck)) {
+                mspClearHeaderInsertMarks();
+                _mspHeaderDragId = null;
+                return; // headers only move between headers
+            }
             if (!mspCanApplyDrop()) return;
             var draggedId = Number(event.dataTransfer.getData('text/plain') || _mspDragId);
             var rect = rowEl.getBoundingClientRect();
@@ -15361,6 +15675,13 @@
             event.preventDefault();
             event.stopPropagation();
             if (el) el.classList.remove('msp-drop-active');
+            var rawCheck = '';
+            try { rawCheck = event.dataTransfer.getData('text/plain') || ''; } catch (e) { rawCheck = ''; }
+            if (_mspHeaderDragId || mspIsHeaderDrag(rawCheck)) {
+                mspClearHeaderInsertMarks();
+                _mspHeaderDragId = null;
+                return; // headers cannot move into subunit area
+            }
             if (!mspCanApplyDrop()) return;
             var unitId = Number(event.dataTransfer.getData('text/plain') || _mspDragId);
             if (!unitId) return;
@@ -15399,6 +15720,13 @@
         function mspDropOnUncat(event, el) {
             event.preventDefault();
             event.stopPropagation();
+            var rawCheck = '';
+            try { rawCheck = (event.dataTransfer && event.dataTransfer.getData('text/plain')) || ''; } catch (e) { rawCheck = ''; }
+            if (_mspHeaderDragId || mspIsHeaderDrag(rawCheck)) {
+                mspClearHeaderInsertMarks();
+                _mspHeaderDragId = null;
+                return; // headers cannot move into Uncategorized subunit area
+            }
             if (!mspCanApplyDrop()) return;
             var unitId = Number((event.dataTransfer && event.dataTransfer.getData('text/plain')) || _mspDragId);
             if (!unitId) return;
@@ -15412,7 +15740,8 @@
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
         }
         // Single persistent touch-drag state (not re-created per render)
-        var _mspTouch = { id: null, ghost: null, container: null, bound: false };
+        // mode: 'unit' | 'header'
+        var _mspTouch = { id: null, headerId: null, mode: null, ghost: null, container: null, bound: false, insertBefore: true };
 
         function setupMspTouchDrag(container) {
             // Only bind once — reuse the same listeners across re-renders
@@ -15432,47 +15761,61 @@
             container.addEventListener('touchcancel', _mspTouchEnd,   {passive:true});
         }
 
-        function _mspTouchStart(e) {
-            var handle = e.target.closest('.msp-drag-handle');
-            if (!handle) return;
-            var row = handle.closest('.msp-unit-row');
-            if (!row) return;
-            _mspCleanGhost(); // clean up any leftover ghost
-            _mspTouch.id = Number(row.dataset.unitId);
-            row.classList.add('msp-dragging');
-            var ghost = row.cloneNode(true);
-            var rect = row.getBoundingClientRect();
-            // Position ghost immediately at the row's current position
+        function _mspMakeGhostFrom(el) {
+            var ghost = el.cloneNode(true);
+            var rect = el.getBoundingClientRect();
             ghost.style.cssText = [
                 'position:fixed',
                 'z-index:99999',
                 'pointer-events:none',
-                'opacity:0.85',
-                'width:' + row.offsetWidth + 'px',
+                'opacity:0.9',
+                'width:' + el.offsetWidth + 'px',
                 'left:' + rect.left + 'px',
                 'top:' + rect.top + 'px',
                 'box-shadow:0 6px 20px rgba(0,0,0,0.25)',
                 'border-radius:8px',
-                'background:white',
+                'background:#c8dfc8',
                 'margin:0'
             ].join(';');
             document.body.appendChild(ghost);
-            _mspTouch.ghost = ghost;
+            return ghost;
+        }
+
+        function _mspTouchStart(e) {
+            // Folder headers use pointer events (mspHeaderPointerDown) so the whole bar moves
+            if (e.target.closest('.msp-header-handle') || _mspHdrPtr.active) return;
+
+            var handle = e.target.closest('.msp-drag-handle');
+            if (!handle) return;
+            if (!_mspEditMode) return; // subunit handles only visible/usable in Edit
+            var row = handle.closest('.msp-unit-row');
+            if (!row) return;
+            _mspCleanGhost();
+            _mspTouch.mode = 'unit';
+            _mspTouch.headerId = null;
+            _mspTouch.id = Number(row.dataset.unitId);
+            row.classList.add('msp-dragging');
+            _mspTouch.ghost = _mspMakeGhostFrom(row);
+            _mspTouch.ghost.style.background = 'white';
         }
 
         function _mspTouchMove(e) {
-            if (!_mspTouch.id || !_mspTouch.ghost) return;
+            if (!_mspTouch.ghost) return;
+            if (_mspTouch.mode !== 'unit') return;
             e.preventDefault();
             var t = e.touches[0];
             _mspTouch.ghost.style.left = (t.clientX - _mspTouch.ghost.offsetWidth / 2) + 'px';
             _mspTouch.ghost.style.top  = (t.clientY - 28) + 'px';
-            // Clear all indicators
+
             document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
             document.querySelectorAll('.msp-insert-above,.msp-insert-below').forEach(function(el){ el.classList.remove('msp-insert-above'); el.classList.remove('msp-insert-below'); });
+
             _mspTouch.ghost.style.display = 'none';
             var under = document.elementFromPoint(t.clientX, t.clientY);
             _mspTouch.ghost.style.display = '';
             if (!under) return;
+
+            // Unit drag (existing)
             var row = under.closest('.msp-unit-row');
             if (row && Number(row.dataset.unitId) !== _mspTouch.id) {
                 var rect = row.getBoundingClientRect();
@@ -15486,21 +15829,25 @@
         }
 
         function _mspTouchEnd(e) {
+            var mode = _mspTouch.mode;
+            var droppedId = _mspTouch.id;
+
             document.querySelectorAll('.msp-drop-active').forEach(function(el){ el.classList.remove('msp-drop-active'); });
             document.querySelectorAll('.msp-insert-above,.msp-insert-below').forEach(function(el){ el.classList.remove('msp-insert-above'); el.classList.remove('msp-insert-below'); });
             document.querySelectorAll('.msp-unit-row.msp-dragging').forEach(function(el){ el.classList.remove('msp-dragging'); });
 
-            var droppedId = _mspTouch.id;
-            _mspCleanGhost();
-            if (!droppedId || !e.changedTouches) return;
-            if (!mspCanApplyDrop()) return;
+            var t = e.changedTouches && e.changedTouches[0];
+            var under = t ? document.elementFromPoint(t.clientX, t.clientY) : null;
 
-            var t = e.changedTouches[0];
-            var under = document.elementFromPoint(t.clientX, t.clientY);
+            _mspCleanGhost();
+            // Header drags are finished in mspHeaderPointerUp — ignore here
+            if (mode === 'header' || _mspHdrPtr.active) return;
+
+            if (mode !== 'unit' || !droppedId || !e.changedTouches) return;
+            if (!mspCanApplyDrop()) return;
             if (!under) return;
 
             // Dropped on Uncategorized pink section (gap, header, empty body)
-            // Unit rows inside Uncategorized still use row-insert below.
             var uncatSec = under.closest('.msp-uncat-section');
             var row = under.closest('.msp-unit-row');
             if (uncatSec && !row) {
@@ -15517,7 +15864,7 @@
                 var targetId = Number(row.dataset.unitId);
                 if (targetId && targetId !== droppedId) {
                     var rect = row.getBoundingClientRect();
-                    var insertBefore = t.clientY < (rect.top + rect.height / 2);
+                    var insertBeforeU = t.clientY < (rect.top + rect.height / 2);
                     var groups = loadGroups();
                     var targetGroup = null;
                     groups.forEach(function(g){ if (g.unitIds.map(Number).indexOf(targetId) !== -1) targetGroup = g; });
@@ -15526,7 +15873,7 @@
                         var ids = (targetGroup.unitIds || []).map(Number);
                         var newToIdx = ids.indexOf(targetId);
                         if (newToIdx === -1) newToIdx = ids.length;
-                        ids.splice(insertBefore ? newToIdx : newToIdx + 1, 0, droppedId);
+                        ids.splice(insertBeforeU ? newToIdx : newToIdx + 1, 0, droppedId);
                         targetGroup.unitIds = ids;
                         saveGroups(groups);
                         saveUncatOrder(loadUncatOrder().map(Number).filter(function(id){ return id !== droppedId; }));
@@ -15543,7 +15890,7 @@
                         order = order.filter(function(id){ return id !== droppedId; });
                         var toU = order.indexOf(targetId);
                         if (toU === -1) order.push(droppedId);
-                        else order.splice(insertBefore ? toU : toU + 1, 0, droppedId);
+                        else order.splice(insertBeforeU ? toU : toU + 1, 0, droppedId);
                         saveUncatOrder(order);
                     }
                     loadUnitsFromDB().then(function(units){ renderMspList(units); });
@@ -15554,7 +15901,7 @@
             // Dropped on folder header/body (not Uncategorized)
             var hit = under.closest('.msp-group-header') || under.closest('.msp-group-body');
             if (!hit || hit.classList.contains('msp-uncat-header') || hit.id === 'msp-uncat-body') return;
-            var gid = (hit.id || '').replace('msp-gbody-', '');
+            var gid = hit.getAttribute('data-group-id') || (hit.id || '').replace('msp-gbody-', '');
             if (!gid) { var m = (hit.getAttribute('onclick') || '').match(/mspToggleGroup\('([^']+)'/); if (m) gid = m[1]; }
             if (!gid) return;
             var groups2 = loadGroups();
@@ -15569,6 +15916,11 @@
         function _mspCleanGhost() {
             if (_mspTouch.ghost) { _mspTouch.ghost.remove(); _mspTouch.ghost = null; }
             _mspTouch.id = null;
+            _mspTouch.headerId = null;
+            _mspTouch.mode = null;
+            document.querySelectorAll('.msp-header-dragging').forEach(function(el) {
+                el.classList.remove('msp-header-dragging');
+            });
         }
 
         function mspDeleteAllConfirm(btn) {
@@ -17480,7 +17832,7 @@
                             </div>`}
                         </div>
                         ` : ''}
-                        <div class="card ${isFlipped ? 'flipped' : ''}" style="cursor: pointer;">
+                        <div class="card ${isFlipped ? 'flipped skip-flip-transition' : ''}" style="cursor: pointer;">
                             <div class="card-face card-front${showFrontCaption(card.backText) ? ' show-text-active' : ''}${charFrontClass(card.backText)}">
                                 ${charOverlayMarkup(card.backText)}
                                 <img src="${gifSrc(card.frontImage)}" class="card-image">
@@ -17593,6 +17945,10 @@
                     '.card-next .card-text-auto-scale'
                 ).forEach(t => { t.style.visibility = ''; });
                 positionNavOverlay();
+                requestAnimationFrame(() => {
+                    const skipEl = display.querySelector('.card.skip-flip-transition');
+                    if (skipEl) skipEl.classList.remove('skip-flip-transition');
+                });
             });
 
             // Only complete a swipe-hint request from a fresh import (not every re-render)
@@ -20485,6 +20841,186 @@
             initMatchGame(matchGameState._pendingCards);
         }
 
+        // Compact 3–6 letter bank for Match similar-word scramble (phonics + common English).
+        const MATCH_SIMILAR_BANK = (
+            'ace add age ago aid aim air ale all and ant any ape are ark arm art ash ask ate awe axe ' +
+            'bad bag ban bar bat bay bed bee beg bet big bin bit bog bow box boy bud bug bun bus but buy ' +
+            'cab can cap car cat cob cop cow cub cup cut ' +
+            'dad dam day den did dig dim dip dog dot dry due dug ' +
+            'ear eat egg elm end ' +
+            'fan far fat fed few fig fin fit fix fly fog for fox fun fur ' +
+            'gap gas get gig gin god got gum gun guy ' +
+            'had ham has hat hen hid him hip his hit hog hop hot how hug hum hut ' +
+            'ice ill ink inn ' +
+            'jam jar jaw jet job jog joy jug ' +
+            'key kid kit ' +
+            'lab lad lag lap law lay led leg let lid lie lip lit log lot low ' +
+            'mad man map mat may men met mix mob mom mop mud mug ' +
+            'nap net new nip nor not now nut ' +
+            'oak odd off oil old one our out owl own ' +
+            'pad pal pan pat paw pay pea pen pet pie pig pin pit pod pop pot pug pup put ' +
+            'rag ram ran rap rat raw red rid rim rip rob rod rot row rub rug run ' +
+            'sad sag sap sat saw say sea see set she sip sit six sob son sun ' +
+            'tab tag tan tap tar tea ten the tie tin tip toe ton top toy tub tug two ' +
+            'van vat ' +
+            'wag war was wax way web wed wet who why wig win wit won wow ' +
+            'yes yet you zip zoo ' +
+            'able also area army baby back ball band bank barn base bath bead bean bear beat bell belt bend best bike bill bird bite blow blue boat body bone book boom boot born both bowl burn bush busy ' +
+            'cake calf call calm came camp card care cart case cash cast cave chip clap claw clay clip club coal coat coin cold come cook cool copy cord corn cost crab crew crop crow cube cute ' +
+            'damp dare dark date dawn dead deal dear deep deer desk dine dirt dish dock doll door down draw drip drop drum duck dump dust duty ' +
+            'each earn ease east easy edge else even ever evil ' +
+            'face fact fade fail fair fall fame farm fast fear feed feel feet fell felt file fill film find fine fire firm fish five flag flap flat flee flip flow foam fold food fool foot fork form fort four free frog from fuel full ' +
+            'gain game gate gave gift girl give glad glow glue goal goat gold golf gone good grab gray grew grey grin grip grow ' +
+            'hair half hall halt hand hang hard hare harm hate have head hear heat held help herd here hero hide high hill hint hire hold hole home hope horn hose host hour huge hunt hurt ' +
+            'idea inch into iron item ' +
+            'jack jade jail join joke jump just ' +
+            'keen keep kick kind king kiss kite knee knew knit knob know ' +
+            'lace lack lady laid lake lamb lamp land lane lark last late lawn lazy lead leaf lean leap left less lid life lift like lily lime line link lion list live load loaf loan lock long look loop lord lose loss lost loud love luck lump ' +
+            'made mail main make male mall malt many mark mars mask mass mate math meal mean meat meet melt menu mess mice mile milk mill mind mine mint miss mist moon more most move much mule must ' +
+            'nail name navy near neck need nest news next nice nine none noon nose note noun ' +
+            'obey once only open over ' +
+            'pace pack page paid pail pain pair pale palm park part pass past path peak pear peas peck peel peep pest pick pile pill pine pink pipe plan play plot plug plus poem pole pond pony pool poor port pour pray pull pump pure push ' +
+            'race rack raft rage rain rake ramp rang rank rare rate read real rear rest rice rich ride ring rise risk road roar rock roll roof room root rope rose ruin rule rush rust ' +
+            'sack safe said sail sake sale salt same sand sang sank save seal seat seed seek seem seen self sell send sent ship shop shot show shut sick side sign silk silt sing sink site size skin skip slid slim slip slow snap snow soap sock soda sofa soft soil sold some song soon sore sort soul soup spin spot star stay stem step stir stop such suit sure swim ' +
+            'tail take tale talk tall tank tape team tear tell tend tent term test than that them then they thin this tide tied tile till time tiny toad told tone took tool torn toss tour town trap tray tree trip true tube tuna tune turn twin type ' +
+            'ugly unit upon used user ' +
+            'vase vast verb very vine vote ' +
+            'wade wage wait wake walk wall want warm warn wash wave weak wear week well went were west what when whip wide wife wild will wind wine wing wink wire wise wish with wolf wood wool word wore work worm worn wrap ' +
+            'yard yarn yeah year yell your ' +
+            'zero zinc zone zoom ' +
+            'about above after again agree alien alone along angry apple April arena argue arise aside avoid awake award aware ' +
+            'bacon badge baker basic beach beans begin being belly below bench berry birth black blame blank blast blend bless blind block blood bloom board boast bones boost booth brain brand brass brave bread break breed brick bring broad brook brown brush build built bunch burst buyer ' +
+            'cabin cable camel candy canoe cards carry catch cause chain chair chalk champ chant chase cheap cheat check chess chest chief child china chips choir chunk cider civil class clean clear clerk click cliff climb cloak clock close cloth cloud clown coach coast cocoa color comet comic coral count cover crack craft crane crash crawl crazy cream creek cried crime crisp croak crowd cruel crush crust curve cycle ' +
+            'daily dairy dance dated dealt death delay dense depth diary dirty ditch diver dizzy donor doubt dough dozen draft drain drama drank drawn dream dress dried drift drink drive drove dryer dusty ' +
+            'early earth eight elder elite empty enemy enjoy enter entry equal error event every exact extra ' +
+            'fable faint fairy faith false fancy fatal fault feast fence fever field fifth fifty fight final first flame flash fleet flesh float flock flood floor flour flush focus force found frame fresh fried front frost fruit funny ' +
+            'giant given glass globe glory going goose grade grain grand grape graph grass grave gravy great green greet grill groan group grove grow grown guard guess guest guide ' +
+            'habit happy harsh haste hatch haven heart heavy hello honey honor horse hotel house human humor hurry ' +
+            'ideal image imply index inner input issue ivory ' +
+            'jeans jelly jewel jolly judge juice jumbo ' +
+            'kneel knife known ' +
+            'label labor large later laugh layer learn least leave legal lemon level light limit linen liver local lodge loose lover lucky lunch ' +
+            'magic major maker maple march match maybe mayor medal melon mercy merry metal might miner minor model money month moral motor mouse mouth movie music ' +
+            'naked nerve never newly night noise north novel nurse ' +
+            'ocean offer often olive onion opera orbit order organ other outer owner ' +
+            'paint panel paper party pasta patch pause peace peach pearl phase phone photo piano piece pilot pinch pitch pizza place plain plane plant plate please plenty point porch pound power press price pride print prior prize proud prove punch pupil purse ' +
+            'queen quick quiet quite quote ' +
+            'radio rainy raise ranch range rapid reach ready relax reply rider right river roast robot rocky roman rough round route royal ruler rural ' +
+            'salad salty sandy sauce scale scare scene scoop score scout scrap screw sense serve seven shade shake shall shame shape share shark sharp sheep sheet shelf shell shift shine shirt shock shoot shore short shout shown shrug sight silly since sixth skill skirt skull slave sleep slice slide slope small smart smell smile smoke snake snowy solar solid solve sorry sound south space spare speak speed spell spend spice spider spike spill spin spirit split spoil spoon sport stack staff stage stain stamp stand stare start state steam steel steep steer stick stiff still stock stone stood stool store storm story stove straw stray strip study stuff style sugar sunny super sweet swing ' +
+            'table tasty teach teeth thank their theme there these thick thief thing think third those three threw throw thumb tiger tight tired title toast today token tooth topic total touch towel tower trace track trade trail train treat tribe trick truck truly trunk trust truth tutor twice twist ' +
+            'uncle under union until upper urban usual ' +
+            'valid value video virus visit vital vivid voice voter ' +
+            'wagon waste watch water wheel where which while white whole whose width woman world worry worse worst worth would wound write wrong ' +
+            'young youth ' +
+            'zebra ' +
+            'across action almost always amount animal answer around artist attack august author ' +
+            'bakery banana banked basket battle beaten beauty become before behind belong better beyond bigger binary bitter blanket bloody border bottle bounce branch breath bridge bright broken bronze bubble budget bundle burden butter button ' +
+            'camera canyon carpet castle cattle celery center chance change charge cheese cherry choice choose chorus church cinema circle citrus clever client closed closer closet cloudy coffee collar colony column comedy common copper corner cotton county couple course cousin cradle crater create credit cricket crowded crystal custom ' +
+            'danger darker dealer debate decade decide demand desert design detail dinner direct doctor dollar domain donkey double dragon drawer driver during ' +
+            'easily editor effect effort either eleven empire engine entire escape except expand expert export extend ' +
+            'fabric factor failed family famous farmer father female fender fierce figure filter finger finish flight flower forest forget formal former fossil fourth friend frozen future ' +
+            'galaxy garden garlic gather gender gentle ginger global golden gospel grabbed grainy grated gravity ground growth guitar ' +
+            'hammer happen harbor hardly health heaven height helmet hidden holder honest hunger hunter ' +
+            'income indoor insect inside intend invent island itself ' +
+            'jacket jungle junior ' +
+            'kitten ' +
+            'ladder latest lawyer leader legend length lesson letter likely linear little living loaded locker longer looker lounge lovely lumber luxury ' +
+            'magnet mainly maker manage manner marble margin market master matter meadow member memory metal method middle mighty miner minute mirror modern moment monkey mostly mother motion motor movie murder muscle museum myself ' +
+            'narrow nation native nature nearby nearly needle nephew nickel nobody normal notice number ' +
+            'object office online orange origin output oxygen ' +
+            'palace parent partly pepper person pickle picnic pillow pirate planet player plenty pocket police polish pollen poster potato powder pretty prince prison proper public purple puzzle ' +
+            'rabbit random rarely rather reader really reason record reduce refuse region remain remind remote repair repeat report rescue result return review ribbon riddle rocket roller rubber ' +
+            'saddle salary sample school screen search season second secret select senior series server shadow silver simple singer sister slider slightly smooth soccer social socket soldier source spider spirit splash spring square stable statue stolen stream street strike string strong studio sudden summer supply surely survey switch symbol system ' +
+            'tablet tackle taken talent target temple tennis thanks theory thirty though threat throat ticket timber tissue tomato tongue toward travel treaty tribe triple trophy tunnel turkey turtle twelve twenty ' +
+            'unique update useful ' +
+            'valley vendor versus victim vision volume ' +
+            'waiter wallet wander warmth wealth weekly weight wheat window winner winter wisdom within wonder wooden worker writer ' +
+            'yellow ' +
+            'zipper'
+        ).trim().split(/\s+/);
+        const MATCH_SIMILAR_SET = {};
+        MATCH_SIMILAR_BANK.forEach(function (w) {
+            const k = w.toLowerCase();
+            if (!MATCH_SIMILAR_SET[k]) MATCH_SIMILAR_SET[k] = k;
+        });
+        function matchScrambleSeed(text) {
+            const w = String(text || '').trim();
+            if (!w) return null;
+            if (/\s/.test(w) || /-/.test(w)) return null;
+            if (!/^[A-Za-z]+$/.test(w)) return null;
+            if (w.length < 3 || w.length > 6) return null;
+            return w.toLowerCase();
+        }
+        function matchSimilarCase(sample, word) {
+            if (!sample) return word;
+            if (sample === sample.toUpperCase()) return word.toUpperCase();
+            if (sample.charAt(0) === sample.charAt(0).toUpperCase()) {
+                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            }
+            return word.toLowerCase();
+        }
+        function matchSimilarNeighbors(seed) {
+            const s = seed.toLowerCase();
+            const n = s.length;
+            const rime = s.slice(1);
+            const out = [];
+            const seen = {};
+            Object.keys(MATCH_SIMILAR_SET).forEach(function (w) {
+                if (w.length !== n || w === s) return;
+                let h = 0;
+                for (let i = 0; i < n; i++) if (w.charAt(i) !== s.charAt(i)) h++;
+                if (h === 1 || w.slice(1) === rime) {
+                    if (!seen[w]) { seen[w] = 1; out.push(w); }
+                }
+            });
+            return out;
+        }
+        function fillMatchSimilarWords() {
+            const cardsWithText = matchGameState._pendingCards || [];
+            const ta = document.getElementById('matchExtraWordsInput');
+            if (!ta) return;
+            const deckLower = {};
+            cardsWithText.forEach(function (c) {
+                const t = (c && c.backText) ? String(c.backText).trim() : '';
+                if (t) deckLower[t.toLowerCase()] = 1;
+            });
+            const existing = {};
+            ta.value.split('\n').forEach(function (line) {
+                const t = line.trim();
+                if (t) existing[t.toLowerCase()] = t;
+            });
+            let added = 0;
+            let skipped = 0;
+            const extras = [];
+            cardsWithText.forEach(function (c) {
+                const raw = (c && c.backText) ? String(c.backText).trim() : '';
+                const seed = matchScrambleSeed(raw);
+                if (!seed) { skipped++; return; }
+                let neigh = matchSimilarNeighbors(seed);
+                if (typeof fisherYatesShuffle === 'function') neigh = fisherYatesShuffle(neigh);
+                let take = 0;
+                for (let i = 0; i < neigh.length && take < 4; i++) {
+                    const w = neigh[i];
+                    if (deckLower[w] || existing[w]) continue;
+                    const cased = matchSimilarCase(raw, w);
+                    existing[w] = cased;
+                    extras.push(cased);
+                    added++;
+                    take++;
+                }
+            });
+            const keep = ta.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+            const merged = keep.slice();
+            extras.forEach(function (w) {
+                if (keep.every(function (k) { return k.toLowerCase() !== w.toLowerCase(); })) merged.push(w);
+            });
+            ta.value = merged.join('\n');
+            if (typeof showToast === 'function') {
+                if (added === 0) showToast('No 3–6 letter lookalikes to add', 2200);
+                else showToast('Added ' + added + ' similar word' + (added === 1 ? '' : 's'), 2200);
+            }
+        }
+
         function initMatchGame(cardsWithText) {
             const shuffled = fisherYatesShuffle(cardsWithText);
             const allWords = [...new Set([
@@ -20508,7 +21044,36 @@
             renderMatchGame();
         }
 
+        function hideMatchEndConfirm() {
+            const el = document.getElementById('matchEndConfirm');
+            if (el) el.style.display = 'none';
+        }
+
+        function requestCloseMatchGame() {
+            closeMatchSettings();
+            const g = matchGameState;
+            const active = !!(g && g.questions && g.questions.length && g.currentQ < g.questions.length);
+            if (!active) {
+                closeMatchGame();
+                return;
+            }
+            const el = document.getElementById('matchEndConfirm');
+            if (el) el.style.display = 'flex';
+        }
+
+        function confirmEndMatchGame() {
+            hideMatchEndConfirm();
+            resetMatchGameSession();
+            closeMatchGame();
+        }
+
+        function declineEndMatchGame() {
+            hideMatchEndConfirm();
+            closeMatchGame();
+        }
+
         function closeMatchGame() {
+            hideMatchEndConfirm();
             closeMatchSettings();
             const matchGear = document.getElementById('matchOverlaySettings');
             if (matchGear) matchGear.style.display = 'none';
@@ -20660,7 +21225,7 @@
             const tabletLift = '';
 
             const toolsBtnsHTML = `
-                <button type="button" class="spell-glass-btn" onclick="closeMatchGame()" style="color:#e53935;" title="Back">
+                <button type="button" class="spell-glass-btn" onclick="requestCloseMatchGame()" style="color:#e53935;" title="Back">
                     <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                 </button>
                 <button type="button" class="spell-glass-btn" onclick="shuffleMatchGame()" style="color:#35654D;" title="Shuffle">
