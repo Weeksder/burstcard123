@@ -55,7 +55,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1312-asset-folder">
+    <meta name="flashabc-build" content="1314-spell-double-cheer">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -1964,6 +1964,7 @@
         const SPELL_DRAG_THRESHOLD = 12;
         const SPELL_CARD_SWIPE_MIN = 60;
         let _spellTryAgain = false;
+        let _spellAdvancing = false;
         function spellClearTryAgain() { _spellTryAgain = false; }
 
         /**
@@ -3827,6 +3828,15 @@
                     if (id === 'cheersSound') return;
                     this._decodeOne(id);
                 });
+                const cheers = document.getElementById('cheersSound');
+                if (cheers) { cheers.preload = 'auto'; try { cheers.load(); } catch (e) {} }
+                setTimeout(() => { this._decodeOne('cheersSound'); }, 400);
+            },
+
+            warmup: function(soundId) {
+                const el = document.getElementById(soundId);
+                if (el) { el.preload = 'auto'; try { el.load(); } catch (e) {} }
+                this._decodeOne(soundId);
             },
 
             _decodeOne: async function(soundId) {
@@ -3915,9 +3925,19 @@
                 };
                 if (node.readyState >= 2) go();
                 else {
+                    node.addEventListener('canplaythrough', go, { once: true });
                     node.addEventListener('canplay', go, { once: true });
                     node.load();
-                    setTimeout(go, 120);
+                    if (soundId !== 'cheersSound') setTimeout(go, 120);
+                    else {
+                        src.preload = 'auto';
+                        try { src.load(); } catch (e) {}
+                        src.addEventListener('canplaythrough', function onCheer() {
+                            src.removeEventListener('canplaythrough', onCheer);
+                            if (started) return;
+                            go();
+                        }, { once: true });
+                    }
                 }
             },
 
@@ -3942,6 +3962,7 @@
         };
 
         // Helper function to play sound effects (backwards compatible)
+        window.audioManager = audioManager;
         function playSound(soundId) {
             if (isMuted) return;
             audioManager.play(soundId);
@@ -14070,6 +14091,11 @@
 
         function startGame(gameType) {
             if (typeof stopCheersSound === 'function') stopCheersSound();
+            var am = (typeof audioManager !== 'undefined') ? audioManager : window.audioManager;
+            if (am && typeof am.warmup === 'function' &&
+                (gameType === 'guess' || gameType === 'spelling' || gameType === 'match' || gameType === 'findletter')) {
+                am.warmup('cheersSound');
+            }
             closeGameMenu();
 
             if (gameType === 'guess') {
@@ -16518,6 +16544,7 @@
         }
 
         function spellingNextCard() {
+            _spellAdvancing = false;
             ensureSpellSets();
             const { gameCards, spelledCards, currentCardIndex } = spellingGameState;
             const total = gameCards.length;
@@ -17726,11 +17753,18 @@
         }
 
         function checkSpelling() {
+            if (_spellAdvancing) return;
             const answer = spellingGameState.answerSlots.map(slot =>
                 slot === 'SPACE' ? ' ' : slot === 'HYPHEN' ? '-' : slot
             ).join('');
 
             if (answer === spellingGameState.correctWord) {
+                _spellAdvancing = true;
+                const checkBtnLock = document.getElementById('checkBtn');
+                if (checkBtnLock) {
+                    checkBtnLock.style.pointerEvents = 'none';
+                    checkBtnLock.style.opacity = '0.55';
+                }
                 playSound('correctSound');
                 ensureSpellSets();
                 const doneIdx = spellingGameState.currentCardIndex;
@@ -17781,7 +17815,8 @@
             const cellAspect = 'width:' + tile + 'px;height:' + tile + 'px;';
 
             const gridCells = [];
-            for (let i = 0; i < guessGridSize; i++) {
+            const cellCount = Math.min(guessVisibleCount(), Math.max(roundCards.length, cards.length < 9 ? cards.length : guessGridSize));
+            for (let i = 0; i < cellCount; i++) {
                 if (i < roundCards.length) {
                     const c = roundCards[i];
                     const index = i;
