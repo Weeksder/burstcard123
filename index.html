@@ -28,7 +28,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1306-cheers-clip">
+    <meta name="flashabc-build" content="1308-github-burstcard123">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -7793,28 +7793,34 @@
         </button>
     </div>
 
-    <!-- Audio elements for sound effects — preload="auto" ensures buffers are ready for instant play -->
+    <!-- Audio: small SFX preload; cheers is large so load only when a game is won -->
     <audio id="flipSound" preload="auto" playsinline>
         <source src="flip2.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/flip2.wav" type="audio/wav">
     </audio>
     <audio id="correctSound" preload="auto" playsinline>
         <source src="correct.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/correct.wav" type="audio/wav">
     </audio>
     <audio id="errorSound" preload="auto" playsinline>
         <source src="error.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/error.wav" type="audio/wav">
     </audio>
     <audio id="shuffleSound" preload="auto" playsinline>
         <source src="Shuffle_Chips.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/Shuffle_Chips.wav" type="audio/wav">
     </audio>
     <audio id="explosionSound" preload="auto" playsinline>
         <source src="explosion.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/explosion.wav" type="audio/wav">
     </audio>
     <audio id="winningSound" preload="auto" playsinline>
         <source src="Winning_Guess_the_word.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/Winning_Guess_the_word.wav" type="audio/wav">
     </audio>
-    <audio id="cheersSound" preload="auto" playsinline>
+    <audio id="cheersSound" preload="none" playsinline>
         <source src="cheers-and-yays.wav" type="audio/wav">
-        <source src="https://raw.githubusercontent.com/Weeksder/burstcard/main/cheers-and-yays.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/cheers-and-yays.wav" type="audio/wav">
     </audio>
 
     <script>
@@ -9964,6 +9970,7 @@
             ctx: null,
             buffers: {},
             isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+            _decoding: {},
 
             soundFiles: {
                 flipSound:      'flip2.wav',
@@ -9974,82 +9981,119 @@
                 winningSound:   'Winning_Guess_the_word.wav',
                 cheersSound:    'cheers-and-yays.wav'
             },
-            githubSoundBase: 'https://raw.githubusercontent.com/Weeksder/burstcard/main/',
+            githubSoundBase: 'https://raw.githubusercontent.com/Weeksder/burstcard123/main/',
             clipEnds: {
                 cheersSound: 3.05
             },
-            _htmlClipTimers: {},
+
+            urlsFor: function(file) {
+                const urls = [];
+                try { urls.push(new URL(file, document.baseURI).href); } catch (e) { urls.push(file); }
+                if (file.indexOf('/') === -1) urls.push(file);
+                if (this.githubSoundBase) urls.push(this.githubSoundBase + file);
+                return urls.filter(function (u, i, a) { return a.indexOf(u) === i; });
+            },
 
             volume: function(soundId) {
                 if (soundId === 'winningSound' || soundId === 'cheersSound') return 0.8;
-                return this.isMobile ? 0.3 : 1.0;
+                return this.isMobile ? 0.45 : 1.0;
             },
 
             init: function() {
-                // Create AudioContext only on the first user gesture (iOS requirement).
-                // Decode all buffers immediately after — small WAV files finish in ~100ms,
-                // so from the second tap onwards everything plays via BufferSource.
                 const setup = () => {
-                    if (this.ctx) return;
+                    if (this.ctx) {
+                        if (this.ctx.state === 'suspended') this.ctx.resume();
+                        return;
+                    }
                     try {
                         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                        if (this.ctx.state === 'suspended') this.ctx.resume(); // synchronous, inside gesture
-                        this._decodeAll();
+                        if (this.ctx.state === 'suspended') this.ctx.resume();
+                        this._decodeSmall();
                     } catch (e) { this.ctx = null; }
                 };
                 document.addEventListener('touchstart', setup, { once: true, passive: true });
                 document.addEventListener('mousedown',  setup, { once: true });
+                document.addEventListener('pointerdown', setup, { once: true });
             },
 
-            _decodeAll: async function() {
-                if (!this.ctx) return;
-                await Promise.all(Object.entries(this.soundFiles).map(async ([id, file]) => {
-                    const urls = [file];
-                    if (this.githubSoundBase) urls.push(this.githubSoundBase + file);
-                    for (let u = 0; u < urls.length; u++) {
-                        try {
-                            const res = await fetch(urls[u]);
-                            if (!res.ok) continue;
-                            const raw = await res.arrayBuffer();
-                            this.buffers[id] = await this.ctx.decodeAudioData(raw);
-                            break;
-                        } catch (e) {}
-                    }
-                }));
+            _decodeSmall: function() {
+                Object.keys(this.soundFiles).forEach((id) => {
+                    if (id === 'cheersSound' || id === 'winningSound') return;
+                    this._decodeOne(id);
+                });
+            },
+
+            _decodeOne: async function(soundId) {
+                if (!this.ctx || this.buffers[soundId] || this._decoding[soundId]) return;
+                this._decoding[soundId] = true;
+                const urls = this.urlsFor(this.soundFiles[soundId]);
+                for (let u = 0; u < urls.length; u++) {
+                    try {
+                        const res = await fetch(urls[u], { mode: 'cors', cache: 'force-cache' });
+                        if (!res.ok) continue;
+                        const raw = await res.arrayBuffer();
+                        this.buffers[soundId] = await this.ctx.decodeAudioData(raw.slice(0));
+                        this._decoding[soundId] = false;
+                        return;
+                    } catch (e) {}
+                }
+                this._decoding[soundId] = false;
             },
 
             play: function(soundId) {
-                // Primary: AudioContext BufferSource (ready after first gesture + decode)
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    try { this.ctx.resume(); } catch (e) {}
+                }
+                if (soundId === 'cheersSound' && !this.buffers[soundId]) this._decodeOne(soundId);
+
                 if (this.ctx && this.ctx.state === 'running' && this.buffers[soundId]) {
                     this._fireBuffer(soundId);
                     return;
                 }
+                this._playHtml(soundId);
+            },
 
-                // Fallback: HTML Audio element.
-                // On iOS this works fine when called inside/after a user gesture.
-                // Try play() first; only seek to 0 on failure to avoid the iOS
-                // "operation aborted" error that occurs when seeking a loading element.
-                const audio = document.getElementById(soundId);
-                if (!audio) return;
-                audio.volume = this.volume(soundId);
+            _playHtml: function(soundId) {
+                const src = document.getElementById(soundId);
+                if (!src) return;
                 const clip = this.clipEnds[soundId];
-                if (this._htmlClipTimers[soundId]) {
-                    clearTimeout(this._htmlClipTimers[soundId]);
-                    this._htmlClipTimers[soundId] = null;
-                }
-                const stopAtClip = () => {
-                    if (clip == null) return;
-                    const ms = Math.max(0, clip * 1000);
-                    this._htmlClipTimers[soundId] = setTimeout(() => {
-                        try { audio.pause(); audio.currentTime = 0; } catch (e) {}
-                    }, ms);
+                const node = src.cloneNode(true);
+                node.removeAttribute('id');
+                node.preload = 'auto';
+                node.volume = this.volume(soundId);
+                node.style.display = 'none';
+                document.body.appendChild(node);
+                const cleanup = () => {
+                    try { node.pause(); } catch (e) {}
+                    if (node.parentNode) node.parentNode.removeChild(node);
                 };
-                const p = audio.play();
-                if (p) p.then(stopAtClip).catch(() => {
-                    audio.currentTime = 0;
-                    audio.play().then(stopAtClip).catch(() => {});
-                });
-                else stopAtClip();
+                node.addEventListener('ended', cleanup);
+                if (clip != null) {
+                    node.addEventListener('timeupdate', function onT() {
+                        if (node.currentTime >= clip) {
+                            node.removeEventListener('timeupdate', onT);
+                            cleanup();
+                        }
+                    });
+                }
+                let started = false;
+                const go = () => {
+                    if (started) return;
+                    started = true;
+                    try { node.currentTime = 0; } catch (e) {}
+                    const p = node.play();
+                    if (p) p.catch(() => {
+                        try { src.pause(); src.currentTime = 0; } catch (e2) {}
+                        src.volume = this.volume(soundId);
+                        src.play().catch(() => {});
+                    });
+                };
+                if (node.readyState >= 2) go();
+                else {
+                    node.addEventListener('canplay', go, { once: true });
+                    node.load();
+                    setTimeout(go, 120);
+                }
             },
 
             _fireBuffer: function(soundId) {
@@ -14000,8 +14044,8 @@
         let sampleDeckData = null;
         let _sampleTab = 'fruits';
         const SAMPLE_DECK_URLS = {
-            fruits:  'https://raw.githubusercontent.com/Weeksder/burstcard/main/Fruits_Sample_Set.json',
-            animals: 'https://raw.githubusercontent.com/Weeksder/burstcard/main/Animals_Sample_Set.json'
+            fruits:  'https://raw.githubusercontent.com/Weeksder/burstcard123/main/Fruits_Sample_Set.json',
+            animals: 'https://raw.githubusercontent.com/Weeksder/burstcard123/main/Animals_Sample_Set.json'
         };
 
         function switchSampleTab(tab) {
