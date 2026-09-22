@@ -5,9 +5,9 @@
     <style>html,body{background:#35654D!important;background-color:#35654D!important;}</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
     
-    <!-- iOS Safari home-screen app: content draws under the status bar; we paint that region green. -->
+    <!-- iOS Safari home-screen: opaque status bar (not a blur overlay). theme-color tints it green. -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FlashABC">
     
     <!-- Android Chrome / iOS 15+ Safari toolbar / home-screen status bar -->
@@ -28,7 +28,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1286-safari-homescreen-status">
+    <meta name="flashabc-build" content="1287-no-status-overlay">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -52,11 +52,6 @@
             var standalone = !!(window.navigator && window.navigator.standalone) ||
                 (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
             if (standalone) document.documentElement.classList.add('is-standalone');
-            /* Safari home-screen: light color-scheme makes a white frosted status bar.
-               Dark scheme uses a clear/dark material so the green page shows through. */
-            if (isIOS && standalone) {
-                document.documentElement.style.setProperty('color-scheme', 'dark');
-            }
 
             if (isEdge) {
                 window.SPELL_LETTER_FONT = 'Fredoka, "Chalkboard SE", "Marker Felt", Arial, sans-serif';
@@ -634,41 +629,6 @@
             flex-direction: column;
         }
 
-        /* Green paint in the iOS status-bar / notch region (content sits below it). */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: constant(safe-area-inset-top);
-            height: env(safe-area-inset-top, 0px);
-            background: #35654D;
-            z-index: 2147483000;
-            pointer-events: none;
-        }
-
-        /* Safari "Add to Home Screen" only. Edge / Brave / PC are unchanged.
-           Light color-scheme + black-translucent = white frosted strip.
-           Dark color-scheme = status bar material is clear/dark over our green. */
-        html.is-ios.is-standalone {
-            color-scheme: dark;
-            background-color: #35654D !important;
-        }
-        html.is-ios.is-standalone body {
-            color-scheme: dark;
-            background-color: #35654D !important;
-            padding-top: constant(safe-area-inset-top);
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-top: max(10px, env(safe-area-inset-top, 0px));
-        }
-        html.is-ios.is-standalone input,
-        html.is-ios.is-standalone textarea,
-        html.is-ios.is-standalone select,
-        html.is-ios.is-standalone button {
-            color-scheme: light;
-        }
-        
         body::-webkit-scrollbar {
             display: none;
         }
