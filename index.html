@@ -3,7 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <style>html,body{background:#35654D!important;background-color:#35654D!important;}</style>
-    <link rel="stylesheet" href="flashabc.css">
+    <script>
+    window.FLASHABC_ASSET_BASE = (function () {
+        var p = decodeURIComponent((location.pathname || '') + ' ' + (location.href || '')).replace(/\\/g, '/');
+        if (/Flash ABC Github files/i.test(p)) return '';
+        if (location.protocol === 'file:') return 'Flash ABC Github files/';
+        return '';
+    })();
+    window.assetUrl = function (f) { return (window.FLASHABC_ASSET_BASE || '') + f; };
+    window.applyAssetSrcs = function () {
+        if (!window.FLASHABC_ASSET_BASE) return;
+        document.querySelectorAll('img[data-asset]').forEach(function (img) {
+            img.src = assetUrl(img.getAttribute('data-asset'));
+        });
+        document.querySelectorAll('audio source').forEach(function (s) {
+            var src = s.getAttribute('src') || '';
+            if (!src || src.indexOf('http') === 0) return;
+            if (/Flash ABC Github files/i.test(src)) return;
+            var file = src.split('/').pop();
+            s.src = assetUrl(file);
+        });
+    };
+    document.addEventListener('DOMContentLoaded', function () { applyAssetSrcs(); });
+    </script>
+    <link rel="stylesheet" href="flashabc.css" id="flashabcCss">
+    <script>
+    document.getElementById('flashabcCss').href = assetUrl('flashabc.css');
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     
     <!-- iOS Safari home-screen: opaque status bar (not a blur overlay). theme-color tints it green. -->
@@ -29,7 +55,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1311-assets-split">
+    <meta name="flashabc-build" content="1312-asset-folder">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -133,15 +159,16 @@
             </svg>
             <!-- Finger icon — drifts with the card via parent animation -->
             <div id="swipeHintFingerWrap">
-                <img src="swipe-finger.png" style="width:72px;height:88px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.22));">
+                <img src="swipe-finger.png" data-asset="swipe-finger.png" style="width:72px;height:88px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.22));">
             </div>
         </div>
     </div>
 
     <!-- Splash Screen -->
     <div id="splashScreen">
-        <img id="splashLogo" src="flashabc-logo.jpg"
+        <img id="splashLogo" src="flashabc-logo.jpg" data-asset="flashabc-logo.jpg"
              alt="FlashABC Logo" />
+        <script>if (typeof applyAssetSrcs === 'function') applyAssetSrcs();</script>
         <div id="splashTitle">
             <span class="splash-letter">F</span><span class="splash-letter">l</span><span class="splash-letter">a</span><span class="splash-letter">s</span><span class="splash-letter">h</span><span class="splash-letter">A</span><span class="splash-letter">B</span><span class="splash-letter">C</span>
         </div>
@@ -208,10 +235,11 @@
             <div class="header">
                 <h1 style="display: flex; align-items: center; gap: 10px; line-height: 1; margin: 0; padding: 0;">
                     <!-- FlashABC PNG Logo - green bg + white border baked into image -->
-                    <img src="flashabc-logo.jpg" alt="FlashABC Logo" style="height: 48px; width: auto; display: block; mix-blend-mode: screen;" />
+                    <img src="flashabc-logo.jpg" data-asset="flashabc-logo.jpg" alt="FlashABC Logo" style="height: 48px; width: auto; display: block; mix-blend-mode: screen;" />
                     <span id="splashDeactivatedNote" style="font-size: 0.78rem; font-weight: 600; color: #c9a227; white-space: nowrap; opacity: 0.95;">loading screen deactivated.</span>
                 </h1>
             </div>
+            <script>if (typeof applyAssetSrcs === 'function') applyAssetSrcs();</script>
 
             <div class="controls" id="topControls">
             <!-- Toolbar Help Button -->
@@ -622,7 +650,7 @@
                     <div class="upload-area-main">
                         <div class="upload-area" id="frontUpload" onclick="handleUploadAreaClick(event)">
                     <div id="frontPreview">
-                        <div class="upload-icon"><img src="icon-add-image.webp" alt="Add Image" style="width: 80px; height: 80px;"></div>
+                        <div class="upload-icon"><img src="icon-add-image.webp" data-asset="icon-add-image.webp" alt="Add Image" style="width: 80px; height: 80px;"></div>
                         <p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p>
                         <p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p>
                         <p style="font-size: 0.9rem; color: #35654D; margin-top: 10px; font-weight: 600; line-height: 1.45;">Max 30 images · Photos ≤15MB auto-compress to 500KB · GIFs ≤3MB</p>
@@ -633,7 +661,7 @@
                     <div class="ipad-paste-section" id="ipadPasteSection" style="display: none;">
                         <div class="ipad-paste-button" id="ipadPasteButton" role="button" tabindex="0">
                             <div class="ipad-button-icon">
-                                <img src="icon-paste.png" alt="Paste" style="width: 125px; height: 125px; object-fit: contain;">
+                                <img src="icon-paste.png" data-asset="icon-paste.png" alt="Paste" style="width: 125px; height: 125px; object-fit: contain;">
                             </div>
                             <div class="ipad-button-label">Paste</div>
                             <img id="pastePreviewImg" alt="Pasted image preview">
@@ -641,7 +669,7 @@
                         </div>
                         <button type="button" class="ipad-add-button" onclick="ipadAddPlusClicked(event)">
                             <div class="ipad-button-icon">
-                                <img src="icon-add-plus.png" alt="Add" style="width: 125px; height: 125px; object-fit: contain;">
+                                <img src="icon-add-plus.png" data-asset="icon-add-plus.png" alt="Add" style="width: 125px; height: 125px; object-fit: contain;">
                             </div>
                             <div class="ipad-button-label">Add +</div>
                         </button>
@@ -3762,8 +3790,12 @@
 
             urlsFor: function(file) {
                 const urls = [];
-                try { urls.push(new URL(file, document.baseURI).href); } catch (e) { urls.push(file); }
-                if (file.indexOf('/') === -1) urls.push(file);
+                const local = (typeof assetUrl === 'function') ? assetUrl(file) : file;
+                try { urls.push(new URL(local, document.baseURI).href); } catch (e) { urls.push(local); }
+                if (file.indexOf('/') === -1) {
+                    urls.push(file);
+                    urls.push(local);
+                }
                 if (this.githubSoundBase) urls.push(this.githubSoundBase + file);
                 return urls.filter(function (u, i, a) { return a.indexOf(u) === i; });
             },
@@ -4687,7 +4719,7 @@
             };
 
             if (typeof _rescueScrollIndicator === 'function') _rescueScrollIndicator();
-            document.getElementById('frontPreview').innerHTML = '<div class="upload-icon"><img src="icon-add-image.webp" alt="Add Image" style="width: 80px; height: 80px;"></div><p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p><p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p><p style="font-size: 0.9rem; color: #35654D; margin-top: 10px; font-weight: 600; line-height: 1.45;">' + imageImportLimitsSummary() + '</p>';
+            document.getElementById('frontPreview').innerHTML = '<div class="upload-icon"><img src="' + assetUrl('icon-add-image.webp') + '" alt="Add Image" style="width: 80px; height: 80px;"></div><p style="font-weight: bold; font-size: 1.1rem;">Tap, drag & drop, or paste image(s)</p><p style="font-size: 0.95rem; color: #666; margin-top: 15px;">Card names = Image filenames</p><p style="font-size: 0.9rem; color: #35654D; margin-top: 10px; font-weight: 600; line-height: 1.45;">' + imageImportLimitsSummary() + '</p>';
 
             const backTextElement = document.getElementById('backText');
             backTextElement.value = '';
@@ -15848,7 +15880,7 @@
                 _gtwHintTimer = setTimeout(() => {
                     const tile = document.getElementById('gtw_active_tile');
                     if (!tile) return;
-                    const fingerSrc = 'swipe-finger.png';
+                    const fingerSrc = assetUrl('swipe-finger.png');
                     // Get tile position relative to its positioned parent
                     const tileRect = tile.getBoundingClientRect();
                     const parentRect = tile.offsetParent ? tile.offsetParent.getBoundingClientRect() : tileRect;
