@@ -28,7 +28,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1288-no-underlap">
+    <meta name="flashabc-build" content="1306-cheers-clip">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -414,6 +414,28 @@
             flex: 0 0 auto;
             width: 100%;
             margin-top: auto;
+        }
+        /* Tablet / PC Spell Me: image fills leftover space above the tiles.
+           Long words (>8 letters) shrink the picture so the extra blanks fit.
+           Phones never get .spell-big-tiles (JS). */
+        #spellingGameModal.spell-big-tiles #spellMain.spell-main-col #spellingImgWrap {
+            flex: 1 1 0;
+            width: 100%;
+            min-height: 0;
+            max-height: none;
+            align-self: stretch;
+            justify-content: center;
+            align-items: center;
+        }
+        #spellingGameModal.spell-big-tiles #spellMain.spell-main-col.spell-tier-long #spellingImgWrap {
+            flex: 0 1 28%;
+            max-height: min(30vh, 220px);
+        }
+        #spellingGameModal.spell-big-tiles #spellMain.spell-main-col #spellColumn {
+            flex: 0 0 auto;
+            margin-top: auto;
+            justify-content: flex-end !important;
+            padding-bottom: 28px;
         }
         /* Progress: original corners (index left, dots right) — never centered with tools */
         #spellingGameModal #spellProgressBar {
@@ -6264,9 +6286,9 @@
 
     <div id="spellingGameModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#35654D;z-index:20000;flex-direction:column;">
         <!-- Game content -->
-        <div id="spellingGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 0;box-sizing:border-box;overflow-y:auto;"></div>
+        <div id="spellingGameContent" style="flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 12px;box-sizing:border-box;overflow-y:auto;"></div>
         <!-- Bottom bar — title + dots -->
-        <div id="spellingBottomBar" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 16px 10px;">
+        <div id="spellingBottomBar" style="display:none;">
             <span style="font-size:0.9rem;font-weight:700;color:rgba(255,255,255,0.7);">✏️ Spell Me</span>
         </div>
     </div>
@@ -7790,6 +7812,10 @@
     <audio id="winningSound" preload="auto" playsinline>
         <source src="Winning_Guess_the_word.wav" type="audio/wav">
     </audio>
+    <audio id="cheersSound" preload="auto" playsinline>
+        <source src="cheers-and-yays.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard/main/cheers-and-yays.wav" type="audio/wav">
+    </audio>
 
     <script>
         // ==================== DEVICE DETECTION ====================
@@ -8121,14 +8147,18 @@
             skippedCards: new Set(),   // forward-skipped → red dots
             scrambledLetters: [],
             answerSlots: [],
-            correctWord: ''
+            correctWord: '',
+            deckSig: ''
         };
 
         /* Mid lift: between previous (-0.03em) and too-high (-0.10em). */
         const SPELL_GLYPH_LIFT = 'translateY(-0.065em)';
         const SPELL_FILL_BG = '#f0f8f3';
+        const SPELL_CONFIRM_GREEN = '#00c853';
         const SPELL_DRAG_THRESHOLD = 12;
         const SPELL_CARD_SWIPE_MIN = 60;
+        let _spellTryAgain = false;
+        function spellClearTryAgain() { _spellTryAgain = false; }
 
         /**
          * Spell Me layout — option 2: word-length tiers + min spell-column width.
@@ -8143,6 +8173,9 @@
             const isLandscape = vw > vh;
             const isDesktop = vw >= 900 && vh >= 600;
             const isCompact = vh <= 520;
+            // Phones keep the original Spell Me layout. Tablet / PC get the roomy update.
+            const isPhone = Math.min(vw, vh) <= 500;
+            const bigTiles = !isPhone;
 
             const word = (opts && opts.word) || '';
             const lettersOnly = String(word).replace(/[\s-]/g, '');
@@ -8154,11 +8187,19 @@
             else if (isMultiWordPhrase || letterCount >= 6) spellTier = 'medium';
 
             const isLongSpell = spellTier === 'long';
-            const sideBySide = isLandscape && !isLongSpell;
-            const toolsTop = sideBySide;
-            const toolsSide = !toolsTop;
+            // Tablet/PC: same stack as portrait — picture on top, tiles below.
+            // Phones keep the old landscape side-by-side (picture on the left).
+            const sideBySide = !bigTiles && isLandscape && !isLongSpell;
+            // Tablet/PC: landscape buttons sit on the right, same as portrait.
+            let toolsTop = sideBySide;
+            let toolsSide = !toolsTop;
+            if (bigTiles) {
+                toolsTop = false;
+                toolsSide = true;
+            }
 
             const fsPx = Math.round(Math.min(Math.max(vw * 0.075, 36), 72));
+            const tileScale = bigTiles ? 1.2 : 1;
 
             const toolGutter = toolsSide ? (isCompact ? 50 : (isDesktop ? 64 : 56)) : 12;
             const mainClass = sideBySide ? 'spell-main-row' : 'spell-main-col';
@@ -8171,18 +8212,28 @@
                 imgMaxH = 'min(42vh, 300px)';
                 imgMinH = 0;
             }
+            if (bigTiles) {
+                imgMinH = 0;
+                // Short/medium: no cap — image fills space above the tiles.
+                // Long words: cap so extra letter rows fit.
+                imgMaxH = isLongSpell
+                    ? (isLandscape ? 'min(30vh, 200px)' : 'min(28vh, 220px)')
+                    : 'none';
+            }
 
             return {
                 vw, vh, isLandscape, sideBySide, isLongSpell, spellTier, letterCount,
-                isMultiWordPhrase, isDesktop, isCompact, isCoarse, fsPx,
+                isMultiWordPhrase, isDesktop, isCompact, isCoarse, isPhone, bigTiles,
+                fsPx, tileScale,
                 toolsTop, toolsSide, toolGutter, mainClass, tierClass, topChrome,
+                spellAlign: sideBySide ? 'center' : 'flex-end',
                 outerPad: isLandscape ? '4px 0 0' : (isDesktop ? '10px 0 0' : '8px 0 0'),
                 cardPad: toolsSide
                     ? (isDesktop ? `14px ${toolGutter}px 14px 16px` : `12px ${toolGutter}px 12px 12px`)
                     : (isCompact ? '8px 10px 8px 10px' : '10px 14px 12px 14px'),
                 imgPadTop: toolsTop ? 0 : 22,
                 spellPadTop: sideBySide ? 2 : (isDesktop ? 6 : 2),
-                spellGap: sideBySide ? 4 : 6,
+                spellGap: bigTiles ? 10 : (sideBySide ? 4 : 6),
                 imgMinH,
                 imgMaxH,
                 btnRight: isDesktop ? 14 : 10,
@@ -8215,6 +8266,16 @@
             spellingGameState.currentCardIndex = 0;
             spellingGameState.spelledCards = new Set();
             spellingGameState.skippedCards = new Set();
+        }
+        /** Shuffle Spell Me cards. If the result still matches deck order, shuffle again. */
+        function shuffleSpellCards(sourceCards) {
+            const src = sourceCards || [];
+            let shuffled = fisherYatesShuffle(src);
+            if (shuffled.length > 1 && src.length === shuffled.length) {
+                const same = shuffled.every(function (c, i) { return c === src[i]; });
+                if (same) shuffled = fisherYatesShuffle(shuffled);
+            }
+            return shuffled;
         }
         function ensureSpellSets() {
             if (!(spellingGameState.spelledCards instanceof Set)) spellingGameState.spelledCards = new Set();
@@ -8508,6 +8569,20 @@
             findLetterState.letterIndex++;
             flBuildRound();
         }
+        function flShowComplete() {
+            flStopLoop();
+            findLetterState.active = false;
+            if (typeof playSound === 'function') playSound('cheersSound');
+            const field = document.getElementById('findLetterField');
+            if (field) {
+                field.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;padding:24px;box-sizing:border-box;">' +
+                    '<div style="font-size:4rem;">🎉</div>' +
+                    '<h2 style="font-size:2rem;color:white;margin:0;">All letters found!</h2>' +
+                    '<p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">Great job!</p>' +
+                    '<button class="btn btn-success" onclick="resetFindLetterSession();startFindLetterGame()" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔄 Play Again</button>' +
+                    '</div>';
+            }
+        }
         function flBuildRound() {
             flStopLoop();
             const field = document.getElementById('findLetterField');
@@ -8516,9 +8591,8 @@
             let queue = findLetterState.letterQueue;
             if (!queue.length) return;
             if (findLetterState.letterIndex >= queue.length) {
-                findLetterState.letterQueue = fisherYatesShuffle(queue.slice());
-                findLetterState.letterIndex = 0;
-                queue = findLetterState.letterQueue;
+                flShowComplete();
+                return;
             }
             const letter = queue[findLetterState.letterIndex];
             findLetterState.letter = letter;
@@ -8796,6 +8870,59 @@
             matchGameState._pendingCards = null;
             matchGameState.deckSig = null;
             matchGameState.skippedQs = new Set();
+        }
+
+        function resetSpellingGameSession() {
+            spellingGameState.currentCardIndex = 0;
+            spellingGameState.gameCards = [];
+            spellingGameState.spelledCards = new Set();
+            spellingGameState.skippedCards = new Set();
+            spellingGameState.scrambledLetters = [];
+            spellingGameState.answerSlots = [];
+            spellingGameState.correctWord = '';
+            spellingGameState.deckSig = '';
+            _spellTryAgain = false;
+        }
+
+        function resetGuessGameSession() {
+            guessGameState = {
+                currentCardIndex: 0,
+                score: 0,
+                answered: [],
+                gameCards: [],
+                currentRoundCards: null,
+                correctCards: {},
+                selectedCard: null,
+                currentCardOrder: 0,
+                deckSig: ''
+            };
+            _gtwFreshStart = true;
+        }
+
+        function resetBombGameSession() {
+            bombGameState.gameCards = [];
+            bombGameState.eliminated = false;
+            bombGameState.cardsRemaining = 0;
+            bombGameState.deckSig = '';
+        }
+
+        /** Import / add / replace / clear deck: every minigame starts fresh. Shuffle of the same cards does not. */
+        function resetAllGameSessions() {
+            if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
+            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
+            if (typeof resetSpellingGameSession === 'function') resetSpellingGameSession();
+            if (typeof resetGuessGameSession === 'function') resetGuessGameSession();
+            if (typeof resetBombGameSession === 'function') resetBombGameSession();
+            try {
+                if (typeof stwStopAll === 'function') {
+                    stwStopAll();
+                    _stwRound = 1;
+                    _stwCardA = null;
+                    _stwCardB = null;
+                    _stwCardC = null;
+                    _stwCardD = null;
+                }
+            } catch (e) { /* Say the Word not loaded yet */ }
         }
 
         function matchSessionIsCurrent() {
@@ -9844,11 +9971,17 @@
                 errorSound:     'error.wav',
                 shuffleSound:   'Shuffle_Chips.wav',
                 explosionSound: 'explosion.wav',
-                winningSound:   'Winning_Guess_the_word.wav'
+                winningSound:   'Winning_Guess_the_word.wav',
+                cheersSound:    'cheers-and-yays.wav'
             },
+            githubSoundBase: 'https://raw.githubusercontent.com/Weeksder/burstcard/main/',
+            clipEnds: {
+                cheersSound: 3.05
+            },
+            _htmlClipTimers: {},
 
             volume: function(soundId) {
-                if (soundId === 'winningSound') return 0.8;
+                if (soundId === 'winningSound' || soundId === 'cheersSound') return 0.8;
                 return this.isMobile ? 0.3 : 1.0;
             },
 
@@ -9871,11 +10004,17 @@
             _decodeAll: async function() {
                 if (!this.ctx) return;
                 await Promise.all(Object.entries(this.soundFiles).map(async ([id, file]) => {
-                    try {
-                        const res = await fetch(file);
-                        const raw = await res.arrayBuffer();
-                        this.buffers[id] = await this.ctx.decodeAudioData(raw);
-                    } catch (e) {}
+                    const urls = [file];
+                    if (this.githubSoundBase) urls.push(this.githubSoundBase + file);
+                    for (let u = 0; u < urls.length; u++) {
+                        try {
+                            const res = await fetch(urls[u]);
+                            if (!res.ok) continue;
+                            const raw = await res.arrayBuffer();
+                            this.buffers[id] = await this.ctx.decodeAudioData(raw);
+                            break;
+                        } catch (e) {}
+                    }
                 }));
             },
 
@@ -9893,11 +10032,24 @@
                 const audio = document.getElementById(soundId);
                 if (!audio) return;
                 audio.volume = this.volume(soundId);
+                const clip = this.clipEnds[soundId];
+                if (this._htmlClipTimers[soundId]) {
+                    clearTimeout(this._htmlClipTimers[soundId]);
+                    this._htmlClipTimers[soundId] = null;
+                }
+                const stopAtClip = () => {
+                    if (clip == null) return;
+                    const ms = Math.max(0, clip * 1000);
+                    this._htmlClipTimers[soundId] = setTimeout(() => {
+                        try { audio.pause(); audio.currentTime = 0; } catch (e) {}
+                    }, ms);
+                };
                 const p = audio.play();
-                if (p) p.catch(() => {
+                if (p) p.then(stopAtClip).catch(() => {
                     audio.currentTime = 0;
-                    audio.play().catch(() => {});
+                    audio.play().then(stopAtClip).catch(() => {});
                 });
+                else stopAtClip();
             },
 
             _fireBuffer: function(soundId) {
@@ -9908,7 +10060,9 @@
                 gain.gain.value = this.volume(soundId);
                 source.connect(gain);
                 gain.connect(this.ctx.destination);
-                source.start(0);
+                const clip = this.clipEnds[soundId];
+                if (clip != null) source.start(0, 0, clip);
+                else source.start(0);
             }
         };
 
@@ -12759,11 +12913,7 @@
                                 currentIndex = cards.length - added;
                                 isFlipped = false;
 
-                                guessGameState.gameCards = [];
-                                guessGameState.currentRoundCards = null;
-                                guessGameState.correctCards = {};
-                                guessGameState.selectedCard = null;
-                                guessGameState.currentCardOrder = 0;
+                                if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
 
                                 if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
                                 renderDisplay();
@@ -12809,12 +12959,7 @@
             // Update hash cache
             imageHashCache.set(fastHash(newCard.frontImage), newCard.frontImage);
 
-            // Reset guess game state to prevent continuing with old cards
-            guessGameState.gameCards = [];
-            guessGameState.currentRoundCards = null;
-            guessGameState.correctCards = {};
-            guessGameState.selectedCard = null;
-            guessGameState.currentCardOrder = 0;
+            if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
 
             saveCards();
             closeCreateModal();
@@ -12869,12 +13014,7 @@
                 currentIndex = 0;
             }
 
-            // Reset game states to prevent continuing with deleted cards
-            guessGameState.gameCards = [];
-            guessGameState.currentRoundCards = null;
-            guessGameState.correctCards = {};
-            guessGameState.selectedCard = null;
-            guessGameState.currentCardOrder = 0;
+            if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
 
             saveCards();
             renderDisplay();
@@ -13294,9 +13434,7 @@
                     // Clear hash cache
                     imageHashCache.clear();
                     sessionStorage.removeItem('flashcards');
-                    if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
-            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
-                    if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
+                    if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
                     renderDisplay();
 
                     // Reset button
@@ -13798,6 +13936,7 @@
             }
             const deletedUnitId = deletedCard && deletedCard._unitId;
             cards.splice(index, 1);
+            if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
             if (deletedUnitId !== undefined) {
                 const stillHasCards = cards.some(function (c) { return c._unitId === deletedUnitId; });
                 if (!stillHasCards) {
@@ -13938,11 +14077,7 @@
             cards = sampleDeckData.cards;
             currentIndex = 0;
             isFlipped = false;
-            guessGameState.gameCards = [];
-            guessGameState.currentRoundCards = null;
-            guessGameState.correctCards = {};
-            guessGameState.selectedCard = null;
-            guessGameState.currentCardOrder = 0;
+            if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
             saveCards();
             closeSampleDeck();
             if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
@@ -14095,12 +14230,7 @@
                     isFlipped = false;
                 }
 
-                // Reset guess game state to prevent continuing with old cards
-                guessGameState.gameCards = [];
-                guessGameState.currentRoundCards = null;
-                guessGameState.correctCards = {};
-                guessGameState.selectedCard = null;
-                guessGameState.currentCardOrder = 0;
+                if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
 
                 saveCards();
                 closeLoadOptions();
@@ -14400,6 +14530,7 @@
                     currentLoadedUnitId = null;
                     loadedUnitIds.clear();
                     setLoadedFileName('');
+                    if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
                     updateDisplay();
                     showToast('🗑️ Unit removed from deck', 2000);
                     return;
@@ -14413,6 +14544,7 @@
                     else currentLoadedUnitId = null;
                     if (currentIndex >= cards.length) currentIndex = Math.max(0, cards.length - 1);
                     Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
+                    if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
                     saveCards();
                     renderDisplay();
                     loadQuickLoadList(true);
@@ -14502,11 +14634,7 @@
                     loadedUnitIds.add(unitId);
                     currentLoadedUnitId = loadedUnitIds.size === 1 ? unitId : null;
 
-                    guessGameState.gameCards = [];
-                    guessGameState.currentRoundCards = null;
-                    guessGameState.correctCards = {};
-                    guessGameState.selectedCard = null;
-                    guessGameState.currentCardOrder = 0;
+                    if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
 
                     saveCards();
                     if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
@@ -14526,11 +14654,7 @@
                     loadedUnitIds.clear();
                     loadedUnitIds.add(unitId);
 
-                    guessGameState.gameCards = [];
-                    guessGameState.currentRoundCards = null;
-                    guessGameState.correctCards = {};
-                    guessGameState.selectedCard = null;
-                    guessGameState.currentCardOrder = 0;
+                    if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
 
                     saveCards();
                     if (typeof requestSwipeHintAfterImport === 'function') requestSwipeHintAfterImport();
@@ -14802,9 +14926,7 @@
                     loadedUnitIds.clear(); currentLoadedUnitId = null;
                     setLoadedFileName('');
                     _ucmPendingUnit = null;
-                    if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
-            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
-                    if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
+                    if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
                     saveCards(); renderDisplay(); syncUnitsEverywhere();
                     updateOrganizePendingUI();
                     updateFoldersPendingUI();
@@ -15973,8 +16095,7 @@
             currentLoadedUnitId = null;
             setLoadedFileName('');
             Object.keys(cachedBackTextSizes).forEach(k => delete cachedBackTextSizes[k]);
-            if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
-            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
+            if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
             saveCards();
             renderDisplay();
             loadUnitsFromDB().then(function(units){ renderMspList(units); });
@@ -19143,18 +19264,7 @@
             // Clear the image hash cache to prevent false duplicate warnings
             imageHashCache.clear();
 
-            // Reset any game states
-            if (typeof bombGameState !== 'undefined') {
-                bombGameState = { currentCardIndex: 0, gameCards: [], selectedLetters: [], correctWord: '' };
-            }
-            if (typeof guessGameState !== 'undefined') {
-                guessGameState = { selectedCard: null, currentCardOrder: 0, correctCards: {}, gameCards: [] };
-            }
-            if (typeof spellingGameState !== 'undefined') {
-                spellingGameState = { currentCardIndex: 0, gameCards: [], spelledCards: new Set(), skippedCards: new Set(), scrambledLetters: [], answerSlots: [], correctWord: '' };
-            }
-            if (typeof resetMatchGameSession === 'function') resetMatchGameSession();
-            if (typeof resetFindLetterSession === 'function') resetFindLetterSession();
+            if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
 
             // Save to sessionStorage using the correct function
             saveCards();
@@ -19936,12 +20046,21 @@
 
     <!-- Deferred game code: parsed only when Games is first opened -->
     <script type="text/plain" id="deferredGameCode">
+        function gameDeckSigChanged(sig) {
+            if (!sig || typeof currentDeckMatchSignature !== 'function') return true;
+            return sig !== currentDeckMatchSignature();
+        }
         function hasActiveGuessSession() {
             try {
                 const g = guessGameState;
-                return !!(g && g.gameCards && g.gameCards.length > 0 &&
-                    g.currentCardIndex < g.gameCards.length &&
-                    g.currentCardOrder > 0);
+                if (!g || !g.gameCards || !g.gameCards.length) return false;
+                if (g.currentCardIndex >= g.gameCards.length) return false;
+                if (!(g.currentCardOrder > 0)) return false;
+                if (gameDeckSigChanged(g.deckSig)) {
+                    resetGuessGameSession();
+                    return false;
+                }
+                return true;
             } catch (e) { return false; }
         }
         function hasActiveSpellingSession() {
@@ -19950,8 +20069,11 @@
                 if (typeof ensureSpellSets === 'function') ensureSpellSets();
                 const g = spellingGameState;
                 if (!g.gameCards || g.gameCards.length === 0) return false;
-                // Finished all words → no continue (use Shuffle / Play Again for a new run)
                 if (g.spelledCards && g.spelledCards.size >= g.gameCards.length) return false;
+                if (gameDeckSigChanged(g.deckSig)) {
+                    resetSpellingGameSession();
+                    return false;
+                }
                 return true;
             } catch (e) {
                 return false;
@@ -19960,8 +20082,12 @@
         function hasActiveBombSession() {
             try {
                 const g = bombGameState;
-                return !!(g && g.gameCards && g.gameCards.length > 0 &&
-                    !g.eliminated && g.cardsRemaining > 0);
+                if (!(g && g.gameCards && g.gameCards.length > 0 && !g.eliminated && g.cardsRemaining > 0)) return false;
+                if (gameDeckSigChanged(g.deckSig)) {
+                    resetBombGameSession();
+                    return false;
+                }
+                return true;
             } catch (e) { return false; }
         }
         function hasActiveMatchSession() {
@@ -20087,6 +20213,7 @@
                     // Shuffle cards for the game
                     const gameCards = fisherYatesShuffle(cards);
                     guessGameState.gameCards = gameCards;
+                    guessGameState.deckSig = (typeof currentDeckMatchSignature === 'function') ? currentDeckMatchSignature() : '';
                 }
                 // If hasActiveSession is true, we continue with existing state
 
@@ -20139,11 +20266,12 @@
                         return;
                     }
 
-                    spellingGameState.gameCards = fisherYatesShuffle(cardsWithText);
+                    spellingGameState.gameCards = shuffleSpellCards(cardsWithText);
                     resetSpellingProgress();
                     spellingGameState.scrambledLetters = [];
                     spellingGameState.answerSlots = [];
                     spellingGameState.correctWord = '';
+                    spellingGameState.deckSig = (typeof currentDeckMatchSignature === 'function') ? currentDeckMatchSignature() : '';
                 }
                 // Continue: keep gameCards, index, progress dots, scrambled bank, and answer slots
 
@@ -21172,7 +21300,7 @@
                 closeMatchSettings();
                 const matchGear = document.getElementById('matchOverlaySettings');
                 if (matchGear) matchGear.style.display = 'none';
-                playSound('winningSound');
+                playSound('cheersSound');
                 content.innerHTML = `
                     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
                         <div style="font-size:4rem;">🎉</div>
@@ -21684,7 +21812,7 @@
                 console.log('🎉 Game completed! Attempting to play winning sound...');
 
                 // Play immediately - audioManager will handle unlocking if needed
-                playSound('winningSound');
+                playSound('cheersSound');
 
                 content.innerHTML = `
                     <div style="text-align: center; padding: 40px;">
@@ -22048,6 +22176,7 @@
             bombGameState.cardsRemaining = selectedCards.length;
             bombGameState.bombCount = bombCount;
             bombGameState.gridSize = size;
+            bombGameState.deckSig = (typeof currentDeckMatchSignature === 'function') ? currentDeckMatchSignature() : '';
         }
 
         function getBombGridLayout() {
@@ -22426,7 +22555,8 @@
         function startNewSpellingGame() {
             // In-game Shuffle: new order + clear progress and tile placements
             resetSpellingProgress();
-            spellingGameState.gameCards = fisherYatesShuffle(spellingGameState.gameCards || []);
+            spellingGameState.gameCards = shuffleSpellCards(spellingGameState.gameCards || []);
+            spellingGameState.deckSig = (typeof currentDeckMatchSignature === 'function') ? currentDeckMatchSignature() : '';
             spellingGameState.scrambledLetters = [];
             spellingGameState.answerSlots = [];
             spellingGameState.correctWord = '';
@@ -22541,6 +22671,7 @@
 
         function showSpellingComplete() {
             const content = document.getElementById('spellingGameContent');
+            playSound('cheersSound');
             content.innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
                     <div style="font-size:4rem;">🎉</div>
@@ -22560,7 +22691,7 @@
             if (content && content.querySelector('h2') && /All words spelled/i.test(content.textContent || '')) return;
             const word = (spellingGameState.correctWord || (spellingGameState.gameCards[spellingGameState.currentCardIndex] || {}).backText || '').trim();
             const L = getSpellLayout({ word });
-            const key = [L.mainClass, L.tierClass, L.fsPx, L.sideBySide ? 1 : 0, L.spellTier, L.toolsTop ? 1 : 0, Math.round(L.vw / 40), Math.round(L.vh / 40)].join('|');
+            const key = [L.mainClass, L.tierClass, L.fsPx, L.tileScale, L.sideBySide ? 1 : 0, L.spellTier, L.toolsTop ? 1 : 0, L.bigTiles ? 1 : 0, Math.round(L.vw / 40), Math.round(L.vh / 40)].join('|');
             if (key === _spellLayoutKey && document.getElementById('spellingCard')) return;
             _spellLayoutKey = key;
             renderSpellingGame({ preserveState: true });
@@ -22568,6 +22699,7 @@
 
         function renderSpellingGame(opts) {
             const preserveState = !!(opts && opts.preserveState);
+            if (!preserveState) _spellTryAgain = false;
             const content = document.getElementById('spellingGameContent');
             const { currentCardIndex, gameCards, spelledCards } = spellingGameState;
             if (!content || !gameCards || !gameCards.length) return;
@@ -22614,13 +22746,16 @@
 
             const layout = getSpellLayout({ word });
             const _fsPx = layout.fsPx;
-            // Compact tiles; glyph sized so a -0.065em lift still keeps descenders inside.
-            const tileH = Math.round(_fsPx * 1.32);
-            const tileW = Math.round(_fsPx * 0.88);
-            const glyphPx = Math.round(_fsPx * 0.82);
+            const tileScale = layout.tileScale || 1;
+            // Compact tiles on phones; tablet/PC use 1.2× (tileScale). Glyph sized so a
+            // -0.065em lift still keeps descenders inside.
+            const tileH = Math.round(_fsPx * 1.32 * tileScale);
+            const tileW = Math.round(_fsPx * 0.88 * tileScale);
+            const glyphPx = Math.round(_fsPx * 0.82 * tileScale);
             const lineFS = glyphPx + 'px';
             const underInset = Math.round(tileW * 0.14);
             const underBottom = Math.max(4, Math.round(tileH * 0.12));
+            const underH = Math.max(2, Math.round(2 * tileScale));
             const glyphLift = SPELL_GLYPH_LIFT;
             const slotGap = 2;
             const letterGap = layout.sideBySide ? 3 : 4;
@@ -22653,53 +22788,9 @@
                            color:#1a1a1a;display:flex;align-items:center;justify-content:center;
                            width:100%;height:100%;margin:0;padding:0;box-sizing:border-box;position:relative;z-index:1;
                            overflow:visible;transform:${glyphLift};">&nbsp;</span>
-                    <span class="answer-underline" style="position:absolute;left:${underInset}px;right:${underInset}px;bottom:${underBottom}px;height:2px;background:#35654D;border-radius:2px;z-index:0;"></span>
+                    <span class="answer-underline" style="position:absolute;left:${underInset}px;right:${underInset}px;bottom:${underBottom}px;height:${underH}px;background:#35654D;border-radius:2px;z-index:0;"></span>
                 </div>`;
             };
-
-            // Clear / undo icon. In side-by-side landscape it sits centered ABOVE the answer
-            // line so the full 8-letter row keeps full width (no side column stealing space).
-            // In portrait / stacked modes it stays beside the last answer row (mirrored columns).
-            const clearIconSz = Math.round(_fsPx * 0.72);
-            const clearColW = tileW + 4; // reserved column width (matches letter footprint)
-            // Landscape (clear above): slightly smaller control. Portrait (beside last tile): full tile size.
-            const clearBtnH = layout.isLandscape ? Math.round(tileH * 0.72) : tileH;
-            const clearBtnW = layout.isLandscape ? Math.round(tileW * 0.72) : tileW;
-            const clearIconDraw = layout.isLandscape ? Math.round(clearIconSz * 0.85) : clearIconSz;
-            const clearBtnHTML = `<button type="button" id="spellClearBtn" onclick="event.stopPropagation();clearSpellingAnswer()"
-                title="Clear all letters"
-                style="display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;
-                       width:${clearBtnW}px;height:${clearBtnH}px;padding:0;margin:0;
-                       background:transparent;border:none;border-radius:0;box-shadow:none;
-                       cursor:pointer;touch-action:manipulation;color:#888;box-sizing:border-box;
-                       visibility:hidden;opacity:0;pointer-events:none;">
-                <svg width="${clearIconDraw}" height="${clearIconDraw}" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;">
-                    <polyline points="1 4 1 10 7 10"/>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-                </svg>
-            </button>`;
-            // Portrait: clear/undo sits to the right of the last answer tile (mirrored empty
-            // column on the left so blanks stay centered). Landscape: clear stays above.
-            // Portrait: clear beside last tile — equal side gaps so blanks stay centered
-            // with a bit more air between the answer line and the undo control.
-            const clearBesideGap = Math.max(10, Math.round(tileW * 0.28));
-            const lastRowWithClear = (innerHTML) =>
-                `<div style="display:grid;grid-template-columns:${clearColW}px minmax(0,1fr) ${clearColW}px;column-gap:${clearBesideGap}px;align-items:center;justify-content:center;width:100%;max-width:100%;margin:0 auto;box-sizing:border-box;">
-                    <div aria-hidden="true" style="width:${clearColW}px;height:1px;"></div>
-                    <div style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;min-width:0;width:100%;max-width:100%;">${innerHTML}</div>
-                    <div style="display:flex;align-items:center;justify-content:center;width:${clearColW}px;height:${tileH}px;">${clearBtnHTML}</div>
-                 </div>`;
-            // Landscape: clear centered over the answer line; slots wrap when needed
-            const answerWithClearAbove = (slotsInnerHTML) =>
-                `<div id="answerRow" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;width:100%;max-width:100%;overflow:visible;box-sizing:border-box;">
-                    <div style="display:flex;align-items:center;justify-content:center;width:100%;min-height:${clearBtnH}px;margin-bottom:1px;">
-                        ${clearBtnHTML}
-                    </div>
-                    <div style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;max-width:100%;margin:0 auto;box-sizing:border-box;">
-                        ${slotsInnerHTML}
-                    </div>
-                 </div>`;
 
             // Letter-to-letter gap stays tight (slotGap). Between words use a wider gap
             // so multi-word phrases stay readable on the same row.
@@ -22707,7 +22798,8 @@
 
             const buildWordGroups = () => {
                 let slotIndex = 0;
-                return words.map((w, wi) => {
+                const groups = [];
+                words.forEach((w, wi) => {
                     const groupSlots = [];
                     for (let ci = 0; ci < w.length; ci++) {
                         groupSlots.push(makeSlot(slotIndex++));
@@ -22719,50 +22811,37 @@
                         }
                         slotIndex++; // skip SPACE or HYPHEN slot in data model
                     }
-                    return `<div class="spell-word-group" style="display:inline-flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:100%;">${groupSlots.join('')}</div>`;
+                    if (!groupSlots.length) return;
+                    groups.push(`<div class="spell-word-group" style="display:inline-flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:100%;">${groupSlots.join('')}</div>`);
                 });
+                return groups;
             };
 
             let answerRowsHTML = '';
-            // Landscape (side-by-side short/medium OR long-word stack): clear ABOVE answer line
-            if (layout.isLandscape) {
-                if (isMultiWord) {
-                    const wordGroups = buildWordGroups();
-                    answerRowsHTML = answerWithClearAbove(
-                        `<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;max-width:100%;">${wordGroups.join('')}</div>`
-                    );
-                } else {
-                    const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
-                    answerRowsHTML = answerWithClearAbove(slots);
-                }
-            } else if (isMultiWord) {
-                // Portrait multi-word: clear beside last row; wider gap between words
+            if (isMultiWord) {
                 const wordGroups = buildWordGroups();
-                if (words.length >= 3) {
+                if (!layout.sideBySide && wordGroups.length >= 3) {
                     const splitAt = Math.ceil(wordGroups.length / 2);
                     answerRowsHTML = `<div id="answerRow" style="display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;overflow:visible;width:100%;">
                                           <div style="display:flex;gap:${wordGap}px;row-gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;width:100%;">${wordGroups.slice(0, splitAt).join('')}</div>
-                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;">${wordGroups.slice(splitAt).join('')}</div>`)}
+                                          <div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;">${wordGroups.slice(splitAt).join('')}</div>
                                       </div>`;
                 } else {
-                    answerRowsHTML = `<div id="answerRow" style="width:100%;overflow:visible;">
-                                          ${lastRowWithClear(`<div style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;">${wordGroups.join('')}</div>`)}
+                    answerRowsHTML = `<div id="answerRow" style="display:flex;gap:${wordGap}px;row-gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;max-width:100%;overflow:visible;">
+                                          ${wordGroups.join('')}
                                       </div>`;
                 }
             } else {
-                // Portrait single word: clear to the right of the last tile
                 const slots = answerSlotsArray.map((_, idx) => makeSlot(idx)).join('');
-                answerRowsHTML = `<div id="answerRow" style="width:100%;max-width:100%;overflow:visible;">
-                                      ${lastRowWithClear(slots)}
+                answerRowsHTML = `<div id="answerRow" style="display:flex;gap:${slotGap}px;row-gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;width:100%;max-width:100%;overflow:visible;box-sizing:border-box;">
+                                      ${slots}
                                   </div>`;
             }
 
             const letterSpans = scrambledArray.map((letter, idx) =>
                 `<span class="letter-tile" data-index="${idx}"
                     onclick="selectLetter(${idx})"
-                    draggable="true"
-                    ondragstart="spellingDragStart(event,${idx},'tile')"
-                    ondragend="spellingDragEnd(event)"
+                    draggable="false"
                     ontouchstart="spellingTouchStart(event,${idx},'tile')"
                     ontouchmove="spellingTouchMove(event)"
                     ontouchend="spellingTouchEnd(event)"
@@ -22775,14 +22854,16 @@
                            background-clip:border-box;-webkit-background-clip:border-box;
                            -webkit-transform:translateZ(0);transform:translateZ(0);
                            color:${spellLetterColor(letter)};
-                           cursor:grab;user-select:none;-webkit-user-select:none;
-                           -webkit-user-drag:element;touch-action:none;flex-shrink:0;
+                           cursor:pointer;user-select:none;-webkit-user-select:none;
+                           -webkit-user-drag:none;touch-action:manipulation;flex-shrink:0;
                            text-align:center;">
                     <span class="letter-tile-ch" style="display:flex;align-items:center;justify-content:center;
                           width:100%;height:100%;line-height:1;overflow:visible;transform:${glyphLift};">${letter}</span></span>`
             ).join('');
 
             const L = layout;
+            const spellModal = document.getElementById('spellingGameModal');
+            if (spellModal) spellModal.classList.toggle('spell-big-tiles', !!L.bigTiles);
             const imgMaxHCss = L.imgMaxH === 'none' ? '' : `max-height:${L.imgMaxH};`;
             const checkMinW = L.isCompact ? 130 : 160;
             const checkPad = L.isCompact ? '10px 20px' : '12px 28px';
@@ -22808,8 +22889,11 @@
                 <button type="button" class="spell-glass-btn" onclick="event.stopPropagation();speakText('${speakEsc}')" style="color:#ff9500;" title="Say It">
                     <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                 </button>
-                <button type="button" class="spell-glass-btn" onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)" ontouchstart="event.stopPropagation();peekSpelling(true)" ontouchend="event.stopPropagation();peekSpelling(false)" style="color:#9c27b0;" title="Peek">
+                <button type="button" class="spell-glass-btn" onpointerdown="event.preventDefault();event.stopPropagation();peekSpelling(true);try{this.setPointerCapture(event.pointerId)}catch(err){}" onpointerup="peekSpelling(false)" onpointercancel="peekSpelling(false)" onmousedown="peekSpelling(true)" onmouseup="peekSpelling(false)" ontouchstart="event.stopPropagation();peekSpelling(true)" ontouchend="event.stopPropagation();peekSpelling(false)" ontouchcancel="peekSpelling(false)" style="color:#9c27b0;" title="Peek">
                     <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <button type="button" class="spell-glass-btn" id="spellClearBtn" onclick="event.stopPropagation();clearSpellingAnswer()" style="color:#1565c0;display:none;" title="Clear all letters">
+                    <svg width="${iconSz}" height="${iconSz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                 </button>`;
 
             // Index left; dots top-right. Same top/right inset (8px) when tools are not on the side.
@@ -22856,7 +22940,7 @@
                             </div>
 
                             <div id="spellColumn" style="min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;
-                                        justify-content:${L.sideBySide ? 'center' : 'flex-end'};gap:${L.spellGap}px;
+                                        justify-content:${L.spellAlign || (L.sideBySide ? 'center' : 'flex-end')};gap:${L.spellGap}px;
                                         padding-top:${L.spellPadTop}px;">
                                 <div style="width:100%;flex-shrink:0;padding:4px 4px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:visible;">
                                     ${answerRowsHTML}
@@ -22875,10 +22959,10 @@
                                     </div>
                                     <button id="checkBtn" onclick="checkSpelling()" type="button"
                                         style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-                                               display:flex;align-items:center;justify-content:center;gap:8px;z-index:4;
+                                               display:flex;align-items:center;justify-content:center;gap:8px;z-index:5;
                                                min-width:${checkMinW}px;padding:${checkPad};border:none;border-radius:999px;cursor:pointer;
-                                               background:#35654D;color:white;font-size:${checkFs};font-weight:700;font-family:inherit;
-                                               box-shadow:0 4px 16px rgba(53,101,77,0.35);touch-action:manipulation;
+                                               background:${SPELL_CONFIRM_GREEN};color:white;font-size:${checkFs};font-weight:700;font-family:inherit;
+                                               box-shadow:0 4px 16px rgba(0,200,83,0.45);touch-action:manipulation;
                                                transition:opacity 0.15s, background 0.15s;
                                                visibility:hidden;opacity:0;pointer-events:none;" title="Confirm spelling">
                                         Confirm
@@ -22898,7 +22982,7 @@
             // Remember layout so resize handler can skip no-op reflows
             try {
                 const _L = getSpellLayout({ word });
-                _spellLayoutKey = [_L.mainClass, _L.tierClass, _L.fsPx, _L.sideBySide ? 1 : 0, _L.spellTier, _L.toolsTop ? 1 : 0, Math.round(_L.vw / 40), Math.round(_L.vh / 40)].join('|');
+                _spellLayoutKey = [_L.mainClass, _L.tierClass, _L.fsPx, _L.tileScale, _L.sideBySide ? 1 : 0, _L.spellTier, _L.toolsTop ? 1 : 0, _L.bigTiles ? 1 : 0, Math.round(_L.vw / 40), Math.round(_L.vh / 40)].join('|');
             } catch (e) { /* ignore */ }
 
             // Card swipe only OUTSIDE tiles / answer line / letter bank (never steal letter drags)
@@ -22949,12 +23033,14 @@
             if (firstEmptySlot === -1) return;
             spellingGameState.answerSlots[firstEmptySlot] = letter;
             spellingGameState.scrambledLetters[letterIndex] = null;
+            spellClearTryAgain();
             renderSpellingGameState();
         }
 
         function selectAnswerSlot(slotIndex) {
             const v = spellingGameState.answerSlots[slotIndex];
             if (!isSpellLetter(v)) return;
+            spellClearTryAgain();
             let emptyIndex = spellingGameState.scrambledLetters.findIndex(l => l === null);
             if (emptyIndex === -1) {
                 spellingGameState.scrambledLetters.push(v);
@@ -22992,6 +23078,7 @@
                 }
             }
             if (!hadPlaced) return;
+            spellClearTryAgain();
 
             const correct = (spellingGameState.correctWord || '').split('').filter(l => l !== ' ' && l !== '-');
             let scrambled;
@@ -23061,15 +23148,76 @@
             return letterIdxs[destPos];
         }
 
-        function findSpellInsertSlotAt(clientX, clientY) {
-            // Must be over (or very near) a slot — not the whole answer row.
-            const slots = Array.from(document.querySelectorAll('#spellingGameModal .answer-slot'));
-            const usable = [];
-            slots.forEach(function (slot) {
+        function spellAnswerLetterItems() {
+            const items = [];
+            document.querySelectorAll('#spellingGameModal .answer-slot').forEach(function (slot) {
                 const idx = parseInt(slot.getAttribute('data-index'), 10);
                 if (isNaN(idx) || isSpellSeparator(spellingGameState.answerSlots[idx])) return;
-                usable.push({ slot: slot, r: slot.getBoundingClientRect() });
+                items.push({ slot: slot, idx: idx, r: slot.getBoundingClientRect() });
             });
+            return items;
+        }
+
+        function spellGroupItemsByLine(items) {
+            if (!items.length) return [];
+            const eps = Math.max(10, items[0].r.height * 0.35);
+            const sorted = items.slice().sort(function (a, b) {
+                if (Math.abs(a.r.top - b.r.top) > eps) return a.r.top - b.r.top;
+                return a.r.left - b.r.left;
+            });
+            const lines = [];
+            sorted.forEach(function (it) {
+                const line = lines[lines.length - 1];
+                if (!line || Math.abs(it.r.top - line[0].r.top) > eps) lines.push([it]);
+                else line.push(it);
+            });
+            return lines;
+        }
+
+        /**
+         * Wrapped rows (e.g. "underwear - pull"): hovering the right side of the
+         * last letter on a line, or the left side of the first letter on the next
+         * line, inserts across the wrap — same reorder as dragging along a line.
+         */
+        function findSpellWrapInsert(clientX, clientY) {
+            const items = spellAnswerLetterItems();
+            if (items.length < 2) return null;
+            const lines = spellGroupItemsByLine(items);
+            if (lines.length < 2) return null;
+
+            for (let i = 0; i < lines.length - 1; i++) {
+                const topLast = lines[i][lines[i].length - 1];
+                const botFirst = lines[i + 1][0];
+                const a = topLast.r;
+                const b = botFirst.r;
+                const padX = Math.max(36, a.width * 0.7);
+                const padY = Math.max(18, a.height * 0.5);
+
+                const overTopRight =
+                    clientX >= a.left + a.width * 0.38 &&
+                    clientX <= a.right + padX &&
+                    clientY >= a.top - padY &&
+                    clientY <= Math.max(a.bottom, b.top) + padY;
+
+                const overBotLeft =
+                    clientX >= b.left - padX &&
+                    clientX <= b.left + b.width * 0.62 &&
+                    clientY >= Math.min(b.top, a.bottom) - padY &&
+                    clientY <= b.bottom + padY;
+
+                if (overTopRight && overBotLeft) {
+                    const midY = (a.bottom + b.top) / 2;
+                    if (clientY <= midY) return { slot: topLast.slot, insertAfter: true };
+                    return { slot: botFirst.slot, insertAfter: false };
+                }
+                if (overTopRight) return { slot: topLast.slot, insertAfter: true };
+                if (overBotLeft) return { slot: botFirst.slot, insertAfter: false };
+            }
+            return null;
+        }
+
+        function findSpellInsertSlotAt(clientX, clientY) {
+            const usable = spellAnswerLetterItems();
             if (!usable.length) return null;
 
             const Y_PAD = 28;
@@ -23089,10 +23237,24 @@
             return best;
         }
 
+        function findSpellInsertTarget(clientX, clientY) {
+            const wrap = findSpellWrapInsert(clientX, clientY);
+            if (wrap) return wrap;
+            const slotEl = findSpellInsertSlotAt(clientX, clientY);
+            if (!slotEl) return null;
+            const r = slotEl.getBoundingClientRect();
+            const mid = r.left + r.width / 2;
+            const hyst = Math.max(10, r.width * 0.22);
+            let insertAfter = _spellInsertAfter;
+            if (clientX > mid + hyst) insertAfter = true;
+            else if (clientX < mid - hyst) insertAfter = false;
+            return { slot: slotEl, insertAfter: insertAfter };
+        }
+
         function spellLivePreview(clientX, clientY) {
             if (!_spellLive) return;
-            const slotEl = findSpellInsertSlotAt(clientX, clientY);
-            if (!slotEl) {
+            const target = findSpellInsertTarget(clientX, clientY);
+            if (!target || !target.slot) {
                 if (_spellLive.lastKey === 'out') return;
                 _spellLive.lastKey = 'out';
                 _spellLive.placeholderIdx = null;
@@ -23101,13 +23263,9 @@
                 spellClearLivePlaceholder();
                 return;
             }
+            const slotEl = target.slot;
             const destIdx = parseInt(slotEl.getAttribute('data-index'), 10);
-            const r = slotEl.getBoundingClientRect();
-            const mid = r.left + r.width / 2;
-            const hyst = Math.max(10, r.width * 0.22);
-            let insertAfter = _spellInsertAfter;
-            if (clientX > mid + hyst) insertAfter = true;
-            else if (clientX < mid - hyst) insertAfter = false;
+            const insertAfter = !!target.insertAfter;
             const key = destIdx + (insertAfter ? 'a' : 'b');
             if (_spellLive.lastKey === key) return;
             _spellLive.lastKey = key;
@@ -23147,6 +23305,8 @@
             if (_spellLive) {
                 if (_spellLive.lastKey == null || _spellLive.lastKey === 'out') {
                     spellRestoreLiveOrig();
+                } else {
+                    spellClearTryAgain();
                 }
                 _spellLive = null;
             }
@@ -23167,9 +23327,12 @@
         }
 
         function spellingDragStart(e, index, type) {
-            const letter = type === 'tile'
-                ? spellingGameState.scrambledLetters[index]
-                : spellingGameState.answerSlots[index];
+            // Drag is only for rearranging letters already on the blank line.
+            if (type !== 'slot') {
+                e.preventDefault();
+                return;
+            }
+            const letter = spellingGameState.answerSlots[index];
             if (!isSpellLetter(letter)) {
                 e.preventDefault();
                 return;
@@ -23368,6 +23531,7 @@
             _spellLive = null;
             spellUnbindDocDrag();
             if (src && spellInsertLetter(src.type, src.index, destSlotIdx, insertAfter)) {
+                spellClearTryAgain();
                 _spellDragSource = null;
                 renderSpellingGameState();
                 return;
@@ -23378,20 +23542,8 @@
 
         function spellingDragDropToTile(e) {
             e.preventDefault();
-            const live = _spellLive;
-            spellUnbindDocDrag();
-            if (live) {
-                spellRestoreLiveOrig();
-                _spellLive = null;
-                _spellDragSource = null;
-                if (live.type === 'slot') selectAnswerSlot(live.index);
-                else renderSpellingGameState();
-                return;
-            }
-            if (!_spellDragSource) return;
-            const { type, index } = _spellDragSource;
-            _spellDragSource = null;
-            if (type === 'slot') selectAnswerSlot(index);
+            // Drag does not send letters back to the bank — tap a blank to send it down.
+            spellCancelLive();
         }
 
         // ---- Touch drag (letter placement only — never card swipe) ----
@@ -23437,7 +23589,8 @@
             const adx = Math.abs(dx);
             const ady = Math.abs(dy);
 
-            // Any direction past threshold = letter drag (including horizontal to the answer line)
+            // Bank tiles are tap-only. Drag is only between blanks.
+            if (_spellTouch.type !== 'slot') return;
             if (!_spellTouch.isDragging && (adx > SPELL_DRAG_THRESHOLD || ady > SPELL_DRAG_THRESHOLD)) {
                 _spellTouch.isDragging = true;
                 if (_spellTouch.ghost) _spellTouch.ghost.style.opacity = '0.92';
@@ -23482,18 +23635,14 @@
             e.stopPropagation();
 
             const clientX = t.clientX, clientY = t.clientY;
-            const slotEl = findSpellInsertSlotAt(clientX, clientY);
+            const wrapHit = findSpellWrapInsert(clientX, clientY);
+            const slotEl = wrapHit ? wrapHit.slot : findSpellInsertSlotAt(clientX, clientY);
             const dropTarget = document.elementFromPoint(clientX, clientY);
             const inLetterRow = dropTarget && dropTarget.closest &&
                 (dropTarget.closest('#letterRow') || dropTarget.closest('#spellLetterBank'));
 
             if (type === 'slot' && (inLetterRow || !slotEl)) {
-                if (_spellLive) {
-                    spellRestoreLiveOrig();
-                    _spellLive = null;
-                }
-                spellUnbindDocDrag();
-                selectAnswerSlot(index);
+                spellCancelLive();
                 return;
             }
             if (slotEl && _spellLive && _spellLive.lastKey && _spellLive.lastKey !== 'out') {
@@ -23503,11 +23652,12 @@
             if (slotEl) {
                 const destIdx = parseInt(slotEl.getAttribute('data-index'), 10);
                 const r = slotEl.getBoundingClientRect();
-                const insertAfter = clientX > r.left + r.width / 2;
+                const insertAfter = wrapHit ? !!wrapHit.insertAfter : (clientX > r.left + r.width / 2);
                 if (_spellLive) spellRestoreLiveOrig();
                 _spellLive = null;
                 spellUnbindDocDrag();
                 if (spellInsertLetter(type, index, destIdx, insertAfter)) {
+                    spellClearTryAgain();
                     renderSpellingGameState();
                     return;
                 }
@@ -23618,7 +23768,7 @@
             const clearBtn = document.getElementById('spellClearBtn');
             if (clearBtn) {
                 const hasPlaced = spellingGameState.answerSlots.some(isSpellLetter);
-                clearBtn.style.display = 'inline-flex';
+                clearBtn.style.display = hasPlaced ? 'flex' : 'none';
                 clearBtn.style.visibility = hasPlaced ? 'visible' : 'hidden';
                 clearBtn.style.opacity = hasPlaced ? '1' : '0';
                 clearBtn.style.pointerEvents = hasPlaced ? 'auto' : 'none';
@@ -23630,19 +23780,49 @@
                 checkBtn.style.visibility = allFilled ? 'visible' : 'hidden';
                 checkBtn.style.opacity = allFilled ? '1' : '0';
                 checkBtn.style.pointerEvents = allFilled ? 'auto' : 'none';
-                checkBtn.textContent = 'Confirm';
-                checkBtn.style.background = '#35654D';
+                if (_spellTryAgain && allFilled) {
+                    checkBtn.textContent = 'Try again';
+                    checkBtn.style.background = '#ff1744';
+                } else {
+                    if (!allFilled) _spellTryAgain = false;
+                    checkBtn.textContent = 'Confirm';
+                    checkBtn.style.background = SPELL_CONFIRM_GREEN;
+                }
                 const bank = document.getElementById('letterRow');
                 if (bank) bank.style.visibility = allFilled ? 'hidden' : 'visible';
             }
             if (typeof applySpellLetterFonts === 'function') applySpellLetterFonts();
         }
 
+        let _spellPeekOn = false;
+        function spellPeekOff() {
+            peekSpelling(false);
+        }
+        function spellBindPeekRelease() {
+            document.addEventListener('pointerup', spellPeekOff, true);
+            document.addEventListener('mouseup', spellPeekOff, true);
+            document.addEventListener('touchend', spellPeekOff, true);
+            document.addEventListener('touchcancel', spellPeekOff, true);
+            window.addEventListener('blur', spellPeekOff);
+        }
+        function spellUnbindPeekRelease() {
+            document.removeEventListener('pointerup', spellPeekOff, true);
+            document.removeEventListener('mouseup', spellPeekOff, true);
+            document.removeEventListener('touchend', spellPeekOff, true);
+            document.removeEventListener('touchcancel', spellPeekOff, true);
+            window.removeEventListener('blur', spellPeekOff);
+        }
         function peekSpelling(show) {
             if (!show) {
+                if (!_spellPeekOn) return;
+                _spellPeekOn = false;
+                spellUnbindPeekRelease();
                 renderSpellingGameState();
                 return;
             }
+            if (_spellPeekOn) return;
+            _spellPeekOn = true;
+            spellBindPeekRelease();
             const chars = (spellingGameState.correctWord || '').split('');
             let charIdx = 0;
             document.querySelectorAll('.answer-slot').forEach(slot => {
@@ -23683,14 +23863,11 @@
             }
 
             playSound('errorSound');
+            _spellTryAgain = true;
             const checkBtn = document.getElementById('checkBtn');
             if (checkBtn) {
                 checkBtn.style.background = '#ff1744';
                 checkBtn.textContent = 'Try again';
-                setTimeout(() => {
-                    checkBtn.style.background = '#35654D';
-                    checkBtn.textContent = 'Confirm';
-                }, 1000);
             }
             const contentEl = document.getElementById('spellingGameContent');
             if (contentEl) {
