@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <style>html,body{background:#35654D!important;background-color:#35654D!important;}</style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     
     <!-- iOS Safari home-screen: opaque status bar (not a blur overlay). theme-color tints it green. -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -28,7 +28,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1287-no-status-overlay">
+    <meta name="flashabc-build" content="1288-no-underlap">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -270,11 +270,6 @@
         #matchGameModal,
         #findLetterModal,
         #stwModal {
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-            padding-left: env(safe-area-inset-left, 0px);
-            box-sizing: border-box;
             background-color: #35654D;
         }
         #spellingGameModal #spellingGameContent {
@@ -615,10 +610,7 @@
             min-height: -webkit-fill-available;
             height: 100vh;
             height: -webkit-fill-available;
-            padding-top: max(10px, env(safe-area-inset-top, 0px));
-            padding-right: max(10px, env(safe-area-inset-right, 0px));
-            padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
-            padding-left: max(10px, env(safe-area-inset-left, 0px));
+            padding: 10px;
             box-sizing: border-box;
             overflow: hidden;
             touch-action: pan-y;
@@ -635,19 +627,13 @@
 
         @media (min-width: 768px) {
             body {
-                padding-top: max(10px, env(safe-area-inset-top, 0px));
-                padding-right: max(10px, env(safe-area-inset-right, 0px));
-                padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
-                padding-left: max(10px, env(safe-area-inset-left, 0px));
+                padding: 10px;
             }
         }
 
         @media (max-width: 480px) {
             body {
-                padding-top: max(6px, env(safe-area-inset-top, 0px));
-                padding-right: max(4px, env(safe-area-inset-right, 0px));
-                padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
-                padding-left: max(4px, env(safe-area-inset-left, 0px));
+                padding: 6px 4px;
             }
         }
 
@@ -4911,8 +4897,7 @@
         /* Guess the Word + Bomb: let JS size square tiles to the real play area */
         #guessGameModal.modal.active,
         #bombGameModal.modal.active {
-            padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-            background-color: #35654D;
+            padding: 0;
         }
         #guessGameModal > div,
         #bombGameModal > div {
