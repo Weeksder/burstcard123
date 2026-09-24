@@ -4,58 +4,164 @@
     <meta charset="UTF-8">
     <style>html,body{background:#35654D!important;background-color:#35654D!important;}</style>
     <script>
+    /*
+     * Assets: local when possible; on iPad OneDrive/Files the HTML is often opened
+     * alone (no sibling CSS), so we fetch CDN CSS and inject it.
+     */
+    window.FLASHABC_CDN = 'https://cdn.jsdelivr.net/gh/Weeksder/burstcard123@main/';
+    window.FLASHABC_CDN_ALT = 'https://raw.githubusercontent.com/Weeksder/burstcard123/main/';
+    window.FLASHABC_NEEDS_CDN = (function () {
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var href = String(location.href || '');
+        var host = String(location.host || '');
+        var path = decodeURIComponent((location.pathname || '') + ' ' + href).replace(/\\/g, '/');
+        var cloud = /onedrive|sharepoint|1drv\.ms|my\.microsoft|files\.icloud|icloud/i.test(path + ' ' + host + ' ' + href);
+        var weirdFile = location.protocol === 'file:' || /^blob:|^null/.test(href) || !location.protocol;
+        // iOS Files/OneDrive almost never resolves sibling CSS next to the HTML
+        return isIOS || cloud || (weirdFile && isIOS);
+    })();
     window.FLASHABC_ASSET_BASE = (function () {
         var p = decodeURIComponent((location.pathname || '') + ' ' + (location.href || '')).replace(/\\/g, '/');
+        if (window.FLASHABC_NEEDS_CDN) return window.FLASHABC_CDN;
         if (/Flash ABC Github files/i.test(p)) return '';
         if (location.protocol === 'file:') return 'Flash ABC Github files/';
         return '';
     })();
-    window.assetUrl = function (f) { return (window.FLASHABC_ASSET_BASE || '') + f; };
+    window.assetUrl = function (f) {
+        var base = window.FLASHABC_ASSET_BASE || '';
+        if (!base && location.protocol !== 'file:') return f;
+        return base + f;
+    };
     window.applyAssetSrcs = function () {
-        if (!window.FLASHABC_ASSET_BASE) return;
+        var cdn = window.FLASHABC_CDN || '';
         document.querySelectorAll('img[data-asset]').forEach(function (img) {
-            img.src = assetUrl(img.getAttribute('data-asset'));
+            var file = img.getAttribute('data-asset');
+            if (!file) return;
+            var name = file.split('/').pop();
+            img.src = assetUrl(name);
+            img.onerror = function () {
+                if (cdn && img.src.indexOf('burstcard123') === -1) {
+                    img.onerror = null;
+                    img.src = cdn + name;
+                }
+            };
         });
         document.querySelectorAll('audio source').forEach(function (s) {
             var src = s.getAttribute('src') || '';
             if (!src || src.indexOf('http') === 0) return;
-            if (/Flash ABC Github files/i.test(src)) return;
             var file = src.split('/').pop();
             s.src = assetUrl(file);
         });
+    };
+    window.injectFlashabcCssText = function (cssText) {
+        if (!cssText) return;
+        var old = document.getElementById('flashabcCssInjected');
+        if (old) old.remove();
+        var style = document.createElement('style');
+        style.id = 'flashabcCssInjected';
+        style.textContent = cssText;
+        document.head.appendChild(style);
+        document.documentElement.classList.add('flashabc-css-ready');
+    };
+    window.fetchFlashabcCss = function (url) {
+        return fetch(url, { mode: 'cors', cache: 'no-cache' }).then(function (r) {
+            if (!r.ok) throw new Error('css ' + r.status);
+            return r.text();
+        });
+    };
+    window.loadFlashabcCss = function () {
+        var link = document.getElementById('flashabcCss');
+        var cdn = window.FLASHABC_CDN || '';
+        var alt = window.FLASHABC_CDN_ALT || '';
+        var remote = [cdn + 'flashabc.css', alt + 'flashabc.css'];
+
+        function cssLooksLoaded() {
+            try {
+                var probe = document.createElement('div');
+                probe.className = 'container';
+                probe.style.cssText = 'position:absolute;left:-9999px;top:0;';
+                document.body.appendChild(probe);
+                var pad = window.getComputedStyle(probe).paddingTop;
+                probe.remove();
+                // flashabc.css sets body/container layout; unstyled probe is usually "0px"
+                return !!pad && pad !== '0px';
+            } catch (e) {
+                return document.documentElement.classList.contains('flashabc-css-ready');
+            }
+        }
+
+        function loadRemoteInject(urls, idx) {
+            idx = idx || 0;
+            if (idx >= urls.length) return Promise.reject(new Error('no css'));
+            return fetchFlashabcCss(urls[idx]).then(injectFlashabcCssText).catch(function () {
+                return loadRemoteInject(urls, idx + 1);
+            });
+        }
+
+        // iPad OneDrive/Files: skip flaky local <link>, inject CDN CSS immediately
+        if (window.FLASHABC_NEEDS_CDN) {
+            loadRemoteInject(remote).catch(function () {});
+            return;
+        }
+
+        // Desktop / GitHub: try local link first, then CDN inject
+        var candidates = [];
+        var base = window.FLASHABC_ASSET_BASE || '';
+        if (base && base.indexOf('http') === 0) candidates.push(base + 'flashabc.css');
+        else {
+            if (base) candidates.push(base + 'flashabc.css');
+            candidates.push('flashabc.css');
+            candidates.push('Flash ABC Github files/flashabc.css');
+        }
+        var i = 0;
+        function tryLink() {
+            if (!link || i >= candidates.length) {
+                loadRemoteInject(remote).catch(function () {});
+                return;
+            }
+            var href = candidates[i++];
+            if (!href) { tryLink(); return; }
+            link.onerror = tryLink;
+            link.onload = function () {
+                link.onerror = null;
+                setTimeout(function () {
+                    if (!cssLooksLoaded()) loadRemoteInject(remote).catch(function () {});
+                }, 400);
+            };
+            link.href = href;
+        }
+        tryLink();
+        // Safety net if onerror never fires (common on some mobile WebViews)
+        setTimeout(function () {
+            if (!document.documentElement.classList.contains('flashabc-css-ready') && !cssLooksLoaded()) {
+                loadRemoteInject(remote).catch(function () {});
+            }
+        }, 1200);
     };
     document.addEventListener('DOMContentLoaded', function () { applyAssetSrcs(); });
     </script>
     <link rel="stylesheet" href="flashabc.css" id="flashabcCss">
     <script>
-    document.getElementById('flashabcCss').href = assetUrl('flashabc.css');
+    loadFlashabcCss();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    
-    <!-- iOS Safari home-screen: opaque status bar (not a blur overlay). theme-color tints it green. -->
+
+    <!-- Home-screen / installed-app basics (no status-bar chrome experiments) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FlashABC">
-    
-    <!-- Android Chrome / iOS 15+ Safari toolbar / home-screen status bar -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#35654D">
-    <meta name="theme-color" content="#35654D" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#35654D" media="(prefers-color-scheme: dark)">
-    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22FlashABC%22%2C%22short_name%22%3A%22FlashABC%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2335654D%22%2C%22theme_color%22%3A%22%2335654D%22%7D">
-    
-    <!-- Windows Phone -->
-    <meta name="msapplication-navbutton-color" content="#35654D">
     <meta name="msapplication-TileColor" content="#35654D">
-    
-    <!-- Edge -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <!-- Cache prevention -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1314-spell-double-cheer">
+    <meta name="flashabc-build" content="1317-ios-cdn-css-inject">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
