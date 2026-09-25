@@ -2441,23 +2441,39 @@
         body.hide-ui:not(.hide-ui-peek) #cardOverlayCounter,
         body.hide-ui:not(.hide-ui-peek) #cardOverlayTTS,
         body.hide-ui:not(.hide-ui-peek) .card-stack-tts,
-        body.hide-ui:not(.hide-ui-peek) #cardOverlayNav,
-        body.hide-ui:not(.hide-ui-peek) .nav-btn,
-        body.hide-ui:not(.hide-ui-peek) #navIndexLabel,
-        body.hide-ui:not(.hide-ui-peek) #navHintLabel {
+        body.hide-ui:not(.hide-ui-peek) #cardOverlayNav {
             display: none !important;
         }
-        body.hide-ui #cardOverlayHidePeek {
-            display: block !important;
+        /* Stay in hide mode: never show L/R arrows; the eye stays so users know hide-UI is on */
+        body.hide-ui .nav-btn,
+        body.hide-ui #navIndexLabel,
+        body.hide-ui #navHintLabel {
+            display: none !important;
         }
+        body.hide-ui #cardOverlayHidePeek,
         body.hide-ui.hide-ui-peek #cardOverlayHidePeek {
-            display: none !important;
+            display: block !important;
+            visibility: visible !important;
+            z-index: 13000 !important;
         }
         body:not(.hide-ui) #cardOverlayHidePeek {
             display: none !important;
         }
         body.hide-ui.hide-ui-peek .top-bar {
             animation: hideUiPeekDrop 0.22s ease-out;
+            position: relative;
+            z-index: 14000;
+        }
+        body.hide-ui.hide-ui-peek #topControls,
+        body.hide-ui.hide-ui-peek .dropdown,
+        body.hide-ui.hide-ui-peek .dropdown-content {
+            z-index: 14001;
+        }
+        body.hide-ui #manageSidePanel {
+            z-index: 40000 !important;
+        }
+        body.hide-ui #manageSidePanelOverlay {
+            z-index: 39999 !important;
         }
         @keyframes hideUiPeekDrop {
             from { opacity: 0; transform: translateY(-12px); }
@@ -6368,7 +6384,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1324-games-min4-banner">
+    <meta name="flashabc-build" content="1331-hideui-manage-z">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -8205,10 +8221,14 @@
                         lockOverlay.style.bottom = (window.innerHeight - rect.bottom + offset + 58) + 'px';
                         lockOverlay.style.left   = (rect.left + offset) + 'px';
                     }
-                    const hidePeek = document.getElementById('cardOverlayHidePeek');
-                    if (hidePeek) {
-                        hidePeek.style.top  = (rect.top + 8) + 'px';
-                        hidePeek.style.left = (rect.left + 8) + 'px';
+                    if (typeof positionHidePeekEye === 'function' && document.body.classList.contains('hide-ui')) {
+                        positionHidePeekEye();
+                    } else {
+                        const hidePeek = document.getElementById('cardOverlayHidePeek');
+                        if (hidePeek) {
+                            hidePeek.style.top  = (rect.top + 8) + 'px';
+                            hidePeek.style.left = (rect.left + 8) + 'px';
+                        }
                     }
                 }
                 if (showTtsButton && (force || needTts)) placeTtsAtCardTop(rect);
@@ -9652,7 +9672,11 @@
             function onStart(e) {
                 const target = e.target;
                 if (isShuffling) return;
-                if (typeof endHideUiPeek === 'function' && document.body.classList.contains('hide-ui-peek')) endHideUiPeek();
+                if (typeof endHideUiPeek === 'function' && document.body.classList.contains('hide-ui-peek')) {
+                    const startPos = getPos(e);
+                    const inTop = typeof isHideUiTopTapY === 'function' && isHideUiTopTapY(startPos.y);
+                    if (!inTop) endHideUiPeek();
+                }
                 if (shouldExcludeTouchTarget(target)) return;
                 if (!target.closest('#cardDisplay') && !target.closest('.card-container')) return;
                 if (cards.length === 0) return;
@@ -9741,6 +9765,10 @@
                 // after the click; current timing lets the click hit the new card).
                 lastTouchTime = Date.now();
 
+                if (document.body.classList.contains('hide-ui-peek') && peakDist >= MIN_DRAG_TO_SUPPRESS_FLIP) {
+                    if (typeof endHideUiPeek === 'function') endHideUiPeek();
+                }
+
                 // Restore overflow for non-swipe cases
                 if (finalDist < MIN_SWIPE) {
                     document.body.style.overflow = 'hidden';
@@ -9750,6 +9778,7 @@
                 if (elapsed < MAX_TAP_TIME && peakDist < PEAK_DRAG_SUPPRESS_FLIP && finalDist < MIN_DRAG_TO_SUPPRESS_FLIP) {
                     setSwipeChromeHidden(false);
                     clearSideCarousel();
+                    if (typeof consumeHideUiTopTap === 'function' && consumeHideUiTopTap(startY)) return;
                     requestAnimationFrame(() => flipCard());
                     return;
                 }
@@ -9957,6 +9986,7 @@
                               target.closest('#settingsMenu');
 
             if (isCardElement && !isExcluded) {
+                if (typeof consumeHideUiTopTap === 'function' && consumeHideUiTopTap(e.clientY)) return;
                 flipCard();
             }
         });
@@ -19400,15 +19430,107 @@
             if (btn) setSettingsItemOn(btn, isMuted);
         }
 
+        function positionHidePeekEye() {
+            const hidePeek = document.getElementById('cardOverlayHidePeek');
+            if (!hidePeek || !document.body.classList.contains('hide-ui')) return;
+            const container = document.querySelector('.card-container');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            hidePeek.style.display = 'block';
+            hidePeek.style.top = Math.round(rect.top + 8) + 'px';
+            hidePeek.style.left = Math.round(rect.left + 8) + 'px';
+            hidePeek.style.zIndex = '13000';
+        }
+
+        function scheduleHidePeekEye() {
+            requestAnimationFrame(function () {
+                requestAnimationFrame(positionHidePeekEye);
+            });
+        }
+
         function endHideUiPeek() {
             document.body.classList.remove('hide-ui-peek');
+            scheduleHidePeekEye();
         }
 
         function peekHideUI() {
             if (!document.body.classList.contains('hide-ui')) return;
+            if (document.body.classList.contains('hide-ui-peek')) {
+                endHideUiPeek();
+                return;
+            }
             document.body.classList.add('hide-ui-peek');
             closeSettingsMenu();
+            scheduleHidePeekEye();
         }
+
+        /* Hide-UI: tap the top of the screen to bring the toolbar back (does not flip).
+           18% of viewport height, clamped 64–160px — easy to change HIDE_UI_TOP_TAP_FRAC. */
+        const HIDE_UI_TOP_TAP_FRAC = 0.18;
+        let _hideUiTopTapAt = 0;
+        let _hideUiTopStart = { x: 0, y: 0 };
+
+        function hideUiTopTapMaxY() {
+            const h = window.innerHeight || 600;
+            return Math.round(Math.min(160, Math.max(64, h * HIDE_UI_TOP_TAP_FRAC)));
+        }
+
+        function isHideUiTopTapY(clientY) {
+            return clientY >= 0 && clientY <= hideUiTopTapMaxY();
+        }
+
+        function hideUiTopTapIgnoredTarget(el) {
+            if (!el || !el.closest) return false;
+            if (el.closest('#cardOverlaySettings, #settingsMenu, #settingsBackdrop, #settingsGearBtn, #hidePeekBtn, #cardOverlayHidePeek, #cardOverlayLock, .fullscreen-btn')) return true;
+            if (document.body.classList.contains('hide-ui-peek') && el.closest('button, .btn, a, input, select, .dropdown-content')) return true;
+            return false;
+        }
+
+        function showButtonsFromHideUi() {
+            if (!document.body.classList.contains('hide-ui')) return false;
+            if (document.body.classList.contains('hide-ui-peek')) endHideUiPeek();
+            else peekHideUI();
+            return true;
+        }
+
+        function consumeHideUiTopTap(clientY) {
+            if (!document.body.classList.contains('hide-ui')) return false;
+            if (!isHideUiTopTapY(clientY)) return false;
+            if (Date.now() - _hideUiTopTapAt < 400) return true;
+            _hideUiTopTapAt = Date.now();
+            lastTouchTime = Date.now();
+            showButtonsFromHideUi();
+            return true;
+        }
+
+        document.addEventListener('touchstart', function (e) {
+            if (!document.body.classList.contains('hide-ui')) return;
+            const t = e.touches && e.touches[0];
+            if (!t) return;
+            _hideUiTopStart.x = t.clientX;
+            _hideUiTopStart.y = t.clientY;
+        }, { capture: true, passive: true });
+
+        document.addEventListener('touchend', function (e) {
+            if (!document.body.classList.contains('hide-ui')) return;
+            const t = e.changedTouches && e.changedTouches[0];
+            if (!t) return;
+            if (hideUiTopTapIgnoredTarget(e.target)) return;
+            if (Math.hypot(t.clientX - _hideUiTopStart.x, t.clientY - _hideUiTopStart.y) > 14) return;
+            if (consumeHideUiTopTap(_hideUiTopStart.y) || consumeHideUiTopTap(t.clientY)) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { capture: true });
+
+        document.addEventListener('click', function (e) {
+            if (!document.body.classList.contains('hide-ui')) return;
+            if (hideUiTopTapIgnoredTarget(e.target)) return;
+            if (consumeHideUiTopTap(e.clientY)) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
 
         function toggleHideUI() {
             const isHidden = document.body.classList.toggle('hide-ui');
@@ -19421,6 +19543,10 @@
                 : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
             setSettingsItemOn(btn, isHidden);
             if (typeof positionNavOverlay === 'function') positionNavOverlay(true);
+            if (typeof scheduleHidePeekEye === 'function') scheduleHidePeekEye();
+            else requestAnimationFrame(function () {
+                if (typeof positionHidePeekEye === 'function') positionHidePeekEye();
+            });
         }
 
         function toggleSettingsMenu() {
