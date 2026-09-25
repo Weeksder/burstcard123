@@ -1525,8 +1525,7 @@
             justify-content: center;
             align-items: stretch;
             overflow: hidden;
-            padding: 4px;
-            padding-bottom: 4px;
+            padding: 8px 4px 12px;
             box-sizing: border-box;
         }
         .card-front.show-solo-active .card-image {
@@ -1542,18 +1541,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2px 8px 58px 8px;
+            padding: 8px 8px 62px 8px;
+            overflow: visible;
             container-type: size;
         }
         .card-front.show-solo-active .card-letter-banner-text {
             font-size: 90vmin !important;
             letter-spacing: 0;
-            line-height: 0.88;
+            line-height: 1.12;
+            padding-bottom: 0.12em;
             white-space: nowrap !important;
+            overflow: visible;
         }
         @media (orientation: landscape) {
             .card-front.show-solo-active .card-letter-banner {
-                padding: 2px 8px 58px 8px;
+                padding: 8px 8px 62px 8px;
             }
         }
 
@@ -1726,25 +1728,31 @@
         }
         .letter-layout-preview {
             width: 100%;
-            aspect-ratio: 3 / 3.4;
-            max-height: 26vh;
+            aspect-ratio: 3 / 4;
+            max-height: 28vh;
             background: #fff;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            border: 2.5px solid #222;
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            padding: 3px;
+            box-shadow: none;
+            padding: 6px 7px 8px;
             box-sizing: border-box;
+        }
+        .letter-layout-preview .llp-pic {
+            width: 72%;
+            height: auto;
+            max-height: 100%;
+            display: block;
         }
         .letter-layout-preview .llp-img {
             flex: 1 1 0;
             min-height: 0;
             margin: 0;
-            border-radius: 6px;
-            background: #f4f7f5;
+            border-radius: 0;
+            background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1764,39 +1772,33 @@
             width: 100%;
             text-align: center;
             font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
-            font-weight: var(--spell-letter-weight, 400);
-            font-size: 0.78rem;
-            color: #1a1a1a;
+            font-weight: 700;
+            font-size: 1.28rem;
+            color: #111;
             line-height: 1.15;
-            padding: 3px 2px 1px;
+            padding: 4px 2px 0;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
-        /* Corner: letters clear; image fills remaining area without covering Ee */
         .letter-layout-preview--corner {
             display: flex;
             flex-direction: column;
         }
         .letter-layout-preview--corner .llp-corner {
             position: absolute;
-            top: 5px;
-            left: 5px;
+            top: 6px;
+            left: 8px;
             z-index: 2;
             font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
-            font-weight: var(--spell-letter-weight, 400);
-            font-size: 1.55rem;
-            color: #1a1a1a;
+            font-weight: 400;
+            font-size: 1.65rem;
+            color: #111;
             line-height: 1;
-            letter-spacing: 0.02em;
             pointer-events: none;
         }
         .letter-layout-preview--corner .llp-img {
-            margin: 22px 2px 0 28%;
+            margin: 22px 8px 0;
             flex: 1 1 0;
-        }
-        .letter-layout-preview--corner .llp-caption {
-            padding-top: 2px;
+            min-height: 0;
         }
         .letter-layout-preview--banner {
             align-items: stretch;
@@ -1804,55 +1806,27 @@
         .letter-layout-preview--banner .llp-banner {
             flex: 0 0 auto;
             text-align: center;
-            padding: 2px 2px 1px;
+            padding: 2px 2px 0;
             font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
-            font-weight: var(--spell-letter-weight, 400);
-            font-size: 1.45rem;
-            color: #1a1a1a;
-            letter-spacing: 0.06em;
+            font-weight: 400;
+            font-size: 1.65rem;
+            color: #111;
+            letter-spacing: 0.12em;
             line-height: 1;
         }
         .letter-layout-preview--banner .llp-img {
             flex: 1 1 0;
             min-height: 0;
+            margin: 2px 8px 0;
         }
-        .letter-layout-preview--bottom .llp-img {
-            flex: 1 1 0;
-            min-height: 0;
-            margin-bottom: 0;
-        }
-        .letter-layout-preview--bottom .llp-rule {
-            display: block;
-            width: 50%;
-            height: 2px;
-            background: #1a1a1a;
-            margin: 2px auto 2px;
-            border-radius: 1px;
-            flex-shrink: 0;
-            opacity: 0.85;
-        }
-        .letter-layout-preview--bottom .llp-bottom {
-            flex: 0 0 auto;
-            text-align: center;
-            padding: 0 2px 2px;
-            font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
-            font-weight: var(--spell-letter-weight, 400);
-            font-size: 1.45rem;
-            color: #1a1a1a;
-            letter-spacing: 0.06em;
-            line-height: 1;
-        }
-        .letter-layout-preview--bottom .llp-caption {
-            padding-bottom: 0;
-        }
-        /* Large: image up top, oversized letters fill the rest, no caption */
         .letter-layout-preview--giant {
             align-items: stretch;
         }
         .letter-layout-preview--giant .llp-img {
-            flex: 0 0 34%;
-            max-height: 38%;
+            flex: 0 0 32%;
+            max-height: 36%;
             min-height: 0;
+            margin: 4px 18px 0;
         }
         .letter-layout-preview--giant .llp-giant {
             flex: 1 1 0;
@@ -1861,11 +1835,11 @@
             align-items: center;
             justify-content: center;
             font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
-            font-weight: var(--spell-letter-weight, 400);
-            font-size: 2.15rem;
-            color: #1a1a1a;
-            letter-spacing: 0.06em;
-            line-height: 0.95;
+            font-weight: 400;
+            font-size: 2.85rem;
+            color: #111;
+            letter-spacing: 0.14em;
+            line-height: 0.9;
         }
         .letter-layout-preview--solo {
             align-items: stretch;
@@ -1877,21 +1851,17 @@
             align-items: center;
             justify-content: center;
             font-family: var(--spell-letter-font, Fredoka, Arial, sans-serif);
-            font-weight: var(--spell-letter-weight, 400);
-            font-size: 3.1rem;
-            color: #1a1a1a;
-            line-height: 0.95;
-        }
-        .letter-layout-option[data-layout="solo"] {
-            grid-column: 1 / -1;
-            max-width: calc(50% - 4px);
-            justify-self: center;
+            font-weight: 400;
+            font-size: 3.2rem;
+            color: #111;
+            letter-spacing: 0.16em;
+            line-height: 0.9;
         }
         @media (max-width: 420px) {
             .letter-layout-grid { gap: 6px; }
             .letter-layout-option { padding: 6px 4px 7px; }
             .letter-layout-preview { max-height: 24vh; }
-            .letter-layout-preview .llp-caption { font-size: 0.7rem; }
+            .letter-layout-preview .llp-caption { font-size: 1.05rem; }
         }
         @media (orientation: landscape) and (max-height: 700px) {
             .letter-layout-card {
@@ -5090,15 +5060,22 @@
         .word-size-thumb:active { cursor: grabbing; }
 
         #showTextBtn.settings-caption-blocked {
-            opacity: 0.55;
-            color: #888 !important;
+            opacity: 0.9;
         }
-        #showTextBtn.settings-caption-blocked svg {
-            stroke: #888 !important;
+        #showCharBtn .settings-off-mark,
+        #showTextBtn .settings-off-mark {
+            display: none;
+            margin-left: auto;
+            color: #e53935;
+            font-weight: 900;
+            font-size: 1.75rem;
+            line-height: 1;
+            flex-shrink: 0;
         }
-        #showTextBtn.settings-caption-blocked .settings-caption-label {
-            text-decoration: line-through;
-            text-decoration-thickness: 2px;
+        #showCharBtn.settings-row-off .settings-off-mark,
+        #showTextBtn.settings-row-off .settings-off-mark,
+        #showTextBtn.settings-caption-blocked .settings-off-mark {
+            display: inline;
         }
 
         #settingsBackdrop {
@@ -5135,6 +5112,30 @@
             box-shadow: none;
             overflow: visible;
             min-width: 0;
+        }
+        .settings-menu-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 200px;
+        }
+        #letterLayoutBtn.settings-layout-float {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px 16px;
+            border: none;
+            border-radius: 14px;
+            background: white;
+            color: #333;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.35);
         }
         .settings-menu-main {
             background: white;
@@ -5198,6 +5199,17 @@
             }
             #settingsMenu .settings-menu-main {
                 min-width: 248px;
+            }
+            .settings-menu-stack {
+                min-width: 248px;
+            }
+            #letterLayoutBtn.settings-layout-float {
+                font-size: 18px !important;
+                padding: 16px 18px !important;
+            }
+            #letterLayoutBtn.settings-layout-float svg {
+                width: 22px;
+                height: 22px;
             }
             #settingsMenu .settings-menu-main button:not(.resize-btn) {
                 font-size: 18px !important;
@@ -6384,7 +6396,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1331-hideui-manage-z">
+    <meta name="flashabc-build" content="1342-solo-descenders">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -6758,6 +6770,14 @@
                 </svg>
             </button>
             <div id="settingsMenu" style="display:none; position:absolute; bottom:60px; left:0;">
+                <div class="settings-menu-stack">
+                <button id="letterLayoutBtn" class="settings-layout-float" onclick="event.stopPropagation(); openLetterLayoutPicker()" ontouchend="event.stopPropagation(); event.preventDefault(); openLetterLayoutPicker()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="18" rx="1"/>
+                        <rect x="14" y="3" width="7" height="18" rx="1"/>
+                    </svg>
+                    Layout
+                </button>
                 <div class="settings-menu-main">
                 <div class="word-size-row" onclick="event.stopPropagation()">
                     <div class="word-size-label">Word size</div>
@@ -6783,15 +6803,8 @@
                         <rect x="2" y="2" width="20" height="20" rx="2"/>
                         <text x="3.5" y="13.5" font-family="serif" font-size="10" font-weight="700" fill="#35654D" stroke="none">Aa</text>
                     </svg>
-                    Letters
-                </button>
-                <button id="letterLayoutBtn" onclick="event.stopPropagation(); openLetterLayoutPicker()" ontouchend="event.stopPropagation(); event.preventDefault(); openLetterLayoutPicker()"
-                    style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#35654D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="7" height="18" rx="1"/>
-                        <rect x="14" y="3" width="7" height="18" rx="1"/>
-                    </svg>
-                    Layout
+                    <span class="settings-row-label">Letters</span>
+                    <span class="settings-off-mark" aria-hidden="true">✕</span>
                 </button>
                 <button id="showTextBtn" onclick="event.stopPropagation(); toggleTextOnFront()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleTextOnFront()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px; border-bottom:1px solid #f0f0f0;">
@@ -6799,6 +6812,7 @@
                         <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/><path d="M8 18h.01M12 18h.01M16 18h.01"/>
                     </svg>
                     <span class="settings-caption-label">Caption</span>
+                    <span class="settings-off-mark" aria-hidden="true">✕</span>
                 </button>
                 <button id="swipeDirBtn" onclick="event.stopPropagation(); toggleSwipeDirection()" ontouchend="event.stopPropagation(); event.preventDefault(); toggleSwipeDirection()"
                     style="width:100%; padding:13px 16px; border:none; background:white; text-align:left; font-size:15px; font-weight:600; color:#333; cursor:pointer; display:flex; align-items:center; gap:10px;">
@@ -6807,6 +6821,7 @@
                     </svg>
                     Swipe goes next
                 </button>
+                </div>
                 </div>
                 <div class="settings-cc-col">
                     <button type="button" class="settings-cc-btn" data-tip="Crop" aria-label="Crop"
@@ -6867,7 +6882,7 @@
         <div id="cardOverlayNav" style="display:none;"></div>
     </div>
 
-    <!-- Letter layout picker: Corner / Middle / Bottom -->
+    <!-- Letter layout picker: 1 corner / 2 middle / 3 large / 4 letter only -->
     <div id="letterLayoutModal" class="letter-layout-modal" role="dialog" aria-modal="true" aria-labelledby="letterLayoutTitle" onclick="if(event.target===this)closeLetterLayoutPicker()">
         <div class="letter-layout-card" onclick="event.stopPropagation()">
             <div class="letter-layout-head">
@@ -6877,41 +6892,34 @@
             <div class="letter-layout-grid" id="letterLayoutGrid">
                 <button type="button" class="letter-layout-option" data-layout="corner" onclick="selectLetterLayout('corner')" aria-label="Layout 1, corner letters">
                     <div class="letter-layout-preview letter-layout-preview--corner">
-                        <span class="llp-corner">Cc</span>
-                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
-                        <div class="llp-caption">Circle</div>
+                        <span class="llp-corner">Ii</span>
+                        <div class="llp-img" aria-hidden="true">
+                            <svg class="llp-pic" viewBox="0 0 24 24"><path fill="#111" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <div class="llp-caption">Image</div>
                     </div>
-                    <span class="llp-num">1</span>
                 </button>
                 <button type="button" class="letter-layout-option" data-layout="banner" onclick="selectLetterLayout('banner')" aria-label="Layout 2, middle letters">
                     <div class="letter-layout-preview letter-layout-preview--banner">
-                        <span class="llp-banner">C c</span>
-                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
-                        <div class="llp-caption">Circle</div>
+                        <span class="llp-banner">I i</span>
+                        <div class="llp-img" aria-hidden="true">
+                            <svg class="llp-pic" viewBox="0 0 24 24"><path fill="#111" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <div class="llp-caption">Image</div>
                     </div>
-                    <span class="llp-num">2</span>
                 </button>
-                <button type="button" class="letter-layout-option" data-layout="bottom" onclick="selectLetterLayout('bottom')" aria-label="Layout 3, bottom letters">
-                    <div class="letter-layout-preview letter-layout-preview--bottom">
-                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
-                        <div class="llp-caption">Circle</div>
-                        <span class="llp-rule"></span>
-                        <span class="llp-bottom">C c</span>
-                    </div>
-                    <span class="llp-num">3</span>
-                </button>
-                <button type="button" class="letter-layout-option" data-layout="giant" onclick="selectLetterLayout('giant')" aria-label="Layout 4, large letters">
+                <button type="button" class="letter-layout-option" data-layout="giant" onclick="selectLetterLayout('giant')" aria-label="Layout 3, large letters">
                     <div class="letter-layout-preview letter-layout-preview--giant">
-                        <div class="llp-img"><img class="llp-photo" alt="" draggable="false"></div>
-                        <span class="llp-giant">C c</span>
+                        <div class="llp-img" aria-hidden="true">
+                            <svg class="llp-pic" viewBox="0 0 24 24"><path fill="#111" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <span class="llp-giant">I i</span>
                     </div>
-                    <span class="llp-num">4</span>
                 </button>
-                <button type="button" class="letter-layout-option" data-layout="solo" onclick="selectLetterLayout('solo')" aria-label="Layout 5, letter only">
+                <button type="button" class="letter-layout-option" data-layout="solo" onclick="selectLetterLayout('solo')" aria-label="Layout 4, letter only">
                     <div class="letter-layout-preview letter-layout-preview--solo">
-                        <span class="llp-solo">A</span>
+                        <span class="llp-solo">I i</span>
                     </div>
-                    <span class="llp-num">5</span>
                 </button>
             </div>
         </div>
@@ -8064,23 +8072,22 @@
             return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block">' +
                 '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>' + shackle + '</svg>';
         }
-        let showTextOnFront = false; // overlay back text on card front
-        // Letters display: 'off' | 'corner' | 'banner' (middle) | 'bottom' | 'giant' (large) | 'solo' (letter only)
-        // Preferred layout (when Letters is turned on) is remembered separately.
+        let showTextOnFront = true; // Caption on for a new session
+        // Letters display: 'off' | 'corner' | 'banner' (middle) | 'giant' (large) | 'solo' (letter only)
+        // New session always opens on layout 1 (corner). Bottom layout was removed.
         let preferredLetterLayout = 'corner';
-        let charDisplayMode = 'off';
+        let charDisplayMode = 'corner';
         try {
             const savedPref = localStorage.getItem('flashabc_char_layout_pref');
-            if (savedPref === 'corner' || savedPref === 'banner' || savedPref === 'bottom' || savedPref === 'giant' || savedPref === 'solo') {
+            if (savedPref === 'bottom') {
+                preferredLetterLayout = 'corner';
+                localStorage.setItem('flashabc_char_layout_pref', 'corner');
+            } else if (savedPref === 'corner' || savedPref === 'banner' || savedPref === 'giant' || savedPref === 'solo') {
                 preferredLetterLayout = savedPref;
             }
-            const savedChar = localStorage.getItem('flashabc_char_mode');
-            if (savedChar === 'corner' || savedChar === 'banner' || savedChar === 'bottom' || savedChar === 'giant' || savedChar === 'solo' || savedChar === 'off') {
-                charDisplayMode = savedChar;
-            } else if (savedChar === '1' || savedChar === 'true') {
-                charDisplayMode = 'corner';
-            }
-            if (charDisplayMode !== 'off') preferredLetterLayout = charDisplayMode;
+            charDisplayMode = 'corner';
+            localStorage.setItem('flashabc_char_mode', 'corner');
+            localStorage.setItem('flashabc_char_layout_pref', preferredLetterLayout === 'bottom' ? 'corner' : (preferredLetterLayout || 'corner'));
         } catch (e) {}
         // Legacy alias — some older checks may still read this name
         let showCharOnCard = charDisplayMode !== 'off';
@@ -18763,18 +18770,23 @@
             setCardTextScaleIndex(cardTextScaleIndex - 1);
         }
 
+        function setLayoutCaptionRow(btn, featureOn) {
+            if (!btn) return;
+            btn.classList.remove('settings-on');
+            btn.classList.toggle('settings-row-off', !featureOn);
+            btn.style.background = featureOn ? 'white' : '#f5ead0';
+            btn.style.color = featureOn ? '#333' : '#6b4e1a';
+        }
+
         function updateCaptionButton() {
             const btn = document.getElementById('showTextBtn');
             if (!btn) return;
             const blocked = charDisplayMode === 'giant' || charDisplayMode === 'solo';
             btn.classList.toggle('settings-caption-blocked', blocked);
-            if (blocked) {
-                setSettingsItemOn(btn, false);
-            } else {
-                setSettingsItemOn(btn, showTextOnFront);
-            }
+            const on = !blocked && showTextOnFront;
+            setLayoutCaptionRow(btn, on);
             const svg = btn.querySelector('svg');
-            if (svg) svg.setAttribute('stroke', (!blocked && showTextOnFront) ? '#6b4e1a' : '#35654D');
+            if (svg) svg.setAttribute('stroke', on ? '#35654D' : '#6b4e1a');
         }
 
         function toggleTextOnFront() {
@@ -18828,7 +18840,7 @@
                 return '<div class="card-letter-banner">' +
                     '<span class="card-letter-banner-text">' + glyph + '</span></div>';
             }
-            if (charDisplayMode === 'banner' || charDisplayMode === 'bottom' || charDisplayMode === 'giant') {
+            if (charDisplayMode === 'banner' || charDisplayMode === 'giant') {
                 // Same markup; CSS order places it top / bottom / large-center
                 return '<div class="card-letter-banner">' +
                     '<span class="card-letter-banner-text">' + upper + ' ' + lower + '</span></div>';
@@ -18840,7 +18852,6 @@
             if (!backText || charDisplayMode === 'off') return '';
             if (charDisplayMode === 'corner') return ' show-char-active';
             if (charDisplayMode === 'banner') return ' show-banner-active';
-            if (charDisplayMode === 'bottom') return ' show-bottom-active';
             if (charDisplayMode === 'giant') return ' show-giant-active';
             if (charDisplayMode === 'solo') return ' show-solo-active';
             return '';
@@ -18923,9 +18934,10 @@
                 const box = el.parentElement;
                 if (!box) continue;
                 el.style.whiteSpace = 'nowrap';
-                el.style.lineHeight = '0.88';
-                const availW = Math.max(8, box.clientWidth - 8);
-                const availH = Math.max(8, box.clientHeight - 8);
+                el.style.lineHeight = '1.12';
+                el.style.paddingBottom = '0.12em';
+                const availW = Math.max(8, box.clientWidth - 16);
+                const availH = Math.max(8, box.clientHeight - 24);
                 if (availW <= 8 || availH <= 8) continue;
                 let lo = 24;
                 let hi = Math.max(availW, availH);
@@ -19044,30 +19056,33 @@
             const btn = document.getElementById('showCharBtn');
             if (!btn) return;
             const on = charDisplayMode !== 'off';
-            setSettingsItemOn(btn, on);
+            setLayoutCaptionRow(btn, on);
             const svgRect = btn.querySelector('rect');
-            if (svgRect) svgRect.setAttribute('stroke', on ? '#6b4e1a' : '#35654D');
+            if (svgRect) svgRect.setAttribute('stroke', on ? '#35654D' : '#6b4e1a');
             const svgText = btn.querySelector('text');
-            if (svgText) svgText.setAttribute('fill', on ? '#6b4e1a' : '#35654D');
+            if (svgText) svgText.setAttribute('fill', on ? '#35654D' : '#6b4e1a');
         }
 
         function updateLetterLayoutButton() {
             const btn = document.getElementById('letterLayoutBtn');
             if (!btn) return;
-            // Highlight Layout when a letter layout is active
-            setSettingsItemOn(btn, charDisplayMode !== 'off');
+            btn.classList.remove('settings-on', 'settings-row-off');
+            btn.style.background = 'white';
+            btn.style.color = '#333';
             const svg = btn.querySelector('svg');
-            if (svg) svg.setAttribute('stroke', charDisplayMode !== 'off' ? '#6b4e1a' : '#35654D');
+            if (svg) svg.setAttribute('stroke', '#35654D');
         }
 
         function applyCharDisplayMode(mode, opts) {
             opts = opts || {};
-            const valid = { off: 1, corner: 1, banner: 1, bottom: 1, giant: 1, solo: 1 };
+            if (mode === 'bottom') mode = 'corner';
+            const valid = { off: 1, corner: 1, banner: 1, giant: 1, solo: 1 };
             if (!valid[mode]) return;
             charDisplayMode = mode;
             showCharOnCard = mode !== 'off';
             if (mode !== 'off') {
                 preferredLetterLayout = mode;
+                showTextOnFront = true;
                 try { localStorage.setItem('flashabc_char_layout_pref', preferredLetterLayout); } catch (e) {}
             }
             try { localStorage.setItem('flashabc_char_mode', charDisplayMode); } catch (e) {}
@@ -19084,7 +19099,6 @@
                 applyCharDisplayMode(preferredLetterLayout || 'corner');
                 if (typeof showToast === 'function') {
                     const label = preferredLetterLayout === 'banner' ? 'middle'
-                        : preferredLetterLayout === 'bottom' ? 'bottom'
                         : preferredLetterLayout === 'giant' ? 'large'
                         : preferredLetterLayout === 'solo' ? 'letter' : 'corner';
                     showToast('Letters: ' + label, 1600);
@@ -19104,25 +19118,13 @@
                 btn.classList.toggle('is-selected', btn.getAttribute('data-layout') === active);
             });
 
-            // One simple filled-circle image for all previews; word = Circle / Cc
-            const circleSrc = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">' +
-                '<rect width="120" height="120" fill="#ffffff"/>' +
-                '<circle cx="60" cy="60" r="42" fill="#35654D"/>' +
-                '</svg>'
-            );
-            grid.querySelectorAll('.llp-photo').forEach(function(photo) {
-                photo.src = circleSrc;
+            const vow = (typeof highlightVowels === 'function') ? highlightVowels : function (t) { return t; };
+            grid.querySelectorAll('.llp-corner').forEach(function(el) { el.innerHTML = vow('Ii'); });
+            grid.querySelectorAll('.llp-banner, .llp-giant, .llp-solo').forEach(function(el) {
+                el.innerHTML = vow('I') + ' ' + vow('i');
             });
             grid.querySelectorAll('.llp-caption').forEach(function(cap) {
-                cap.textContent = 'Circle';
-            });
-            grid.querySelectorAll('.llp-corner').forEach(function(el) { el.textContent = 'Cc'; });
-            grid.querySelectorAll('.llp-banner, .llp-bottom, .llp-giant').forEach(function(el) {
-                el.textContent = 'C c';
-            });
-            grid.querySelectorAll('.llp-solo').forEach(function(el) {
-                el.textContent = letterCaseMode === 'lower' ? 'a' : 'A';
+                cap.innerHTML = vow('Image');
             });
         }
 
@@ -19140,7 +19142,7 @@
         }
 
         function selectLetterLayout(layout) {
-            if (layout !== 'corner' && layout !== 'banner' && layout !== 'bottom' && layout !== 'giant' && layout !== 'solo') return;
+            if (layout !== 'corner' && layout !== 'banner' && layout !== 'giant' && layout !== 'solo') return;
             applyCharDisplayMode(layout);
             closeLetterLayoutPicker();
             const label = layout === 'banner' ? 'middle' : layout === 'giant' ? 'large' : layout === 'solo' ? 'letter' : layout;
