@@ -6396,7 +6396,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1342-solo-descenders">
+    <meta name="flashabc-build" content="1344-audio-ambient">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -7939,19 +7939,19 @@
     </div>
 
     <!-- Audio: small SFX preload; cheers is large so load only when a game is won -->
-    <audio id="flipSound" preload="auto" playsinline>
+    <audio id="flipSound" preload="none" playsinline>
         <source src="flip2.wav" type="audio/wav">
         <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/flip2.wav" type="audio/wav">
     </audio>
-    <audio id="correctSound" preload="auto" playsinline>
+    <audio id="correctSound" preload="none" playsinline>
         <source src="correct.wav" type="audio/wav">
         <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/correct.wav" type="audio/wav">
     </audio>
-    <audio id="errorSound" preload="auto" playsinline>
+    <audio id="errorSound" preload="none" playsinline>
         <source src="error.wav" type="audio/wav">
         <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/error.wav" type="audio/wav">
     </audio>
-    <audio id="shuffleSound" preload="auto" playsinline>
+    <audio id="shuffleSound" preload="none" playsinline>
         <source src="Shuffle_Chips.wav" type="audio/wav">
         <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/Shuffle_Chips.wav" type="audio/wav">
     </audio>
@@ -10161,37 +10161,47 @@
                 return this.isMobile ? 0.45 : 1.0;
             },
 
-            init: function() {
-                const setup = () => {
-                    if (this.ctx) {
-                        if (this.ctx.state === 'suspended') this.ctx.resume();
-                        return;
-                    }
-                    try {
-                        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                        if (this.ctx.state === 'suspended') this.ctx.resume();
-                        this._decodeSmall();
-                    } catch (e) { this.ctx = null; }
-                };
-                document.addEventListener('touchstart', setup, { once: true, passive: true });
-                document.addEventListener('mousedown',  setup, { once: true });
-                document.addEventListener('pointerdown', setup, { once: true });
+            setMixWithOthers: function () {
+                try {
+                    if (navigator.audioSession) navigator.audioSession.type = 'ambient';
+                } catch (e) {}
             },
 
-            _decodeSmall: function() {
-                Object.keys(this.soundFiles).forEach((id) => {
-                    if (id === 'cheersSound') return;
-                    this._decodeOne(id);
-                });
-                const cheers = document.getElementById('cheersSound');
-                if (cheers) { cheers.preload = 'auto'; try { cheers.load(); } catch (e) {} }
-                setTimeout(() => { this._decodeOne('cheersSound'); }, 400);
+            setExclusiveForClip: function () {
+                try {
+                    if (navigator.audioSession) navigator.audioSession.type = 'transient';
+                } catch (e) {}
+            },
+
+            init: function() {
+                this.setMixWithOthers();
+                try {
+                    if (navigator.audioSession) {
+                        navigator.audioSession.addEventListener('statechange', () => {
+                            if (typeof isMuted !== 'undefined' && isMuted) this.setMixWithOthers();
+                        });
+                    }
+                } catch (e) {}
+            },
+
+            ensureCtx: function () {
+                if (this.ctx) return this.ctx;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    this.ctx = null;
+                }
+                return this.ctx;
             },
 
             warmup: function(soundId) {
-                const el = document.getElementById(soundId);
-                if (el) { el.preload = 'auto'; try { el.load(); } catch (e) {} }
-                this._decodeOne(soundId);
+                if (typeof isMuted !== 'undefined' && isMuted) return;
+                // Prefetch bytes only — do not resume AudioContext or call audio.load()
+                // (those take the iPad audio session and pause YouTube).
+                if (!this.buffers[soundId] && this.soundFiles[soundId]) {
+                    const urls = this.urlsFor(this.soundFiles[soundId]);
+                    fetch(urls[0], { mode: 'cors', cache: 'force-cache' }).catch(function () {});
+                }
             },
 
             _decodeOne: async function(soundId) {
@@ -10212,10 +10222,13 @@
             },
 
             play: function(soundId) {
+                if (typeof isMuted !== 'undefined' && isMuted) return;
+                this.setExclusiveForClip();
+                this.ensureCtx();
                 if (this.ctx && this.ctx.state === 'suspended') {
                     try { this.ctx.resume(); } catch (e) {}
                 }
-                if (soundId === 'cheersSound' && !this.buffers[soundId]) this._decodeOne(soundId);
+                if (!this.buffers[soundId]) this._decodeOne(soundId);
 
                 if (this.ctx && this.ctx.state === 'running' && this.buffers[soundId]) {
                     this._fireBuffer(soundId);
@@ -10256,6 +10269,7 @@
                     try { node.pause(); } catch (e) {}
                     this._liveHtml = this._liveHtml.filter(function (n) { return n !== node; });
                     if (node.parentNode) node.parentNode.removeChild(node);
+                    if (!this._liveHtml.length) this.setMixWithOthers();
                 };
                 node.addEventListener('ended', cleanup);
                 if (clip != null) {
@@ -10305,14 +10319,17 @@
                 source.connect(gain);
                 gain.connect(this.ctx.destination);
                 const clip = this.clipEnds[soundId];
-                if (soundId === 'cheersSound') {
-                    this._liveBuffers.push(source);
-                    source.onended = () => {
-                        this._liveBuffers = this._liveBuffers.filter(function (s) { return s !== source; });
-                    };
-                }
+                this._liveBuffers.push(source);
+                const mixBack = () => {
+                    this._liveBuffers = this._liveBuffers.filter(function (s) { return s !== source; });
+                    if (!this._liveBuffers.length) this.setMixWithOthers();
+                };
+                source.onended = mixBack;
                 if (clip != null) source.start(0, 0, clip);
                 else source.start(0);
+                if (clip != null) {
+                    setTimeout(function () { try { mixBack(); } catch (e) {} }, clip * 1000 + 80);
+                }
             }
         };
 
@@ -13445,11 +13462,9 @@
             }, 1300);
         }
 
-        let swipeForwardOnly = true;
+        let swipeForwardOnly = false;
         try {
-            const savedSwipe = localStorage.getItem('flashabc_swipe_forward');
-            if (savedSwipe === '0') swipeForwardOnly = false;
-            if (savedSwipe === '1') swipeForwardOnly = true;
+            localStorage.setItem('flashabc_swipe_forward', '0');
         } catch (e) {}
 
         function setSettingsItemOn(btn, on) {
@@ -19417,19 +19432,10 @@
                     : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
             }
             if (btn) setSettingsItemOn(btn, isMuted);
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            const btn = document.getElementById('muteBtn');
-            const icon = document.getElementById('muteIcon');
-            if (icon) {
-                icon.setAttribute('stroke', isMuted ? '#6b4e1a' : '#35654D');
-                icon.innerHTML = isMuted
-                    ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
-                    : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+            if (isMuted && audioManager && typeof audioManager.setMixWithOthers === 'function') {
+                audioManager.setMixWithOthers();
+                if (typeof stopCheersSound === 'function') stopCheersSound();
             }
-            if (btn) setSettingsItemOn(btn, isMuted);
         }
 
         function positionHidePeekEye() {
