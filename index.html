@@ -6399,7 +6399,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1349-sfx-on-green">
+    <meta name="flashabc-build" content="1351-spell-scale-fit">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -8319,7 +8319,60 @@
          *  short  ≤5 letters (single)      → side-by-side, large image (~58%)
          *  medium 6–8 letters OR multi-word → side-by-side, medium image (~45%), spell min-width
          *  long   >8 letters (single only) → stack, image top (capped), spelling bottom
+         *
+         * Tablet/PC tileScale: 1.5× for short single words (≤6 letters); never wrap a
+         * single word — shrink tiles so the whole word stays on one row.
          */
+        const SPELL_SHORT_BOOST_LETTERS = 6;
+        const SPELL_SCALE_PHONE = 1;
+        const SPELL_SCALE_TABLET = 1.2;
+        const SPELL_SCALE_SHORT = 1.5;
+        const SPELL_SCALE_MIN = 0.4;
+        const SPELL_SLOT_GAP = 2;
+        const SPELL_HYPHEN_W = 14;
+
+        function spellContentBoxWidth(vw, vh) {
+            if (vw >= 900 && vh >= 640) return Math.min(1100, vw * 0.96);
+            return vw;
+        }
+
+        function spellAnswerRowAvail(L) {
+            const contentW = spellContentBoxWidth(L.vw, L.vh);
+            const contentPad = (L.vw >= 900 && L.vh >= 640) ? 16 : 12;
+            const cardL = L.toolsSide ? (L.isDesktop ? 16 : 12) : (L.isCompact ? 10 : 14);
+            const cardR = L.toolsSide ? L.toolGutter : cardL;
+            return Math.max(80, contentW - (2 * contentPad) - cardL - cardR - 8);
+        }
+
+        function spellSingleWordWidth(fsPx, scale, word) {
+            const raw = String(word || '');
+            let nTiles = 0;
+            let nHyphens = 0;
+            for (let i = 0; i < raw.length; i++) {
+                const ch = raw[i];
+                if (ch === ' ') continue;
+                if (ch === '-') nHyphens++;
+                else nTiles++;
+            }
+            const tileW = Math.round(fsPx * 0.88 * scale);
+            const units = nTiles + nHyphens;
+            const gaps = Math.max(0, units - 1) * SPELL_SLOT_GAP;
+            return nTiles * tileW + nHyphens * SPELL_HYPHEN_W + gaps;
+        }
+
+        function spellTileScaleForWord(L, word, letterCount, isMultiWord) {
+            if (!L.bigTiles) return SPELL_SCALE_PHONE;
+            if (isMultiWord) return SPELL_SCALE_TABLET;
+            const boost = (letterCount <= SPELL_SHORT_BOOST_LETTERS) ? SPELL_SCALE_SHORT : SPELL_SCALE_TABLET;
+            const avail = spellAnswerRowAvail(L);
+            let scale = boost;
+            while (scale > SPELL_SCALE_MIN + 0.001) {
+                if (spellSingleWordWidth(L.fsPx, scale, word) <= avail) return Math.round(scale * 100) / 100;
+                scale -= 0.02;
+            }
+            return SPELL_SCALE_MIN;
+        }
+
         function getSpellLayout(opts) {
             const vw = window.innerWidth || 360;
             const vh = window.innerHeight || 640;
@@ -8353,9 +8406,12 @@
             }
 
             const fsPx = Math.round(Math.min(Math.max(vw * 0.075, 36), 72));
-            const tileScale = bigTiles ? 1.2 : 1;
 
             const toolGutter = toolsSide ? (isCompact ? 50 : (isDesktop ? 64 : 56)) : 12;
+            const tileScale = spellTileScaleForWord(
+                { vw, vh, bigTiles, isDesktop, isCompact, toolsSide, toolGutter, fsPx },
+                word, letterCount, isMultiWordPhrase
+            );
             const mainClass = sideBySide ? 'spell-main-row' : 'spell-main-col';
             const tierClass = 'spell-tier-' + spellTier;
             const topChrome = toolsTop ? 56 : 22;
@@ -9000,8 +9056,14 @@
             extraWords: [],
             wrongAttempt: false,
             deckSig: null,
-            skippedQs: new Set()
+            skippedQs: new Set(),
+            matchedQs: new Set()
         };
+
+        function ensureMatchSets() {
+            if (!(matchGameState.skippedQs instanceof Set)) matchGameState.skippedQs = new Set();
+            if (!(matchGameState.matchedQs instanceof Set)) matchGameState.matchedQs = new Set();
+        }
 
         // Order-independent snapshot of the live deck. Shuffle/reorder keeps
         // the Match session; import/replace/add/edit/clear does not.
@@ -9026,6 +9088,7 @@
             matchGameState._pendingCards = null;
             matchGameState.deckSig = null;
             matchGameState.skippedQs = new Set();
+            matchGameState.matchedQs = new Set();
         }
 
         function resetSpellingGameSession() {
@@ -9085,7 +9148,8 @@
             try {
                 const g = matchGameState;
                 if (!g || !g.questions || g.questions.length === 0) return false;
-                if (g.currentQ >= g.questions.length) return false;
+                if (typeof ensureMatchSets === 'function') ensureMatchSets();
+                if (g.matchedQs && g.matchedQs.size >= g.questions.length) return false;
                 if (g.deckSig !== currentDeckMatchSignature()) return false;
                 for (let i = 0; i < g.questions.length; i++) {
                     const card = g.questions[i] && g.questions[i].card;
@@ -20633,8 +20697,9 @@
                     return false;
                 }
                 const g = matchGameState;
+                if (typeof ensureMatchSets === 'function') ensureMatchSets();
                 return !!(g && g.questions && g.questions.length > 0 &&
-                    g.currentQ < g.questions.length);
+                    !(g.matchedQs && g.matchedQs.size >= g.questions.length));
             } catch (e) { return false; }
         }
         function setGameMenuContLabel(id, baseName, active) {
@@ -21756,6 +21821,7 @@
             matchGameState.score = 0;
             matchGameState.wrongAttempt = false;
             matchGameState.skippedQs = new Set();
+            matchGameState.matchedQs = new Set();
             matchGameState.deckSig = currentDeckMatchSignature();
 
             document.getElementById('matchGameModal').style.display = 'flex';
@@ -21770,7 +21836,9 @@
         function requestCloseMatchGame() {
             closeMatchSettings();
             const g = matchGameState;
-            const active = !!(g && g.questions && g.questions.length && g.currentQ < g.questions.length);
+            if (typeof ensureMatchSets === 'function') ensureMatchSets();
+            const active = !!(g && g.questions && g.questions.length &&
+                !(g.matchedQs && g.matchedQs.size >= g.questions.length));
             if (!active) {
                 closeMatchGame();
                 return;
@@ -21818,19 +21886,58 @@
             matchGameState.score = 0;
             matchGameState.wrongAttempt = false;
             matchGameState.skippedQs = new Set();
+            matchGameState.matchedQs = new Set();
             renderMatchGame();
             showToast('🔀 Shuffled!', 1200);
+        }
+
+        function markMatchSkippedIfIncomplete(fromIndex) {
+            ensureMatchSets();
+            if (matchGameState.matchedQs.has(fromIndex)) {
+                matchGameState.skippedQs.delete(fromIndex);
+                return;
+            }
+            matchGameState.skippedQs.add(fromIndex);
+        }
+
+        function clearMatchSkipOnVisit(idx) {
+            ensureMatchSets();
+            matchGameState.skippedQs.delete(idx);
+        }
+
+        function goToMatchQuestion(idx, opts) {
+            const markSkipFrom = opts && opts.markSkipFrom;
+            if (markSkipFrom !== undefined) markMatchSkippedIfIncomplete(markSkipFrom);
+            clearMatchSkipOnVisit(idx);
+            matchGameState.currentQ = idx;
+            matchGameState.wrongAttempt = false;
+            renderMatchGame();
+        }
+
+        function matchNextQuestion() {
+            ensureMatchSets();
+            const g = matchGameState;
+            const total = (g.questions && g.questions.length) || 0;
+            if (!total) return;
+            if (g.matchedQs.size >= total) {
+                renderMatchGame();
+                return;
+            }
+            const from = g.currentQ;
+            for (let i = 1; i <= total; i++) {
+                const idx = (from + i) % total;
+                if (!g.matchedQs.has(idx)) {
+                    goToMatchQuestion(idx, { markSkipFrom: from });
+                    return;
+                }
+            }
+            renderMatchGame();
         }
 
         function skipMatchQuestion() {
             const g = matchGameState;
             if (!g || !g.questions || !g.questions.length) return;
-            if (g.currentQ >= g.questions.length) return;
-            if (!(g.skippedQs instanceof Set)) g.skippedQs = new Set();
-            g.skippedQs.add(g.currentQ);
-            g.wrongAttempt = false;
-            g.currentQ++;
-            renderMatchGame();
+            matchNextQuestion();
         }
 
         function openMatchHelp() {
@@ -21841,13 +21948,16 @@
         function buildMatchDotsHTML(total, currentQ) {
             const n = total | 0;
             const rowSizes = (typeof spellDotRowSizes === 'function') ? spellDotRowSizes(n, 15) : [n];
-            const skipped = (matchGameState.skippedQs instanceof Set) ? matchGameState.skippedQs : new Set();
+            ensureMatchSets();
+            const skipped = matchGameState.skippedQs;
+            const matched = matchGameState.matchedQs;
             let i = 0;
             const rows = rowSizes.map(function (count) {
                 const cells = [];
                 for (let k = 0; k < count; k++, i++) {
                     let c = '#ccc';
-                    if (i < currentQ) c = skipped.has(i) ? '#e53935' : '#2ecc71';
+                    if (matched.has(i)) c = '#2ecc71';
+                    else if (skipped.has(i)) c = '#e53935';
                     const isCur = i === currentQ;
                     cells.push(
                         '<div class="spell-dot-cell">' +
@@ -21862,9 +21972,10 @@
 
         function renderMatchGame() {
             const content = document.getElementById('matchGameContent');
+            ensureMatchSets();
             const { questions, currentQ, score } = matchGameState;
 
-            if (currentQ >= questions.length) {
+            if (questions.length && matchGameState.matchedQs.size >= questions.length) {
                 closeMatchSettings();
                 const matchGear = document.getElementById('matchOverlaySettings');
                 if (matchGear) matchGear.style.display = 'none';
@@ -22241,10 +22352,12 @@
                 }
                 if (!matchGameState.wrongAttempt) matchGameState.score++;
                 playSound('correctSound');
+                ensureMatchSets();
+                matchGameState.matchedQs.add(matchGameState.currentQ);
+                matchGameState.skippedQs.delete(matchGameState.currentQ);
                 setTimeout(() => {
-                    matchGameState.currentQ++;
                     matchGameState.wrongAttempt = false;
-                    renderMatchGame();
+                    matchNextQuestion();
                 }, 800);
             } else {
                 matchGameState.wrongAttempt = true;
