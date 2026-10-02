@@ -14,6 +14,9 @@
         var protocol = String(location.protocol || '');
         var edgeExternal = /^edge:/i.test(protocol) || /edge:\/\/external-file/i.test(href);
         var cloud = /onedrive|sharepoint|1drv\.ms|my\.microsoft|files\.icloud|icloud/i.test(href + ' ' + (location.host || ''));
+        // GitHub Pages / http(s) already has wavs next to the HTML — CDN only for
+        // file://, OneDrive, and Edge external-file where relative wavs fail.
+        if ((protocol === 'http:' || protocol === 'https:') && !cloud && !edgeExternal) return false;
         return isIOS || edgeExternal || cloud;
     })();
     window.FLASHABC_ASSET_BASE = window.FLASHABC_NEEDS_CDN
@@ -6396,7 +6399,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1344-audio-ambient">
+    <meta name="flashabc-build" content="1346-sfx-snappy">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -10128,6 +10131,9 @@
             buffers: {},
             isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
             _decoding: {},
+            _prefetching: {},
+            _raw: {},
+            _blobs: {},
 
             soundFiles: {
                 flipSound:      'flip2.wav',
@@ -10143,6 +10149,7 @@
             },
             _liveHtml: [],
             _liveBuffers: [],
+            _smallIds: ['flipSound', 'correctSound', 'errorSound', 'shuffleSound'],
 
             urlsFor: function(file) {
                 const urls = [];
@@ -10173,15 +10180,72 @@
                 } catch (e) {}
             },
 
+            releaseSession: function () {
+                this.setMixWithOthers();
+                try {
+                    this._liveBuffers.slice().forEach(function (s) { try { s.stop(); } catch (e) {} });
+                    this._liveBuffers = [];
+                    this._liveHtml.slice().forEach(function (n) {
+                        try { n.pause(); } catch (e) {}
+                        if (n.parentNode) n.parentNode.removeChild(n);
+                    });
+                    this._liveHtml = [];
+                } catch (e) {}
+                document.querySelectorAll('audio').forEach(function (a) {
+                    try { a.pause(); } catch (e2) {}
+                });
+                if (this.ctx && this.ctx.state === 'running') {
+                    try { this.ctx.suspend(); } catch (e) {}
+                }
+                try {
+                    if (typeof _stwAudioCtx !== 'undefined' && _stwAudioCtx && _stwAudioCtx.state === 'running') {
+                        _stwAudioCtx.suspend();
+                    }
+                } catch (e) {}
+            },
+
+            onForeground: function () {
+                this.setMixWithOthers();
+                // Never resume AudioContext here — that pauses YouTube when returning to the PWA.
+                if (this.ctx && this.ctx.state === 'running') {
+                    try { this.ctx.suspend(); } catch (e) {}
+                }
+                this.setMixWithOthers();
+            },
+
+            bindSessionGuards: function () {
+                const self = this;
+                const mix = function () { self.onForeground(); };
+                const release = function () { self.releaseSession(); };
+                document.addEventListener('visibilitychange', function () {
+                    if (document.visibilityState === 'hidden') release();
+                    else mix();
+                });
+                window.addEventListener('pagehide', release);
+                window.addEventListener('pageshow', mix);
+                window.addEventListener('freeze', release);
+                window.addEventListener('blur', release);
+                window.addEventListener('focus', mix);
+                document.addEventListener('touchstart', function () {
+                    self.setMixWithOthers();
+                    if (typeof isMuted !== 'undefined' && isMuted) self.releaseSession();
+                }, { passive: true });
+            },
+
             init: function() {
                 this.setMixWithOthers();
+                this.bindSessionGuards();
                 try {
                     if (navigator.audioSession) {
                         navigator.audioSession.addEventListener('statechange', () => {
-                            if (typeof isMuted !== 'undefined' && isMuted) this.setMixWithOthers();
+                            if (typeof isMuted !== 'undefined' && isMuted) this.releaseSession();
+                            else this.setMixWithOthers();
                         });
                     }
                 } catch (e) {}
+                // Bytes only — no AudioContext, no audio.load() (those pause YouTube).
+                const self = this;
+                this._smallIds.forEach(function (id) { self.prefetch(id); });
             },
 
             ensureCtx: function () {
@@ -10196,28 +10260,56 @@
 
             warmup: function(soundId) {
                 if (typeof isMuted !== 'undefined' && isMuted) return;
-                // Prefetch bytes only — do not resume AudioContext or call audio.load()
-                // (those take the iPad audio session and pause YouTube).
-                if (!this.buffers[soundId] && this.soundFiles[soundId]) {
-                    const urls = this.urlsFor(this.soundFiles[soundId]);
-                    fetch(urls[0], { mode: 'cors', cache: 'force-cache' }).catch(function () {});
-                }
+                this.prefetch(soundId);
+            },
+
+            prefetch: function(soundId) {
+                if (!this.soundFiles[soundId] || this._raw[soundId] || this._prefetching[soundId]) return;
+                this._prefetching[soundId] = true;
+                const self = this;
+                const urls = this.urlsFor(this.soundFiles[soundId]);
+                (async function () {
+                    for (let u = 0; u < urls.length; u++) {
+                        try {
+                            const res = await fetch(urls[u], { mode: 'cors', cache: 'force-cache' });
+                            if (!res.ok) continue;
+                            const raw = await res.arrayBuffer();
+                            if (!raw || !raw.byteLength) continue;
+                            self._raw[soundId] = raw;
+                            try {
+                                if (self._blobs[soundId]) URL.revokeObjectURL(self._blobs[soundId]);
+                            } catch (e2) {}
+                            self._blobs[soundId] = URL.createObjectURL(new Blob([raw], { type: 'audio/wav' }));
+                            self._prefetching[soundId] = false;
+                            return;
+                        } catch (e) {}
+                    }
+                    self._prefetching[soundId] = false;
+                })();
             },
 
             _decodeOne: async function(soundId) {
                 if (!this.ctx || this.buffers[soundId] || this._decoding[soundId]) return;
                 this._decoding[soundId] = true;
-                const urls = this.urlsFor(this.soundFiles[soundId]);
-                for (let u = 0; u < urls.length; u++) {
-                    try {
-                        const res = await fetch(urls[u], { mode: 'cors', cache: 'force-cache' });
-                        if (!res.ok) continue;
-                        const raw = await res.arrayBuffer();
-                        this.buffers[soundId] = await this.ctx.decodeAudioData(raw.slice(0));
+                try {
+                    if (this._raw[soundId]) {
+                        this.buffers[soundId] = await this.ctx.decodeAudioData(this._raw[soundId].slice(0));
                         this._decoding[soundId] = false;
                         return;
-                    } catch (e) {}
-                }
+                    }
+                    const urls = this.urlsFor(this.soundFiles[soundId]);
+                    for (let u = 0; u < urls.length; u++) {
+                        try {
+                            const res = await fetch(urls[u], { mode: 'cors', cache: 'force-cache' });
+                            if (!res.ok) continue;
+                            const raw = await res.arrayBuffer();
+                            this._raw[soundId] = raw;
+                            this.buffers[soundId] = await this.ctx.decodeAudioData(raw.slice(0));
+                            this._decoding[soundId] = false;
+                            return;
+                        } catch (e) {}
+                    }
+                } catch (e) {}
                 this._decoding[soundId] = false;
             },
 
@@ -10259,6 +10351,12 @@
                 const clip = this.clipEnds[soundId];
                 const node = src.cloneNode(true);
                 node.removeAttribute('id');
+                if (this._blobs[soundId]) {
+                    try {
+                        while (node.firstChild) node.removeChild(node.firstChild);
+                    } catch (e) {}
+                    node.src = this._blobs[soundId];
+                }
                 node.preload = 'auto';
                 node.volume = this.volume(soundId);
                 node.style.display = 'none';
@@ -10284,29 +10382,31 @@
                 const go = () => {
                     if (started) return;
                     started = true;
-                    try { node.currentTime = 0; } catch (e) {}
+                    try { if (node.readyState >= 1) node.currentTime = 0; } catch (e) {}
                     const p = node.play();
                     if (p) p.catch(() => {
                         try { src.pause(); src.currentTime = 0; } catch (e2) {}
                         src.volume = this.volume(soundId);
+                        if (this._blobs[soundId]) {
+                            try { src.src = this._blobs[soundId]; } catch (e4) {}
+                        }
                         src.play().catch(() => {});
                     });
                 };
-                if (node.readyState >= 2) go();
-                else {
-                    node.addEventListener('canplaythrough', go, { once: true });
-                    node.addEventListener('canplay', go, { once: true });
-                    node.load();
-                    if (soundId !== 'cheersSound') setTimeout(go, 120);
-                    else {
-                        src.preload = 'auto';
-                        try { src.load(); } catch (e) {}
-                        src.addEventListener('canplaythrough', function onCheer() {
-                            src.removeEventListener('canplaythrough', onCheer);
-                            if (started) return;
-                            go();
-                        }, { once: true });
-                    }
+                node.addEventListener('canplay', go, { once: true });
+                node.addEventListener('canplaythrough', go, { once: true });
+                if (soundId === 'cheersSound' && !this._blobs[soundId]) {
+                    src.preload = 'auto';
+                    try { src.load(); } catch (e) {}
+                    src.addEventListener('canplaythrough', function onCheer() {
+                        src.removeEventListener('canplaythrough', onCheer);
+                        if (started) return;
+                        go();
+                    }, { once: true });
+                    try { node.load(); } catch (e) {}
+                } else {
+                    try { node.load(); } catch (e) {}
+                    go();
                 }
             },
 
@@ -19432,9 +19532,11 @@
                     : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>';
             }
             if (btn) setSettingsItemOn(btn, isMuted);
-            if (isMuted && audioManager && typeof audioManager.setMixWithOthers === 'function') {
-                audioManager.setMixWithOthers();
+            if (isMuted && audioManager && typeof audioManager.releaseSession === 'function') {
+                audioManager.releaseSession();
                 if (typeof stopCheersSound === 'function') stopCheersSound();
+            } else if (audioManager && typeof audioManager.setMixWithOthers === 'function') {
+                audioManager.setMixWithOthers();
             }
         }
 
@@ -20640,6 +20742,9 @@
             if (am && typeof am.warmup === 'function' &&
                 (gameType === 'guess' || gameType === 'spelling' || gameType === 'match' || gameType === 'findletter')) {
                 am.warmup('cheersSound');
+            }
+            if (am && typeof am.warmup === 'function' && gameType === 'bomb') {
+                am.warmup('explosionSound');
             }
 
             const gameLabels = {
