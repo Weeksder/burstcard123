@@ -305,7 +305,7 @@
         #matchGameModal #matchShell[data-orient="landscape"] #matchTimer {
             position: absolute;
             right: auto;
-            bottom: -2px;
+            bottom: auto;
             transform: translateX(-50%);
         }
         #findLetterBottomBar {
@@ -6442,7 +6442,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1362-fl-timer-match-offset">
+    <meta name="flashabc-build" content="1363-match-timer-gear-mid">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -22369,15 +22369,17 @@
             gear.style.left = Math.max(0, (shellRect.left - modalRect.left + offset)) + 'px';
         }
 
-        /** Landscape: sit at the same bottom offset as the gear, centered on the word column. */
+        /** Landscape: same height as the gear button's center, centered on the word column. */
         function positionMatchTimer() {
             const shell = document.getElementById('matchShell');
             const timer = document.getElementById('matchTimer');
             const wrap = document.getElementById('matchChoicesWrap');
+            const gearBtn = document.getElementById('matchSettingsGearBtn');
             if (!shell || !timer) return;
             if (shell.getAttribute('data-orient') !== 'landscape' || !wrap) {
                 timer.style.left = '';
                 timer.style.right = '';
+                timer.style.top = '';
                 timer.style.bottom = '';
                 timer.style.transform = '';
                 return;
@@ -22386,8 +22388,16 @@
             const w = wrap.getBoundingClientRect();
             timer.style.left = ((w.left - s.left) + w.width / 2) + 'px';
             timer.style.right = 'auto';
-            timer.style.bottom = '-2px';
             timer.style.transform = 'translateX(-50%)';
+            const g = gearBtn ? gearBtn.getBoundingClientRect() : null;
+            if (g && g.height) {
+                const th = timer.offsetHeight || 20;
+                timer.style.bottom = 'auto';
+                timer.style.top = ((g.top + g.height / 2) - s.top - th / 2) + 'px';
+            } else {
+                timer.style.top = 'auto';
+                timer.style.bottom = '0px';
+            }
         }
 
         function closeMatchSettings() {
