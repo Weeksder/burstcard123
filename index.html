@@ -6442,7 +6442,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1363-match-timer-gear-mid">
+    <meta name="flashabc-build" content="1364-refresh-empty">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -10812,18 +10812,18 @@
 
         function loadCards() {
             try {
-                // Clear any old localStorage data (migration cleanup)
                 localStorage.removeItem('flashcards');
-
-                // Load from sessionStorage only
-                const saved = sessionStorage.getItem('flashcards');
-                if (saved) {
-                    cards = JSON.parse(saved);
-                }
-            } catch (e) {
-                console.error('Error loading cards:', e);
-                cards = [];
-            }
+            } catch (e) {}
+            // Refresh / new visit always opens the empty default page.
+            // Saved JSON units stay in Manage (IndexedDB) and can be loaded from there.
+            cards = [];
+            currentIndex = 0;
+            isFlipped = false;
+            currentLoadedUnitId = null;
+            if (typeof loadedUnitIds !== 'undefined' && loadedUnitIds && loadedUnitIds.clear) loadedUnitIds.clear();
+            currentLoadedFileName = '';
+            try { sessionStorage.removeItem('_flashLoadedName'); } catch (e2) {}
+            if (typeof resetAllGameSessions === 'function') resetAllGameSessions();
         }
 
         function saveCards(opts) {
