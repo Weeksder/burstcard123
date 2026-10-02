@@ -6399,7 +6399,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1348-flip-sfx-delay">
+    <meta name="flashabc-build" content="1349-sfx-on-green">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -13654,25 +13654,7 @@
                 _flipSoundTimer = null;
             }
         }
-        function scheduleFlipSound() {
-            if (document.getElementById('matchGameModal')?.style.display === 'flex') return;
-            clearFlipSound();
-            // .card transform transition is 0.6s ease — wait until the far side is showing.
-            _flipSoundTimer = setTimeout(function () {
-                _flipSoundTimer = null;
-                playSound('flipSound');
-            }, 600);
-        }
-        function flipCard() {
-            if (isShuffling) return;
-            if (typeof endHideUiPeek === 'function') endHideUiPeek();
-            const now = Date.now();
-            if (now - lastFlipTime < 400) return;
-            lastFlipTime = now;
-            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
-            closeQuickLoadDropdown();
-            window.speechSynthesis.cancel();
-            scheduleFlipSound();
+        function applyStudyCardFlip() {
             isFlipped = !isFlipped;
             const cardEl = document.querySelector('.card');
             if (cardEl) {
@@ -13686,7 +13668,6 @@
             const labelColor = isFlipped ? 'white' : '#333';
             if (navHint) { navHint.textContent = 'Tap to flip'; navHint.style.color = labelColor; }
             if (navIndex) navIndex.style.color = labelColor;
-            // Re-scale text now that card-back is visible and measurable
             if (isFlipped) {
                 const _ft = document.querySelector('.card > .card-back .card-text-auto-scale');
                 if (_ft) _ft.style.visibility = 'hidden';
@@ -13697,6 +13678,27 @@
                 });
             }
             updateOverlayIconColors();
+        }
+        function flipCard() {
+            if (isShuffling) return;
+            if (typeof endHideUiPeek === 'function') endHideUiPeek();
+            const now = Date.now();
+            if (now - lastFlipTime < 400) return;
+            lastFlipTime = now;
+            if (typeof noteSwipeHintUserEngaged === 'function') noteSwipeHintUserEngaged();
+            closeQuickLoadDropdown();
+            window.speechSynthesis.cancel();
+            if (document.getElementById('matchGameModal')?.style.display === 'flex') {
+                applyStudyCardFlip();
+                return;
+            }
+            // Play on the current (green/front) face, then start the 0.6s turn.
+            playSound('flipSound');
+            clearFlipSound();
+            _flipSoundTimer = setTimeout(function () {
+                _flipSoundTimer = null;
+                applyStudyCardFlip();
+            }, 220);
         }
 
         function highlightVowels(text) {
@@ -23031,12 +23033,12 @@
             const soundId = isBomb ? 'explosionSound' : 'correctSound';
             clearBombRevealSound();
             showBombReveal(cardIndex, isBomb);
-            // card-flip is 0.8s (holds front until 60%, then rotates). Play after
-            // the back is showing so the sound does not spoil the reveal.
+            // card-flip holds the green face until 60% of 0.8s (~480ms), then
+            // rotates. Play on the green side just before that turn starts.
             _bombRevealSoundTimer = setTimeout(function () {
                 _bombRevealSoundTimer = null;
                 playSound(soundId);
-            }, 800);
+            }, 400);
         }
 
         function showBombReveal(cardIndex, isBomb) {
