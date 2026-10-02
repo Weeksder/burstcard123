@@ -279,6 +279,49 @@
                 font-size: 0.78rem !important;
             }
         }
+        #spellingGameModal #spellTimer,
+        #matchGameModal #matchTimer,
+        #findLetterModal #findLetterTimer {
+            margin: 0;
+            padding: 0;
+            color: #ff9500;
+            font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+            font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+            letter-spacing: 0.06em;
+            line-height: 1.15;
+            pointer-events: none;
+            user-select: none;
+            z-index: 7;
+        }
+        #spellingGameModal #spellTimer,
+        #matchGameModal #matchShell[data-orient="portrait"] #matchTimer {
+            position: absolute;
+            right: 16px;
+            bottom: 12px;
+        }
+        #matchGameModal #matchShell[data-orient="landscape"] #matchTimer {
+            position: absolute;
+            right: auto;
+            bottom: -2px;
+            transform: translateX(-50%);
+        }
+        #findLetterBottomBar {
+            position: relative;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 16px 10px;
+        }
+        #findLetterModal #findLetterTimer {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
         #spellingGameModal #spellingCard {
             display: flex;
             flex-direction: column;
@@ -6399,7 +6442,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1354-bomb-end-pair">
+    <meta name="flashabc-build" content="1362-fl-timer-match-offset">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -7353,8 +7396,9 @@
             </div>
         </div>
         <div id="findLetterField" style="flex:1;min-height:0;position:relative;overflow:hidden;margin:0 12px;border-radius:20px;background:rgba(255,255,255,0.08);"></div>
-        <div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:6px 16px 10px;">
+        <div id="findLetterBottomBar">
             <span style="font-size:0.9rem;font-weight:700;color:rgba(255,255,255,0.7);">🔤 Find the Letter</span>
+            <div id="findLetterTimer" aria-hidden="true">00:00</div>
         </div>
     </div>
     <div class="modal" id="findLetterHelpModal">
@@ -8301,8 +8345,161 @@
             scrambledLetters: [],
             answerSlots: [],
             correctWord: '',
-            deckSig: ''
+            deckSig: '',
+            timerRunning: false,
+            timerStartedAt: 0,
+            timerElapsedMs: 0
         };
+        let _spellTimerTick = null;
+        function gameClockIsPhone() {
+            return Math.min(window.innerWidth || 0, window.innerHeight || 0) <= 500;
+        }
+        function formatSpellTimer(ms) {
+            const sec = Math.max(0, Math.floor((ms || 0) / 1000));
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+        function spellTimerNowMs() {
+            const g = spellingGameState;
+            const base = g.timerElapsedMs || 0;
+            if (g.timerRunning && g.timerStartedAt) return base + (Date.now() - g.timerStartedAt);
+            return base;
+        }
+        function updateSpellTimerDisplay() {
+            const el = document.getElementById('spellTimer');
+            if (el) el.textContent = formatSpellTimer(spellTimerNowMs());
+        }
+        function stopSpellTimerTick() {
+            if (_spellTimerTick) {
+                clearInterval(_spellTimerTick);
+                _spellTimerTick = null;
+            }
+        }
+        function startSpellTimer(reset) {
+            if (reset) {
+                spellingGameState.timerElapsedMs = 0;
+                spellingGameState.timerStartedAt = Date.now();
+            } else if (!spellingGameState.timerRunning) {
+                spellingGameState.timerStartedAt = Date.now();
+            }
+            spellingGameState.timerRunning = true;
+            if (gameClockIsPhone()) stopSpellTimerTick();
+            else if (!_spellTimerTick) _spellTimerTick = setInterval(updateSpellTimerDisplay, 250);
+            updateSpellTimerDisplay();
+        }
+        function pauseSpellTimer() {
+            if (spellingGameState.timerRunning) {
+                spellingGameState.timerElapsedMs = spellTimerNowMs();
+                spellingGameState.timerRunning = false;
+                spellingGameState.timerStartedAt = 0;
+            }
+            stopSpellTimerTick();
+            updateSpellTimerDisplay();
+        }
+        function resetSpellTimer() {
+            spellingGameState.timerRunning = false;
+            spellingGameState.timerStartedAt = 0;
+            spellingGameState.timerElapsedMs = 0;
+            stopSpellTimerTick();
+            updateSpellTimerDisplay();
+        }
+        let _matchTimerTick = null;
+        function matchTimerNowMs() {
+            const g = matchGameState;
+            const base = (g && g.timerElapsedMs) || 0;
+            if (g && g.timerRunning && g.timerStartedAt) return base + (Date.now() - g.timerStartedAt);
+            return base;
+        }
+        function updateMatchTimerDisplay() {
+            const el = document.getElementById('matchTimer');
+            if (el) el.textContent = formatSpellTimer(matchTimerNowMs());
+        }
+        function stopMatchTimerTick() {
+            if (_matchTimerTick) {
+                clearInterval(_matchTimerTick);
+                _matchTimerTick = null;
+            }
+        }
+        function startMatchTimer(reset) {
+            if (reset) {
+                matchGameState.timerElapsedMs = 0;
+                matchGameState.timerStartedAt = Date.now();
+            } else if (!matchGameState.timerRunning) {
+                matchGameState.timerStartedAt = Date.now();
+            }
+            matchGameState.timerRunning = true;
+            if (gameClockIsPhone()) stopMatchTimerTick();
+            else if (!_matchTimerTick) _matchTimerTick = setInterval(updateMatchTimerDisplay, 250);
+            updateMatchTimerDisplay();
+        }
+        function pauseMatchTimer() {
+            if (matchGameState.timerRunning) {
+                matchGameState.timerElapsedMs = matchTimerNowMs();
+                matchGameState.timerRunning = false;
+                matchGameState.timerStartedAt = 0;
+            }
+            stopMatchTimerTick();
+            updateMatchTimerDisplay();
+        }
+        function resetMatchTimer() {
+            matchGameState.timerRunning = false;
+            matchGameState.timerStartedAt = 0;
+            matchGameState.timerElapsedMs = 0;
+            stopMatchTimerTick();
+            updateMatchTimerDisplay();
+        }
+        let _findLetterTimerTick = null;
+        function findLetterTimerNowMs() {
+            const g = findLetterState;
+            const base = (g && g.timerElapsedMs) || 0;
+            if (g && g.timerRunning && g.timerStartedAt) return base + (Date.now() - g.timerStartedAt);
+            return base;
+        }
+        function updateFindLetterTimerDisplay() {
+            const el = document.getElementById('findLetterTimer');
+            if (!el) return;
+            if (typeof gameClockIsPhone === 'function' && gameClockIsPhone()) {
+                el.style.display = 'none';
+                return;
+            }
+            el.style.display = '';
+            el.textContent = formatSpellTimer(findLetterTimerNowMs());
+        }
+        function stopFindLetterTimerTick() {
+            if (_findLetterTimerTick) {
+                clearInterval(_findLetterTimerTick);
+                _findLetterTimerTick = null;
+            }
+        }
+        function startFindLetterTimer(reset) {
+            if (reset) {
+                findLetterState.timerElapsedMs = 0;
+                findLetterState.timerStartedAt = Date.now();
+            } else if (!findLetterState.timerRunning) {
+                findLetterState.timerStartedAt = Date.now();
+            }
+            findLetterState.timerRunning = true;
+            if (gameClockIsPhone()) stopFindLetterTimerTick();
+            else if (!_findLetterTimerTick) _findLetterTimerTick = setInterval(updateFindLetterTimerDisplay, 250);
+            updateFindLetterTimerDisplay();
+        }
+        function pauseFindLetterTimer() {
+            if (findLetterState.timerRunning) {
+                findLetterState.timerElapsedMs = findLetterTimerNowMs();
+                findLetterState.timerRunning = false;
+                findLetterState.timerStartedAt = 0;
+            }
+            stopFindLetterTimerTick();
+            updateFindLetterTimerDisplay();
+        }
+        function resetFindLetterTimer() {
+            findLetterState.timerRunning = false;
+            findLetterState.timerStartedAt = 0;
+            findLetterState.timerElapsedMs = 0;
+            stopFindLetterTimerTick();
+            updateFindLetterTimerDisplay();
+        }
 
         /* Mid lift: between previous (-0.03em) and too-high (-0.10em). */
         const SPELL_GLYPH_LIFT = 'translateY(-0.065em)';
@@ -8502,7 +8699,10 @@
             remainingCorrect: 0,
             raf: 0,
             deckSig: '',
-            idSeq: 0
+            idSeq: 0,
+            timerRunning: false,
+            timerStartedAt: 0,
+            timerElapsedMs: 0
         };
         function resetFindLetterSession() {
             if (findLetterState.raf) {
@@ -8518,6 +8718,7 @@
             findLetterState.letterIndex = 0;
             const field = document.getElementById('findLetterField');
             if (field) field.innerHTML = '';
+            if (typeof resetFindLetterTimer === 'function') resetFindLetterTimer();
         }
         function findLetterDeckSig() {
             return (cards || []).map(function (c) {
@@ -8739,6 +8940,7 @@
                 const lo = document.getElementById('findLetterLower');
                 if (up) up.textContent = findLetterState.letter;
                 if (lo) lo.textContent = findLetterState.letter.toLowerCase();
+                if (typeof startFindLetterTimer === 'function') startFindLetterTimer(false);
                 flStartLoop();
                 return;
             }
@@ -8760,12 +8962,14 @@
             findLetterState.letterIndex = 0;
             findLetterState.idSeq = 0;
             flUpdateCoins();
+            if (typeof startFindLetterTimer === 'function') startFindLetterTimer(true);
             requestAnimationFrame(function () {
                 requestAnimationFrame(flBuildRound);
             });
         }
         function closeFindLetterGame() {
             if (typeof stopCheersSound === 'function') stopCheersSound();
+            if (typeof pauseFindLetterTimer === 'function') pauseFindLetterTimer();
             flStopLoop();
             const modal = document.getElementById('findLetterModal');
             if (modal) modal.style.display = 'none';
@@ -8783,13 +8987,21 @@
         function flShowComplete() {
             flStopLoop();
             findLetterState.active = false;
+            if (typeof pauseFindLetterTimer === 'function') pauseFindLetterTimer();
             if (typeof playSound === 'function') playSound('cheersSound');
+            const showClock = !(typeof gameClockIsPhone === 'function' && gameClockIsPhone());
+            const total = showClock && typeof formatSpellTimer === 'function'
+                ? formatSpellTimer(typeof findLetterTimerNowMs === 'function' ? findLetterTimerNowMs() : 0)
+                : '';
+            const barTimer = document.getElementById('findLetterTimer');
+            if (barTimer) barTimer.style.display = showClock ? '' : 'none';
             const field = document.getElementById('findLetterField');
             if (field) {
                 field.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;padding:24px;box-sizing:border-box;">' +
                     '<div style="font-size:4rem;">🎉</div>' +
                     '<h2 style="font-size:2rem;color:white;margin:0;">All letters found!</h2>' +
                     '<p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">Great job!</p>' +
+                    (showClock ? '<div style="color:#ff9500;font-size:clamp(1.15rem,3vw,1.5rem);font-weight:700;font-variant-numeric:tabular-nums;font-family:ui-monospace,\'Cascadia Mono\',\'Segoe UI Mono\',Consolas,monospace;letter-spacing:0.06em;line-height:1;">' + total + '</div>' : '') +
                     '<button class="btn btn-success" onclick="stopCheersSound();resetFindLetterSession();startFindLetterGame()" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔄 Play Again</button>' +
                     '<button class="btn" onclick="closeFindLetterGame()" style="padding:10px 20px;background:rgba(255,255,255,0.9);color:#35654D;justify-content:center;">Back to Menu</button>' +
                     '</div>';
@@ -9057,7 +9269,10 @@
             wrongAttempt: false,
             deckSig: null,
             skippedQs: new Set(),
-            matchedQs: new Set()
+            matchedQs: new Set(),
+            timerRunning: false,
+            timerStartedAt: 0,
+            timerElapsedMs: 0
         };
 
         function ensureMatchSets() {
@@ -9089,6 +9304,7 @@
             matchGameState.deckSig = null;
             matchGameState.skippedQs = new Set();
             matchGameState.matchedQs = new Set();
+            if (typeof resetMatchTimer === 'function') resetMatchTimer();
         }
 
         function resetSpellingGameSession() {
@@ -9101,6 +9317,7 @@
             spellingGameState.correctWord = '';
             spellingGameState.deckSig = '';
             _spellTryAgain = false;
+            if (typeof resetSpellTimer === 'function') resetSpellTimer();
         }
 
         function resetGuessGameSession() {
@@ -20908,16 +21125,21 @@
                     spellingGameState.answerSlots = [];
                     spellingGameState.correctWord = '';
                     spellingGameState.deckSig = (typeof currentDeckMatchSignature === 'function') ? currentDeckMatchSignature() : '';
+                    if (typeof startSpellTimer === 'function') startSpellTimer(true);
+                } else if (typeof startSpellTimer === 'function') {
+                    startSpellTimer(false);
                 }
                 // Continue: keep gameCards, index, progress dots, scrambled bank, and answer slots
 
                 document.body.style.overflow = 'hidden';
                 document.getElementById('spellingGameModal').style.display = 'flex';
+                if (typeof updateSpellTimerDisplay === 'function') updateSpellTimerDisplay();
                 renderSpellingGame({ preserveState: continueSpell });
             } else if (gameType === 'match') {
                 if (hasActiveMatchSession()) {
                     document.body.style.overflow = 'hidden';
                     document.getElementById('matchGameModal').style.display = 'flex';
+                    if (typeof startMatchTimer === 'function') startMatchTimer(false);
                     renderMatchGame();
                     return;
                 }
@@ -21825,6 +22047,7 @@
             matchGameState.deckSig = currentDeckMatchSignature();
 
             document.getElementById('matchGameModal').style.display = 'flex';
+            if (typeof startMatchTimer === 'function') startMatchTimer(true);
             renderMatchGame();
         }
 
@@ -21860,6 +22083,7 @@
 
         function closeMatchGame() {
             if (typeof stopCheersSound === 'function') stopCheersSound();
+            if (typeof pauseMatchTimer === 'function') pauseMatchTimer();
             hideMatchEndConfirm();
             closeMatchSettings();
             const matchGear = document.getElementById('matchOverlaySettings');
@@ -21887,6 +22111,7 @@
             matchGameState.wrongAttempt = false;
             matchGameState.skippedQs = new Set();
             matchGameState.matchedQs = new Set();
+            if (typeof startMatchTimer === 'function') startMatchTimer(true);
             renderMatchGame();
             showToast('🔀 Shuffled!', 1200);
         }
@@ -21977,14 +22202,22 @@
 
             if (questions.length && matchGameState.matchedQs.size >= questions.length) {
                 closeMatchSettings();
+                if (typeof pauseMatchTimer === 'function') pauseMatchTimer();
                 const matchGear = document.getElementById('matchOverlaySettings');
                 if (matchGear) matchGear.style.display = 'none';
                 playSound('cheersSound');
+                const showMatchClock = !(typeof gameClockIsPhone === 'function' && gameClockIsPhone());
+                const matchTotal = showMatchClock
+                    ? ((typeof formatSpellTimer === 'function')
+                        ? formatSpellTimer(typeof matchTimerNowMs === 'function' ? matchTimerNowMs() : 0)
+                        : '00:00')
+                    : '';
                 content.innerHTML = `
                     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
                         <div style="font-size:4rem;">🎉</div>
                         <h2 style="font-size:2rem;color:white;margin:0;">All done!</h2>
                         <p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">${score} / ${questions.length} correct first try</p>
+                        ${showMatchClock ? `<div style="color:#ff9500;font-size:clamp(1.15rem,3vw,1.5rem);font-weight:700;font-variant-numeric:tabular-nums;font-family:ui-monospace,'Cascadia Mono','Segoe UI Mono',Consolas,monospace;letter-spacing:0.06em;line-height:1;">${matchTotal}</div>` : ''}
                         <button class="btn btn-success" onclick="startGame('match')" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔄 Play Again</button>
                         <button class="btn" onclick="closeMatchGame()" style="padding:10px 20px;background:rgba(255,255,255,0.9);color:#35654D;justify-content:center;">Back to Menu</button>
                     </div>`;
@@ -22044,6 +22277,9 @@
             const imageWrap = isLandscape
                 ? 'flex:1 1 0;min-width:40%;min-height:0;border:3px solid #35654D;border-radius:14px;overflow:hidden;'
                 : 'flex:1 1 0;min-height:45%;min-width:0;width:100%;overflow:hidden;';
+            const timerHTML = (typeof gameClockIsPhone === 'function' && gameClockIsPhone())
+                ? ''
+                : '<div id="matchTimer" aria-hidden="true">00:00</div>';
             const imageBlock = `
                     <div id="matchImageWrap" style="${imageWrap}">
                         <img src="${gifSrc(q.card.frontImage)}"
@@ -22101,13 +22337,17 @@
                     ${isLandscape ? choicesBlock + imageBlock : imageBlock + choicesBlock}
                     ${tabletLift}
                     </div>
+                    ${timerHTML}
                 </div>
                 </div>`;
 
+            if (typeof updateMatchTimerDisplay === 'function') updateMatchTimerDisplay();
             positionMatchGear();
+            positionMatchTimer();
             document.fonts.ready.then(() => requestAnimationFrame(() => {
                 scaleMatchLabels();
                 positionMatchGear();
+                positionMatchTimer();
             }));
         }
 
@@ -22127,6 +22367,27 @@
             gear.style.position = 'absolute';
             gear.style.bottom = Math.max(0, (modalRect.bottom - shellRect.bottom + offset)) + 'px';
             gear.style.left = Math.max(0, (shellRect.left - modalRect.left + offset)) + 'px';
+        }
+
+        /** Landscape: sit at the same bottom offset as the gear, centered on the word column. */
+        function positionMatchTimer() {
+            const shell = document.getElementById('matchShell');
+            const timer = document.getElementById('matchTimer');
+            const wrap = document.getElementById('matchChoicesWrap');
+            if (!shell || !timer) return;
+            if (shell.getAttribute('data-orient') !== 'landscape' || !wrap) {
+                timer.style.left = '';
+                timer.style.right = '';
+                timer.style.bottom = '';
+                timer.style.transform = '';
+                return;
+            }
+            const s = shell.getBoundingClientRect();
+            const w = wrap.getBoundingClientRect();
+            timer.style.left = ((w.left - s.left) + w.width / 2) + 'px';
+            timer.style.right = 'auto';
+            timer.style.bottom = '-2px';
+            timer.style.transform = 'translateX(-50%)';
         }
 
         function closeMatchSettings() {
@@ -22200,6 +22461,7 @@
             requestAnimationFrame(() => {
                 scaleMatchLabels();
                 positionMatchGear();
+                positionMatchTimer();
             });
         }
 
@@ -22796,14 +23058,16 @@
         function applyBombSizeButtonStyles(selectedSize) {
             const n = selectedSize != null ? selectedSize : bombGridSize;
             [9, 12, 15].forEach(size => {
-                const btn = document.getElementById('bombSize' + size);
-                if (!btn) return;
                 const available = isBombSizeAvailable(size);
                 const selected = size === n;
-                btn.style.background = selected ? '#e53935' : 'transparent';
-                btn.style.color      = selected ? 'white' : (available ? '#666' : '#ccc');
-                btn.style.cursor     = available ? 'pointer' : 'not-allowed';
-                btn.style.opacity    = (selected || available) ? '1' : '0.4';
+                ['bombSize' + size, 'bombSize' + size + 'Inline'].forEach(function (id) {
+                    const btn = document.getElementById(id);
+                    if (!btn) return;
+                    btn.style.background = selected ? '#e53935' : 'transparent';
+                    btn.style.color      = selected ? 'white' : (available ? '#666' : '#ccc');
+                    btn.style.cursor     = available ? 'pointer' : 'not-allowed';
+                    btn.style.opacity    = (selected || available) ? '1' : '0.4';
+                });
             });
         }
 
@@ -22890,7 +23154,7 @@
         }
 
         function getBombGridLayout() {
-            const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+            const isLandscape = window.innerWidth > window.innerHeight;
             const isTouchPortrait = !isLandscape && (('ontouchstart' in window) || navigator.maxTouchPoints > 0);
             const size = bombGameState.gridSize || bombGridSize || 9;
             let gridCols, gridRows;
@@ -22908,8 +23172,9 @@
             }
             const gap = 8;
             const inset = 8;
-            const isStandardGrid = size === 9 || size === 12 || size === 15;
-            const useSidePill = isStandardGrid && (!isTouchPortrait || size === 12 || size === 15);
+            // PC and landscape: vertical bar on the right for the whole round
+            // (including leftover tiles). Phone portrait keeps the top pill.
+            const useSidePill = !isTouchPortrait;
             const pillW = useSidePill ? 56 : 0;
             const box = getGamePlayBox('bombGameModal');
             const availW = Math.max(160, Math.floor(box.w - pillW - inset * 2));
@@ -23015,15 +23280,11 @@
             if (bombGameState.cardsRemaining === 0) {
                 if (controls) controls.style.cssText = 'display: none;';
                 content.innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <h2 style="font-size: 2.4rem; margin-bottom: 16px; color: white;">🎉 Safe!</h2>
-                        <p style="font-size: 1.3rem; margin-bottom: 20px; color: rgba(255,255,255,0.9);">All safe cards found</p>
-                        <button class="btn btn-success" onclick="startNewBombGame()" style="padding: 15px 30px; font-size: 1.2rem;">
-                            🔄 Play Again
-                        </button>
-                        <div style="margin-top: 14px;">
-                            <button class="btn" onclick="closeBombGame()" style="padding: 10px 20px; background: rgba(255,255,255,0.9); color: #35654D;">Back to Menu</button>
-                        </div>
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:40px;width:100%;box-sizing:border-box;">
+                        <h2 style="font-size: 2.4rem; margin: 0; color: white;">🎉 Safe!</h2>
+                        <p style="font-size: 1.3rem; margin: 0; color: rgba(255,255,255,0.9);">All safe cards found</p>
+                        <button class="btn btn-success" onclick="startNewBombGame()" style="padding:15px 30px;font-size:1.2rem;justify-content:center;margin-top:8px;">🔄 Play Again</button>
+                        <button class="btn" onclick="closeBombGame()" style="padding:10px 20px;background:rgba(255,255,255,0.9);color:#35654D;justify-content:center;">Back to Menu</button>
                     </div>
                 `;
                 return;
@@ -23041,7 +23302,7 @@
             const { isLandscape, gridCols, gridRows, scroll15, fillByHeight, isTouchPortrait, useSidePill, gap, tile, gridW, gridH } = layout;
 
             const sizeToggle = document.getElementById('bombGridToggle');
-            if (sizeToggle) sizeToggle.style.display = (cards.length < 9) ? 'none' : '';
+            if (sizeToggle) sizeToggle.style.display = '';
             if (controls) {
                 if (!useSidePill && cardsRemaining > 0) {
                     controls.style.cssText = 'position: absolute; top: clamp(10px, 2vh, 18px); left: 50%; right: auto; transform: translateX(-50%); z-index: 30; display: inline-flex; flex-direction: row; align-items: center; gap: 10px; background: rgba(255,255,255,0.96); border-radius: 999px; padding: 7px 14px; box-shadow: 0 4px 22px rgba(0,0,0,0.28);';
@@ -23070,9 +23331,9 @@
             const inlinePillHtml = useSidePill ? `
                 <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px; background:rgba(255,255,255,0.96); border-radius:999px; padding:12px 7px; box-shadow:0 4px 22px rgba(0,0,0,0.28); margin-left:10px; flex-shrink:0; align-self:center;">
                     <div id="bombGridToggleInline" style="display:inline-flex; flex-direction:column; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
-                        <button onclick="setBombGridSize(9)"  style="${bombGridSizeBtnStyle(9,  bombGridSize===9)}">9</button>
-                        <button onclick="setBombGridSize(12)" style="${bombGridSizeBtnStyle(12, bombGridSize===12)}">12</button>
-                        <button onclick="setBombGridSize(15)" style="${bombGridSizeBtnStyle(15, bombGridSize===15)}">15</button>
+                        <button onclick="setBombGridSize(9)"  id="bombSize9Inline"  style="${bombGridSizeBtnStyle(9,  bombGridSize===9)}">9</button>
+                        <button onclick="setBombGridSize(12)" id="bombSize12Inline" style="${bombGridSizeBtnStyle(12, bombGridSize===12)}">12</button>
+                        <button onclick="setBombGridSize(15)" id="bombSize15Inline" style="${bombGridSizeBtnStyle(15, bombGridSize===15)}">15</button>
                     </div>
                     <span style="height:1px; width:18px; background:#e0e0e0;"></span>
                     <button onclick="startNewBombGame()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center;" title="Shuffle Cards">
@@ -23198,9 +23459,9 @@
             const inlinePillHtml = useSidePill ? `
                 <div style="display:inline-flex; flex-direction:column; align-items:center; gap:10px; background:rgba(255,255,255,0.96); border-radius:999px; padding:12px 7px; box-shadow:0 4px 22px rgba(0,0,0,0.28); margin-left:10px; flex-shrink:0; align-self:center;">
                     <div style="display:inline-flex; flex-direction:column; gap:3px; background:#f0f0f0; border-radius:999px; padding:3px;">
-                        <button onclick="setBombGridSize(9)"  style="${bombGridSizeBtnStyle(9,  bombGridSize===9)}">9</button>
-                        <button onclick="setBombGridSize(12)" style="${bombGridSizeBtnStyle(12, bombGridSize===12)}">12</button>
-                        <button onclick="setBombGridSize(15)" style="${bombGridSizeBtnStyle(15, bombGridSize===15)}">15</button>
+                        <button onclick="setBombGridSize(9)"  id="bombSize9Inline"  style="${bombGridSizeBtnStyle(9,  bombGridSize===9)}">9</button>
+                        <button onclick="setBombGridSize(12)" id="bombSize12Inline" style="${bombGridSizeBtnStyle(12, bombGridSize===12)}">12</button>
+                        <button onclick="setBombGridSize(15)" id="bombSize15Inline" style="${bombGridSizeBtnStyle(15, bombGridSize===15)}">15</button>
                     </div>
                     <span style="height:1px; width:18px; background:#e0e0e0;"></span>
                     <button onclick="startNewBombGame()" style="background:none; border:none; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center;" title="Shuffle Cards">
@@ -23314,6 +23575,7 @@
 
         function closeSpellingGame() {
             if (typeof stopCheersSound === 'function') stopCheersSound();
+            if (typeof pauseSpellTimer === 'function') pauseSpellTimer();
             // Leave spellingGameState intact so menu can show Spell Me (Continue)
             document.getElementById('spellingGameModal').style.display = 'none';
             openGameMenu();
@@ -23328,6 +23590,7 @@
             spellingGameState.scrambledLetters = [];
             spellingGameState.answerSlots = [];
             spellingGameState.correctWord = '';
+            if (typeof startSpellTimer === 'function') startSpellTimer(true);
             renderSpellingGame({ preserveState: false });
         }
 
@@ -23439,13 +23702,17 @@
         }
 
         function showSpellingComplete() {
+            if (typeof pauseSpellTimer === 'function') pauseSpellTimer();
             const content = document.getElementById('spellingGameContent');
             playSound('cheersSound');
+            const showSpellClock = !gameClockIsPhone();
+            const spellTotal = showSpellClock ? formatSpellTimer(spellTimerNowMs()) : '';
             content.innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:16px;">
                     <div style="font-size:4rem;">🎉</div>
                     <h2 style="font-size:2rem;color:white;margin:0;">All words spelled!</h2>
                     <p style="font-size:1.3rem;color:rgba(255,255,255,0.85);margin:0;">Great job!</p>
+                    ${showSpellClock ? `<div style="color:#ff9500;font-size:clamp(1.15rem,3vw,1.5rem);font-weight:700;font-variant-numeric:tabular-nums;font-family:ui-monospace,'Cascadia Mono','Segoe UI Mono',Consolas,monospace;letter-spacing:0.06em;line-height:1;">${spellTotal}</div>` : ''}
                     <button class="btn btn-success" onclick="startNewSpellingGame()" style="padding:14px 28px;font-size:1.1rem;justify-content:center;margin-top:8px;">🔀 Play Again</button>
                     <button class="btn" onclick="closeSpellingGame()" style="padding:10px 20px;background:rgba(255,255,255,0.9);color:#35654D;justify-content:center;">Back to Menu</button>
                 </div>`;
@@ -23743,10 +24010,12 @@
 
                         ${sideToolsHTML}
 
+                        ${L.isPhone ? '' : '<div id="spellTimer" aria-hidden="true">00:00</div>'}
                     </div>
                 </div>`;
 
             renderSpellingGameState();
+            if (typeof updateSpellTimerDisplay === 'function') updateSpellTimerDisplay();
             if (typeof applySpellLetterFonts === 'function') applySpellLetterFonts();
 
             // Remember layout so resize handler can skip no-op reflows
