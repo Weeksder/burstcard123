@@ -6399,7 +6399,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1346-sfx-snappy">
+    <meta name="flashabc-build" content="1347-bomb-sfx-delay">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -22634,6 +22634,7 @@
         }
 
         function closeBombGame() {
+            clearBombRevealSound();
             document.getElementById('bombGameModal').classList.remove('active');
             document.querySelector('.container').style.filter = '';
             openGameMenu();
@@ -22688,12 +22689,14 @@
             applyBombSizeButtonStyles(n);
             // Changing size restarts the round (fresh shuffle + bombs)
             if (document.getElementById('bombGameModal')?.classList.contains('active')) {
+                clearBombRevealSound();
                 setupBombRound();
                 renderBombGame();
             }
         }
 
         function startNewBombGame() {
+            clearBombRevealSound();
             setupBombRound();
             renderBombGame();
         }
@@ -22992,18 +22995,29 @@
             }
         }
 
+        let _bombRevealSoundTimer = null;
+        function clearBombRevealSound() {
+            if (_bombRevealSoundTimer) {
+                clearTimeout(_bombRevealSoundTimer);
+                _bombRevealSoundTimer = null;
+            }
+            if (typeof audioManager !== 'undefined' && audioManager && typeof audioManager.stop === 'function') {
+                audioManager.stop('explosionSound');
+            }
+        }
+
         function selectBombCard(cardIndex) {
             const card = bombGameState.gameCards[cardIndex];
-
-            if (card.isBomb) {
-                // Hit the bomb!
-                playSound('explosionSound');
-                showBombReveal(cardIndex, true);
-            } else {
-                // Safe card
-                playSound('correctSound');
-                showBombReveal(cardIndex, false);
-            }
+            const isBomb = !!card.isBomb;
+            const soundId = isBomb ? 'explosionSound' : 'correctSound';
+            clearBombRevealSound();
+            showBombReveal(cardIndex, isBomb);
+            // card-flip is 0.8s (holds front until 60%, then rotates). Play after
+            // the back is showing so the sound does not spoil the reveal.
+            _bombRevealSoundTimer = setTimeout(function () {
+                _bombRevealSoundTimer = null;
+                playSound(soundId);
+            }, 800);
         }
 
         function showBombReveal(cardIndex, isBomb) {
