@@ -6399,7 +6399,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1351-spell-scale-fit">
+    <meta name="flashabc-build" content="1354-bomb-end-pair">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -22836,29 +22836,27 @@
         }
 
         /**
-         * Target safe/bomb counts for a round.
-         * Small decks (1–5): board shrinks — one tile per card + a few bombs (not padded to 9).
+         * Target safe/bomb counts. Small decks: one tile per card + bombs (board
+         * then shrinks as cards are picked so leftover tiles get bigger).
          * Full decks: ~2/3 safe, ~1/3 bombs on the chosen 9/12/15 grid.
          */
         function bombTargetCounts(gridSize, deckLen) {
             const n = Math.max(0, deckLen | 0);
-            const size = gridSize || 9;
-            if (n <= 0) return { safe: 0, bombs: 0, board: 0, compact: true };
-            // Compact board: display count = cards + bombs (no empty 9-grid padding)
+            const size = (gridSize === 12 || gridSize === 15) ? gridSize : 9;
+            if (n <= 0) return { safe: 0, bombs: 0, board: 0, roundSize: size };
             if (n < 9) {
                 const bombs = n <= 3 ? 1 : (n <= 5 ? 2 : Math.max(1, Math.round(n * 0.3)));
-                return { safe: n, bombs: bombs, board: n + bombs, compact: true };
+                return { safe: n, bombs: bombs, board: n + bombs, roundSize: 9 };
             }
             let bombs = Math.max(1, Math.round(size * (3 / 9)));
             let safe = size - bombs;
             if (safe < 1) { safe = 1; bombs = Math.max(0, size - 1); }
-            return { safe: safe, bombs: bombs, board: size, compact: false };
+            return { safe: safe, bombs: bombs, board: size, roundSize: size };
         }
 
-        /** Build a new bomb round for the current bombGridSize (9 / 12 / 15), or a compact board for tiny decks. */
+        /** Build a new bomb round for the current bombGridSize (9 / 12 / 15). */
         function setupBombRound() {
             const n = cards.length;
-            // Tiny decks: ignore 9/12/15 toggle — board size follows card count
             if (n < 9) {
                 const targets = bombTargetCounts(9, n);
                 const selectedCards = fisherYatesShuffle(cards.slice());
@@ -22867,34 +22865,27 @@
                 bombGameState.eliminated = false;
                 bombGameState.cardsRemaining = selectedCards.length;
                 bombGameState.bombCount = targets.bombs;
-                bombGameState.gridSize = targets.board; // e.g. 3 cards + 1 bomb = 4 tiles
+                bombGameState.gridSize = targets.board;
+                bombGameState.roundSize = 9;
                 bombGameState.deckSig = (typeof currentDeckMatchSignature === 'function') ? currentDeckMatchSignature() : '';
                 return;
             }
-
-            // Clamp size to deck availability
-            if (cards.length < bombGridSize) {
-                if (cards.length >= 12) bombGridSize = 12;
+            if (n < bombGridSize) {
+                if (n >= 12) bombGridSize = 12;
                 else bombGridSize = 9;
             }
-            const size = bombGridSize;
+            const size = (bombGridSize === 12 || bombGridSize === 15) ? bombGridSize : 9;
+            bombGridSize = size;
             const targets = bombTargetCounts(size, n);
-            const bombCount = targets.bombs;
-            const safeNeeded = targets.safe;
-
             const pool = fisherYatesShuffle(cards.slice());
-            const selectedCards = pool.slice(0, Math.min(safeNeeded, pool.length));
-            // If deck is between 9 and safeNeeded, use all unique cards we have
-            while (selectedCards.length < safeNeeded && pool.length) {
-                selectedCards.push(pool[selectedCards.length % pool.length]);
-            }
-
-            const bombCards = Array.from({ length: bombCount }, function () { return { isBomb: true }; });
+            const selectedCards = pool.slice(0, Math.min(targets.safe, pool.length));
+            const bombCards = Array.from({ length: targets.bombs }, function () { return { isBomb: true }; });
             bombGameState.gameCards = fisherYatesShuffle(selectedCards.concat(bombCards));
             bombGameState.eliminated = false;
             bombGameState.cardsRemaining = selectedCards.length;
-            bombGameState.bombCount = bombCount;
+            bombGameState.bombCount = targets.bombs;
             bombGameState.gridSize = size;
+            bombGameState.roundSize = size;
             bombGameState.deckSig = (typeof currentDeckMatchSignature === 'function') ? currentDeckMatchSignature() : '';
         }
 
@@ -22906,11 +22897,10 @@
             if (size === 9) {
                 gridCols = 3; gridRows = 3;
             } else if (size === 12 || size === 15) {
-                // 12 and 15 share one visible frame so 15 tiles stay the same size as 12.
                 gridCols = isLandscape ? 4 : 3;
                 gridRows = isLandscape ? 3 : 4;
             } else {
-                // Compact boards for small decks (2–8 tiles)
+                // Leftover tiles grow to fill the screen (after ~5 picks, 4 or fewer).
                 if (size <= 2) { gridCols = size; gridRows = 1; }
                 else if (size <= 4) { gridCols = 2; gridRows = 2; }
                 else if (size <= 6) { gridCols = 3; gridRows = 2; }
@@ -22919,7 +22909,6 @@
             const gap = 8;
             const inset = 8;
             const isStandardGrid = size === 9 || size === 12 || size === 15;
-            // Compact small-deck boards: keep top controls; no side pill covering tiles
             const useSidePill = isStandardGrid && (!isTouchPortrait || size === 12 || size === 15);
             const pillW = useSidePill ? 56 : 0;
             const box = getGamePlayBox('bombGameModal');
@@ -22955,48 +22944,102 @@
             return 572;
         }
 
-        /** Scale bomb-count reduction thresholds with grid size (original was for 9). */
+        function bombSafeLeft() {
+            return (bombGameState.gameCards || []).filter(function (c) { return c && !c.isBomb; }).length;
+        }
+        function bombBombsLeft() {
+            return (bombGameState.gameCards || []).filter(function (c) { return c && c.isBomb; }).length;
+        }
+
+        /** Scale bomb-count reduction from the round's 9/12/15 size, not the shrinking leftover grid. */
         function maybeReduceBombCount() {
-            const size = bombGameState.gridSize || 9;
-            const t1 = Math.floor(size * 7 / 9); // 7 for size 9
-            const t2 = Math.floor(size * 4 / 9); // 4 for size 9
-            const maxBombs = Math.max(1, Math.round(size * (3 / 9))); // 3 for size 9
-            const midBombs = Math.max(1, Math.round(size * (2 / 9))); // 2 for size 9
-            if (bombGameState.gameCards.length <= t1 && bombGameState.bombCount === maxBombs) {
+            const size = bombGameState.roundSize || 9;
+            const t1 = Math.floor(size * 7 / 9);
+            const t2 = Math.floor(size * 4 / 9);
+            const maxBombs = Math.max(1, Math.round(size * (3 / 9)));
+            const midBombs = Math.max(1, Math.round(size * (2 / 9)));
+            const live = bombGameState.gameCards.length;
+            if (live <= t1 && bombGameState.bombCount === maxBombs && bombBombsLeft() > midBombs) {
                 bombGameState.bombCount = midBombs;
                 const bombIndexToRemove = bombGameState.gameCards.findIndex(c => c.isBomb);
-                if (bombIndexToRemove !== -1) {
-                    bombGameState.gameCards.splice(bombIndexToRemove, 1);
-                }
-            } else if (bombGameState.gameCards.length <= t2 && bombGameState.bombCount === midBombs) {
+                if (bombIndexToRemove !== -1) bombGameState.gameCards.splice(bombIndexToRemove, 1);
+            } else if (live <= t2 && bombGameState.bombCount >= midBombs && bombBombsLeft() > 1) {
                 bombGameState.bombCount = 1;
                 const bombIndexToRemove = bombGameState.gameCards.findIndex(c => c.isBomb);
-                if (bombIndexToRemove !== -1) {
-                    bombGameState.gameCards.splice(bombIndexToRemove, 1);
-                }
+                if (bombIndexToRemove !== -1) bombGameState.gameCards.splice(bombIndexToRemove, 1);
             }
+            bombGameState.bombCount = bombBombsLeft();
+        }
+
+        /** Last flashcard always sits with exactly one bomb. */
+        function isolateLastBombPair() {
+            if (bombSafeLeft() !== 1) return;
+            while (bombBombsLeft() > 1) {
+                const i = bombGameState.gameCards.findIndex(function (c) { return c && c.isBomb; });
+                if (i === -1) break;
+                bombGameState.gameCards.splice(i, 1);
+            }
+            if (bombBombsLeft() === 0) bombGameState.gameCards.push({ isBomb: true });
+            bombGameState.bombCount = bombBombsLeft();
+        }
+
+        /** While any flashcard remains, keep a bomb on the board. Last two tiles are always 1 bomb + 1 flashcard. */
+        function ensureBombPairWhileSafesRemain() {
+            if (bombSafeLeft() >= 1 && bombBombsLeft() === 0) {
+                bombGameState.gameCards.push({ isBomb: true });
+            }
+            isolateLastBombPair();
+            bombGameState.bombCount = bombBombsLeft();
+        }
+
+        function bombLastPairIsolated() {
+            return bombSafeLeft() === 1 && bombBombsLeft() === 1;
+        }
+
+        function shrinkBombGridToLive() {
+            const live = (bombGameState.gameCards && bombGameState.gameCards.length) || 0;
+            if (live <= 0) return;
+            bombGameState.gridSize = live;
         }
 
         function renderBombGame() {
             const content = document.getElementById('bombGameContent');
             const controls = document.getElementById('bombGameControls');
+
+            if (bombSafeLeft() === 0) bombGameState.cardsRemaining = 0;
+            if (bombGameState.cardsRemaining > 0) {
+                ensureBombPairWhileSafesRemain();
+                shrinkBombGridToLive();
+            }
+
+            if (bombGameState.cardsRemaining === 0) {
+                if (controls) controls.style.cssText = 'display: none;';
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h2 style="font-size: 2.4rem; margin-bottom: 16px; color: white;">🎉 Safe!</h2>
+                        <p style="font-size: 1.3rem; margin-bottom: 20px; color: rgba(255,255,255,0.9);">All safe cards found</p>
+                        <button class="btn btn-success" onclick="startNewBombGame()" style="padding: 15px 30px; font-size: 1.2rem;">
+                            🔄 Play Again
+                        </button>
+                        <div style="margin-top: 14px;">
+                            <button class="btn" onclick="closeBombGame()" style="padding: 10px 20px; background: rgba(255,255,255,0.9); color: #35654D;">Back to Menu</button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             const { gameCards, cardsRemaining } = bombGameState;
 
-            // Auto-clamp size toggle when deck is large enough for 9/12/15;
-            // compact boards (deck < 9) use bombGameState.gridSize from setupBombRound.
-            if (cards.length >= 9) {
-                if (cards.length < bombGridSize) {
-                    if (cards.length >= 12) bombGridSize = 12;
-                    else bombGridSize = 9;
-                }
+            if (cards.length < bombGridSize) {
+                if (cards.length >= 12) bombGridSize = 12;
+                else bombGridSize = 9;
             }
             applyBombSizeButtonStyles(bombGridSize);
 
             const layout = getBombGridLayout();
             const { isLandscape, gridCols, gridRows, scroll15, fillByHeight, isTouchPortrait, useSidePill, gap, tile, gridW, gridH } = layout;
 
-            // Top pill for portrait 9 / compact small decks. 12/15 + landscape use side bar.
-            // Hide 9/12/15 size toggle when deck is under 9 (compact board).
             const sizeToggle = document.getElementById('bombGridToggle');
             if (sizeToggle) sizeToggle.style.display = (cards.length < 9) ? 'none' : '';
             if (controls) {
@@ -23020,24 +23063,6 @@
                 wrapperEl.style.maxWidth = '100%';
                 wrapperEl.style.width = '100%';
                 wrapperEl.style.paddingTop = '0px';
-            }
-
-            // Win state
-            if (cardsRemaining === 0) {
-                if (controls) controls.style.cssText = 'display: none;';
-                content.innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <h2 style="font-size: 2.4rem; margin-bottom: 16px; color: white;">🎉 Safe!</h2>
-                        <p style="font-size: 1.3rem; margin-bottom: 20px; color: rgba(255,255,255,0.9);">All safe cards found</p>
-                        <button class="btn btn-success" onclick="startNewBombGame()" style="padding: 15px 30px; font-size: 1.2rem;">
-                            🔄 Play Again
-                        </button>
-                        <div style="margin-top: 14px;">
-                            <button class="btn" onclick="closeBombGame()" style="padding: 10px 20px; background: rgba(255,255,255,0.9); color: #35654D;">Back to Menu</button>
-                        </div>
-                    </div>
-                `;
-                return;
             }
 
             const outerStyle = 'position: relative; width: ' + gridW + 'px; height: ' + gridH + 'px;';
@@ -23142,6 +23167,7 @@
 
         function selectBombCard(cardIndex) {
             const card = bombGameState.gameCards[cardIndex];
+            if (!card || bombGameState.cardsRemaining <= 0) return;
             const isBomb = !!card.isBomb;
             const soundId = isBomb ? 'explosionSound' : 'correctSound';
             clearBombRevealSound();
@@ -23271,30 +23297,19 @@
         }
 
         function continueBombGame(cardIndex, isBomb) {
-            if (isBomb) {
-                // Hit bomb — remove it; tiny decks do not respawn bombs forever
-                bombGameState.gameCards.splice(cardIndex, 1);
-                maybeReduceBombCount();
-                const n = cards.length;
-                const size = bombGameState.gridSize || bombGridSize || 9;
-                const targets = bombTargetCounts(size, n);
-                const bombsLeft = bombGameState.gameCards.filter(function (c) { return c.isBomb; }).length;
-                // Compact boards (deck < 9): bombs are finite. Standard grids may respawn.
-                if (n >= 9 && bombsLeft < targets.bombs) {
-                    bombGameState.gameCards.push({ isBomb: true });
-                }
-                bombGameState.bombCount = bombGameState.gameCards.filter(function (c) { return c.isBomb; }).length;
-                bombGameState.gameCards = fisherYatesShuffle(bombGameState.gameCards);
-                if (n < 9) bombGameState.gridSize = bombGameState.gameCards.length;
+            bombGameState.gameCards.splice(cardIndex, 1);
+            if (!isBomb) bombGameState.cardsRemaining--;
+            // Last flashcard found: win without leaving a single leftover tile to pick.
+            if (bombGameState.cardsRemaining <= 0) {
+                bombGameState.cardsRemaining = 0;
                 renderBombGame();
-            } else {
-                // Safe card picked - remove it
-                bombGameState.gameCards.splice(cardIndex, 1);
-                bombGameState.cardsRemaining--;
-                maybeReduceBombCount();
-                if (cards.length < 9) bombGameState.gridSize = bombGameState.gameCards.length;
-                renderBombGame();
+                return;
             }
+            maybeReduceBombCount();
+            ensureBombPairWhileSafesRemain();
+            if (isBomb) bombGameState.gameCards = fisherYatesShuffle(bombGameState.gameCards);
+            shrinkBombGridToLive();
+            renderBombGame();
         }
 
         function closeSpellingGame() {
