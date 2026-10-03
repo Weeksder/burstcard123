@@ -6443,7 +6443,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1375-win-the-game">
+    <meta name="flashabc-build" content="1376-hideui-swipe">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -9969,11 +9969,6 @@
             function onStart(e) {
                 const target = e.target;
                 if (isShuffling) return;
-                if (typeof endHideUiPeek === 'function' && document.body.classList.contains('hide-ui-peek')) {
-                    const startPos = getPos(e);
-                    const inTop = typeof isHideUiTopTapY === 'function' && isHideUiTopTapY(startPos.y);
-                    if (!inTop) endHideUiPeek();
-                }
                 if (shouldExcludeTouchTarget(target)) return;
                 if (!target.closest('#cardDisplay') && !target.closest('.card-container')) return;
                 if (cards.length === 0) return;
@@ -10014,6 +10009,9 @@
                 if (dist > peakDist) peakDist = dist;
 
                 if (dist > 10) {
+                    if (typeof endHideUiPeek === 'function' && document.body.classList.contains('hide-ui-peek')) {
+                        endHideUiPeek();
+                    }
                     setSwipeChromeHidden(true);
                     const cardEl = document.querySelector('.card');
                     const cardStack = document.querySelector('.card-stack');
@@ -10466,7 +10464,7 @@
             },
 
             volume: function(soundId) {
-                if (soundId === 'cheersSound') return 0.8;
+                if (soundId === 'cheersSound') return 0.4;
                 return this.isMobile ? 0.45 : 1.0;
             },
 
@@ -19944,6 +19942,7 @@
         function hideUiTopTapIgnoredTarget(el) {
             if (!el || !el.closest) return false;
             if (el.closest('#cardOverlaySettings, #settingsMenu, #settingsBackdrop, #settingsGearBtn, #hidePeekBtn, #cardOverlayHidePeek, #cardOverlayLock, .fullscreen-btn')) return true;
+            if (el.closest('.top-bar, #topControls, .controls, .dropdown, #moreDropdown, #quickLoadDropdown, #manageSidePanel, #manageSidePanelOverlay')) return true;
             if (document.body.classList.contains('hide-ui-peek') && el.closest('button, .btn, a, input, select, .dropdown-content')) return true;
             return false;
         }
