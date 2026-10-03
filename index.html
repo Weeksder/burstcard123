@@ -31,6 +31,7 @@
         var base = window.FLASHABC_ASSET_BASE || '';
         var name = String(f || '').split('/').pop();
         if (!base && location.protocol !== 'file:') return name;
+        if (/^https?:/i.test(base)) return base + encodeURIComponent(name);
         return base + name;
     };
     window.applyAssetSrcs = function () {
@@ -6442,7 +6443,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1370-fl-chime-vol">
+    <meta name="flashabc-build" content="1375-win-the-game">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -8007,8 +8008,8 @@
         <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/explosion.wav" type="audio/wav">
     </audio>
     <audio id="cheersSound" preload="none" playsinline>
-        <source src="cheers-and-yays.wav" type="audio/wav">
-        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/cheers-and-yays.wav" type="audio/wav">
+        <source src="Win the game.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/Win%20the%20game.wav" type="audio/wav">
     </audio>
     <audio id="chimeSound" preload="none" playsinline>
         <source src="Chime.wav" type="audio/wav">
@@ -10427,12 +10428,11 @@
                 errorSound:     'error.wav',
                 shuffleSound:   'Shuffle_Chips.wav',
                 explosionSound: 'explosion.wav',
-                cheersSound:    'cheers-and-yays.wav',
+                cheersSound:    'Win the game.wav',
                 chimeSound:     'Chime.wav'
             },
             githubSoundBase: 'https://raw.githubusercontent.com/Weeksder/burstcard123/main/',
             clipEnds: {
-                cheersSound: 3.05
             },
             _liveHtml: [],
             _liveBuffers: [],
@@ -10460,7 +10460,7 @@
                         urls.push(name);
                         urls.push(local);
                     }
-                    if (self.githubSoundBase) urls.push(self.githubSoundBase + name);
+                    if (self.githubSoundBase) urls.push(self.githubSoundBase + encodeURIComponent(name).replace(/%2F/g, '/'));
                 });
                 return urls.filter(function (u, i, a) { return a.indexOf(u) === i; });
             },
@@ -10468,6 +10468,15 @@
             volume: function(soundId) {
                 if (soundId === 'cheersSound') return 0.8;
                 return this.isMobile ? 0.45 : 1.0;
+            },
+
+            // PC/desktop: keep AudioContext running after idle so the next SFX is immediate.
+            // iPad/iPhone/Android still suspend so YouTube and other apps can mix.
+            keepEngineWarm: function () {
+                try {
+                    if (typeof isIPad === 'function' && isIPad()) return false;
+                } catch (e) {}
+                return !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             },
 
             setMixWithOthers: function () {
@@ -10496,6 +10505,7 @@
                 document.querySelectorAll('audio').forEach(function (a) {
                     try { a.pause(); } catch (e2) {}
                 });
+                if (this.keepEngineWarm()) return;
                 if (this.ctx && this.ctx.state === 'running') {
                     try { this.ctx.suspend(); } catch (e) {}
                 }
@@ -10508,6 +10518,7 @@
 
             onForeground: function () {
                 this.setMixWithOthers();
+                if (this.keepEngineWarm()) return;
                 // Never resume AudioContext here — that pauses YouTube when returning to the PWA.
                 if (this.ctx && this.ctx.state === 'running') {
                     try { this.ctx.suspend(); } catch (e) {}
@@ -10526,8 +10537,10 @@
                 window.addEventListener('pagehide', release);
                 window.addEventListener('pageshow', mix);
                 window.addEventListener('freeze', release);
-                window.addEventListener('blur', release);
-                window.addEventListener('focus', mix);
+                if (!this.keepEngineWarm()) {
+                    window.addEventListener('blur', release);
+                    window.addEventListener('focus', mix);
+                }
                 document.addEventListener('touchstart', function () {
                     self.setMixWithOthers();
                     if (typeof isMuted !== 'undefined' && isMuted) self.releaseSession();
@@ -10619,16 +10632,25 @@
                 if (typeof isMuted !== 'undefined' && isMuted) return;
                 this.setExclusiveForClip();
                 this.ensureCtx();
-                if (this.ctx && this.ctx.state === 'suspended') {
-                    try { this.ctx.resume(); } catch (e) {}
-                }
                 if (!this.buffers[soundId]) this._decodeOne(soundId);
-
-                if (this.ctx && this.ctx.state === 'running' && this.buffers[soundId]) {
-                    this._fireBuffer(soundId);
-                    return;
+                const self = this;
+                const go = function () {
+                    if (self.ctx && self.ctx.state === 'running' && self.buffers[soundId]) {
+                        self._fireBuffer(soundId);
+                        return;
+                    }
+                    self._playHtml(soundId);
+                };
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    try {
+                        const p = this.ctx.resume();
+                        if (p && typeof p.then === 'function') {
+                            p.then(go).catch(function () { self._playHtml(soundId); });
+                            return;
+                        }
+                    } catch (e) {}
                 }
-                this._playHtml(soundId);
+                go();
             },
 
             stop: function(soundId) {
