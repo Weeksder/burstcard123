@@ -6442,7 +6442,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1364-refresh-empty">
+    <meta name="flashabc-build" content="1365-match-chime">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -8009,6 +8009,10 @@
     <audio id="cheersSound" preload="none" playsinline>
         <source src="cheers-and-yays.wav" type="audio/wav">
         <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/cheers-and-yays.wav" type="audio/wav">
+    </audio>
+    <audio id="chimeSound" preload="none" playsinline>
+        <source src="Chime.flac" type="audio/flac">
+        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/Chime.flac" type="audio/flac">
     </audio>
 
     <script>
@@ -10422,7 +10426,8 @@
                 errorSound:     'error.wav',
                 shuffleSound:   'Shuffle_Chips.wav',
                 explosionSound: 'explosion.wav',
-                cheersSound:    'cheers-and-yays.wav'
+                cheersSound:    'cheers-and-yays.wav',
+                chimeSound:     'Chime.flac'
             },
             githubSoundBase: 'https://raw.githubusercontent.com/Weeksder/burstcard123/main/',
             clipEnds: {
@@ -10431,6 +10436,12 @@
             _liveHtml: [],
             _liveBuffers: [],
             _smallIds: ['flipSound', 'correctSound', 'errorSound', 'shuffleSound'],
+
+            mimeFor: function(soundId) {
+                const file = this.soundFiles[soundId] || '';
+                if (/\.flac$/i.test(file)) return 'audio/flac';
+                return 'audio/wav';
+            },
 
             urlsFor: function(file) {
                 const urls = [];
@@ -10560,7 +10571,7 @@
                             try {
                                 if (self._blobs[soundId]) URL.revokeObjectURL(self._blobs[soundId]);
                             } catch (e2) {}
-                            self._blobs[soundId] = URL.createObjectURL(new Blob([raw], { type: 'audio/wav' }));
+                            self._blobs[soundId] = URL.createObjectURL(new Blob([raw], { type: self.mimeFor(soundId) }));
                             self._prefetching[soundId] = false;
                             return;
                         } catch (e) {}
@@ -21046,6 +21057,9 @@
                 (gameType === 'guess' || gameType === 'spelling' || gameType === 'match' || gameType === 'findletter')) {
                 am.warmup('cheersSound');
             }
+            if (am && typeof am.warmup === 'function' && gameType === 'match') {
+                am.warmup('chimeSound');
+            }
             if (am && typeof am.warmup === 'function' && gameType === 'bomb') {
                 am.warmup('explosionSound');
             }
@@ -22623,7 +22637,7 @@
                     chosenBtn.style.transition = 'background 0.15s ease';
                 }
                 if (!matchGameState.wrongAttempt) matchGameState.score++;
-                playSound('correctSound');
+                playSound('chimeSound');
                 ensureMatchSets();
                 matchGameState.matchedQs.add(matchGameState.currentQ);
                 matchGameState.skippedQs.delete(matchGameState.currentQ);
