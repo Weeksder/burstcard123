@@ -6442,7 +6442,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1366-match-chime-wav">
+    <meta name="flashabc-build" content="1370-fl-chime-vol">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -8013,8 +8013,6 @@
     <audio id="chimeSound" preload="none" playsinline>
         <source src="Chime.wav" type="audio/wav">
         <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/Chime.wav" type="audio/wav">
-        <source src="Chime.flac" type="audio/flac">
-        <source src="https://raw.githubusercontent.com/Weeksder/burstcard123/main/Chime.flac" type="audio/flac">
     </audio>
 
     <script>
@@ -9161,6 +9159,7 @@
             if (b.correct) {
                 b.popped = true;
                 // No green swoosh — the 3D coin flying to the bank is the success cue
+                if (typeof playSound === 'function') playSound('chimeSound');
                 findLetterState.remainingCorrect = Math.max(0, findLetterState.remainingCorrect - 1);
                 const fromEl = b.el;
                 flFlyCoinToBank(fromEl).then(function () {
@@ -10452,7 +10451,6 @@
 
             urlsFor: function(file) {
                 const names = [file];
-                if (/^Chime\.wav$/i.test(file)) names.push('Chime.flac');
                 const urls = [];
                 const self = this;
                 names.forEach(function (name) {
@@ -10655,6 +10653,13 @@
                 const clip = this.clipEnds[soundId];
                 const node = src.cloneNode(true);
                 node.removeAttribute('id');
+                try {
+                    Array.prototype.slice.call(node.querySelectorAll('source')).forEach(function (s) {
+                        const t = (s.getAttribute('type') || '').toLowerCase();
+                        const u = (s.getAttribute('src') || '').toLowerCase();
+                        if (t.indexOf('flac') !== -1 || /\.flac(\?|$)/.test(u)) s.parentNode.removeChild(s);
+                    });
+                } catch (eStrip) {}
                 if (this._blobs[soundId]) {
                     try {
                         while (node.firstChild) node.removeChild(node.firstChild);
@@ -21069,7 +21074,7 @@
                 (gameType === 'guess' || gameType === 'spelling' || gameType === 'match' || gameType === 'findletter')) {
                 am.warmup('cheersSound');
             }
-            if (am && typeof am.warmup === 'function' && gameType === 'match') {
+            if (am && typeof am.warmup === 'function' && gameType === 'findletter') {
                 am.warmup('chimeSound');
             }
             if (am && typeof am.warmup === 'function' && gameType === 'bomb') {
@@ -22649,7 +22654,7 @@
                     chosenBtn.style.transition = 'background 0.15s ease';
                 }
                 if (!matchGameState.wrongAttempt) matchGameState.score++;
-                playSound('chimeSound');
+                playSound('correctSound');
                 ensureMatchSets();
                 matchGameState.matchedQs.add(matchGameState.currentQ);
                 matchGameState.skippedQs.delete(matchGameState.currentQ);
