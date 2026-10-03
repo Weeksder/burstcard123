@@ -2461,11 +2461,13 @@
         body.hide-ui:not(.hide-ui-peek) #cardOverlayNav {
             display: none !important;
         }
-        /* Stay in hide mode: never show L/R arrows; the eye stays so users know hide-UI is on */
+        /* Stay in hide mode: never show L/R arrows; keep the card index */
         body.hide-ui .nav-btn,
-        body.hide-ui #navIndexLabel,
         body.hide-ui #navHintLabel {
             display: none !important;
+        }
+        body.hide-ui #navIndexLabel {
+            display: block !important;
         }
         body.hide-ui #cardOverlayHidePeek,
         body.hide-ui.hide-ui-peek #cardOverlayHidePeek {
@@ -5142,8 +5144,14 @@
             visibility: visible;
             pointer-events: auto;
         }
+        body.settings-menu-open #settingsBackdrop {
+            z-index: 15000;
+        }
         body.settings-menu-open #cardOverlaySettings {
-            z-index: 10002;
+            z-index: 15001 !important;
+        }
+        body.settings-menu-open #cardOverlayHidePeek {
+            z-index: 1 !important;
         }
         body.settings-menu-open #cardOverlayTTS,
         body.settings-menu-open .card-stack-tts {
@@ -6443,7 +6451,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="flashabc-build" content="1376-hideui-swipe">
+    <meta name="flashabc-build" content="1378-settings-above-blur">
 
     <!-- JSZip loaded on demand when user saves as ZIP -->
 
@@ -19954,8 +19962,32 @@
             return true;
         }
 
-        function consumeHideUiTopTap(clientY) {
+        function isHideUiTopTapEnabled() {
             if (!document.body.classList.contains('hide-ui')) return false;
+            if (document.body.classList.contains('settings-menu-open')) return false;
+            const bd = document.getElementById('settingsBackdrop');
+            if (bd && bd.classList.contains('open')) return false;
+            if (document.querySelector('.modal.active')) return false;
+            const msp = document.getElementById('manageSidePanel');
+            if (msp && msp.classList.contains('open')) return false;
+            const overlayIds = [
+                'spellingGameModal', 'matchGameModal', 'findLetterModal', 'stwModal',
+                'guessGameModal', 'bombGameModal', 'gameMenuModal',
+                'previewOverlayModal', 'sampleDeckModal', 'letterLayoutModal',
+                'cropOverlay', 'createModal'
+            ];
+            for (let i = 0; i < overlayIds.length; i++) {
+                const el = document.getElementById(overlayIds[i]);
+                if (!el) continue;
+                const d = el.style.display;
+                if (d === 'flex' || d === 'block') return false;
+                if (el.classList.contains('active')) return false;
+            }
+            return true;
+        }
+
+        function consumeHideUiTopTap(clientY) {
+            if (!isHideUiTopTapEnabled()) return false;
             if (!isHideUiTopTapY(clientY)) return false;
             if (Date.now() - _hideUiTopTapAt < 400) return true;
             _hideUiTopTapAt = Date.now();
@@ -19965,7 +19997,7 @@
         }
 
         document.addEventListener('touchstart', function (e) {
-            if (!document.body.classList.contains('hide-ui')) return;
+            if (!isHideUiTopTapEnabled()) return;
             const t = e.touches && e.touches[0];
             if (!t) return;
             _hideUiTopStart.x = t.clientX;
@@ -19973,7 +20005,7 @@
         }, { capture: true, passive: true });
 
         document.addEventListener('touchend', function (e) {
-            if (!document.body.classList.contains('hide-ui')) return;
+            if (!isHideUiTopTapEnabled()) return;
             const t = e.changedTouches && e.changedTouches[0];
             if (!t) return;
             if (hideUiTopTapIgnoredTarget(e.target)) return;
@@ -19985,7 +20017,7 @@
         }, { capture: true });
 
         document.addEventListener('click', function (e) {
-            if (!document.body.classList.contains('hide-ui')) return;
+            if (!isHideUiTopTapEnabled()) return;
             if (hideUiTopTapIgnoredTarget(e.target)) return;
             if (consumeHideUiTopTap(e.clientY)) {
                 e.preventDefault();
@@ -20019,6 +20051,7 @@
                 closeSettingsMenu();
                 return;
             }
+            if (typeof endHideUiPeek === 'function') endHideUiPeek();
             menu.style.display = 'flex';
             if (bd) bd.classList.add('open');
             document.body.classList.add('settings-menu-open');
